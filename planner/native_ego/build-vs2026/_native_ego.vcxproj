@@ -1,0 +1,401 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5284E658-9C9D-3847-B008-495D63E19F0E}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>_native_ego</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\files\Semantic Navigation\planner\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_native_ego.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_native_ego.cp310-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\files\Semantic Navigation\planner\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_native_ego.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_native_ego.cp310-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">E:\files\Semantic Navigation\planner\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">_native_ego.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">_native_ego.cp310-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">E:\files\Semantic Navigation\planner\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">_native_ego.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">_native_ego.cp310-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Include" /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Lib/site-packages/pybind11/include" /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;Py_NO_LINK_LIB;CMAKE_INTDIR="Debug";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;Py_NO_LINK_LIB;CMAKE_INTDIR=\"Debug\";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>D:\ananconda\envs\Segm-Navi-python3.10\libs\python310.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>E:/files/Semantic Navigation/planner/native_ego/build-vs2026/Debug/_native_ego.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>E:/files/Semantic Navigation/planner/_native_ego.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Include" /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Lib/site-packages/pybind11/include" /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;Py_NO_LINK_LIB;CMAKE_INTDIR="Release";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;Py_NO_LINK_LIB;CMAKE_INTDIR=\"Release\";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>D:\ananconda\envs\Segm-Navi-python3.10\libs\python310.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>E:/files/Semantic Navigation/planner/native_ego/build-vs2026/Release/_native_ego.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <ProgramDataBaseFile>E:/files/Semantic Navigation/planner/_native_ego.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Include" /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Lib/site-packages/pybind11/include" /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;Py_NO_LINK_LIB;CMAKE_INTDIR="MinSizeRel";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;Py_NO_LINK_LIB;CMAKE_INTDIR=\"MinSizeRel\";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>D:\ananconda\envs\Segm-Navi-python3.10\libs\python310.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>E:/files/Semantic Navigation/planner/native_ego/build-vs2026/MinSizeRel/_native_ego.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <ProgramDataBaseFile>E:/files/Semantic Navigation/planner/_native_ego.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Include" /external:I "D:/ananconda/envs/Segm-Navi-python3.10/Lib/site-packages/pybind11/include" /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;Py_NO_LINK_LIB;CMAKE_INTDIR="RelWithDebInfo";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;Py_NO_LINK_LIB;CMAKE_INTDIR=\"RelWithDebInfo\";_native_ego_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>E:\files\Semantic Navigation\planner\native_ego\include;D:\ananconda\envs\Segm-Navi-python3.10\Include;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>D:\ananconda\envs\Segm-Navi-python3.10\libs\python310.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>E:/files/Semantic Navigation/planner/native_ego/build-vs2026/RelWithDebInfo/_native_ego.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>E:/files/Semantic Navigation/planner/_native_ego.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\files\Semantic Navigation\planner\native_ego\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule E:/files/Semantic Navigation/planner/native_ego/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\bin\cmake.exe "-SE:/files/Semantic Navigation/planner/native_ego" "-BE:/files/Semantic Navigation/planner/native_ego/build-vs2026" --check-stamp-file "E:/files/Semantic Navigation/planner/native_ego/build-vs2026/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCheckCompilerFlagCommonPatterns.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeRCInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTest.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestTargets.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestUseLaunchers.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\DartConfiguration.tcl.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageHandleStandardArgs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageMessage.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython\Support.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCommon.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckFlagCommonConfig.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Templates\CTestScript.cmake.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Common.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Config.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11ConfigVersion.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11NewTools.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Targets.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeCXXCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeRCCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule E:/files/Semantic Navigation/planner/native_ego/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\bin\cmake.exe "-SE:/files/Semantic Navigation/planner/native_ego" "-BE:/files/Semantic Navigation/planner/native_ego/build-vs2026" --check-stamp-file "E:/files/Semantic Navigation/planner/native_ego/build-vs2026/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCheckCompilerFlagCommonPatterns.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeRCInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTest.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestTargets.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestUseLaunchers.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\DartConfiguration.tcl.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageHandleStandardArgs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageMessage.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython\Support.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCommon.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckFlagCommonConfig.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Templates\CTestScript.cmake.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Common.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Config.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11ConfigVersion.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11NewTools.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Targets.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeCXXCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeRCCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule E:/files/Semantic Navigation/planner/native_ego/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\bin\cmake.exe "-SE:/files/Semantic Navigation/planner/native_ego" "-BE:/files/Semantic Navigation/planner/native_ego/build-vs2026" --check-stamp-file "E:/files/Semantic Navigation/planner/native_ego/build-vs2026/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCheckCompilerFlagCommonPatterns.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeRCInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTest.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestTargets.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestUseLaunchers.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\DartConfiguration.tcl.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageHandleStandardArgs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageMessage.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython\Support.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCommon.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckFlagCommonConfig.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Templates\CTestScript.cmake.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Common.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Config.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11ConfigVersion.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11NewTools.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Targets.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeCXXCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeRCCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule E:/files/Semantic Navigation/planner/native_ego/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\bin\cmake.exe "-SE:/files/Semantic Navigation/planner/native_ego" "-BE:/files/Semantic Navigation/planner/native_ego/build-vs2026" --check-stamp-file "E:/files/Semantic Navigation/planner/native_ego/build-vs2026/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCheckCompilerFlagCommonPatterns.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeRCInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTest.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestTargets.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CTestUseLaunchers.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\CheckCXXSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Compiler\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\DartConfiguration.tcl.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageHandleStandardArgs.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPackageMessage.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\FindPython\Support.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCommon.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckCompilerFlag.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckFlagCommonConfig.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Internal\CheckSourceCompiles.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Linker\MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\Windows.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\share\cmake-4.4\Templates\CTestScript.cmake.in;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Common.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Config.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11ConfigVersion.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11NewTools.cmake;D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\pybind11\share\cmake\pybind11\pybind11Targets.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeCXXCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeRCCompiler.cmake;E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\4.4.2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">E:\files\Semantic Navigation\planner\native_ego\build-vs2026\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="E:\files\Semantic Navigation\planner\native_ego\src\bindings.cpp" />
+    <ClCompile Include="E:\files\Semantic Navigation\planner\native_ego\src\ego_planner.cpp" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="E:\files\Semantic Navigation\planner\native_ego\build-vs2026\ZERO_CHECK.vcxproj">
+      <Project>{BF4C86E1-C496-3068-B083-41C6153238E9}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

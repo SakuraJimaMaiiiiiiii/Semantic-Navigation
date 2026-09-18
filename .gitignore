@@ -1,0 +1,5 @@
+# 大型模型文件
+detections/Yolomode/sam2.1_t.pt
+detections/Yolomode/yolo26x.pt
+detections/weights/clip/ViT-B-32.pt
+detections/Yolomode/mobileclip_blt.ts

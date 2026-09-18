@@ -1,0 +1,2 @@
+native_ego_core_test 1 0.0421604
+---

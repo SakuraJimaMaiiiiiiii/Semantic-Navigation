@@ -1,0 +1,18 @@
+Start testing: Aug 27 09:11 中国标准时间
+----------------------------------------------------------
+1/1 Testing: native_ego_core_test
+1/1 Test: native_ego_core_test
+Command: "E:/files/Semantic Navigation/planner/native_ego/build-vs2026/Release/native_ego_core_test.exe"
+Directory: E:/files/Semantic Navigation/planner/native_ego/build-vs2026
+"native_ego_core_test" start time: Aug 27 09:11 中国标准时间
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"native_ego_core_test" end time: Aug 27 09:11 中国标准时间
+"native_ego_core_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Aug 27 09:11 中国标准时间

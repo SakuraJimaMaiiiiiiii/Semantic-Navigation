@@ -1,0 +1,10 @@
+^E:\FILES\SEMANTIC NAVIGATION\PLANNER\NATIVE_EGO\BUILD-VS2026\CMAKEFILES\37C8C2596BE1445EC302781D352E76C7\GENERATE.STAMP.RULE
+setlocal
+D:\ananconda\envs\Segm-Navi-python3.10\Lib\site-packages\cmake\data\bin\cmake.exe "-SE:/files/Semantic Navigation/planner/native_ego" "-BE:/files/Semantic Navigation/planner/native_ego/build-vs2026" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "E:/files/Semantic Navigation/planner/native_ego/build-vs2026/native_ego_planner.slnx"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
