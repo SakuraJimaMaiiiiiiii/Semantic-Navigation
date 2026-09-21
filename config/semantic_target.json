@@ -1,0 +1,46 @@
+{
+  // 语义导航目标配置：支持独立成行的 // 注释。
+  // 两阶段流程：先运行 run_explore.py；返航待命后，在另一终端运行 navigate_target.py。
+  // navigate_target.py 每次执行时读取本文件；run_explore.py 探索阶段不读取 target。
+  // 也可直接运行 python navigate_target.py --class-name vehicle --open-map，覆盖本文件目标。
+  // 按实例可用 --instance-id vehicle_01（须为本次语义图中的实际 ID）。
+  // 使用方法：把下面某个示例的 target 对象复制到最后一行，替换 null。
+  // 同时填写多个筛选条件时，目标必须全部满足；class_name、instance_id 至少填写一个。
+
+  // 示例 1：按类别寻找一辆车。
+  // "target": { "class_name": "vehicle" }
+  // vehicle 包含 car、truck、bus、van，也可以直接指定其中一种车型。
+  // 其他可用类别：column（结构柱）、fire cabinet（消防箱）、
+  // signboard（普通指示牌）、exit sign（出口标牌）。
+
+  // 示例 2：按本次运行的实例 ID 指定目标。
+  // "target": { "instance_id": "vehicle_02" }
+  // 使用地图中的 runtime_instance_id；柱子的视频编号、导出编号可能与它不同。
+  // 实例 ID 取自本次探索保存的 semantic_graph.json；两个终端共用同一个控制会话。
+  // 第一终端须保持运行；重启 UE/PX4 或控制会话后，不能直接沿用旧地图编号。
+
+  // 示例 3：寻找红色车辆。
+  // "target": { "class_name": "vehicle", "color": "red" }
+  // color 仅用于车辆；颜色不确定的实例不会通过该筛选。
+
+  // 示例 4：寻找距离指定柱子不超过 3 米的红色车辆。
+  // "target": {
+  //   "class_name": "vehicle",
+  //   "color": "red",
+  //   "near_instance_id": "column_03",
+  //   "near_distance": 3.0,
+  //   "min_confidence": 0.25,
+  //   "min_observations": 3,
+  //   "max_age": 120.0
+  // }
+  // near_instance_id：作为距离参照的地标运行时 ID。
+  // near_distance：与参照地标的三维距离上限，单位米，默认 3.0。
+  // min_confidence：目标置信度下限，范围 0～1，默认 0.25。
+  // min_observations：累计有效观测次数下限，正整数，默认 3。
+  // max_age：目标最后观测相对最新感知帧的最大年龄，单位秒，默认 120.0。
+  // 未填写的可选参数使用默认值。
+
+  // 当前配置：null 表示尚未指定目标，navigate_target.py 会提示先填写。
+  // 使用旧入口 run_demo.py 时，null 仍表示执行原有航点任务。
+  "target": null
+}

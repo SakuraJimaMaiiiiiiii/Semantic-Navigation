@@ -13,6 +13,7 @@ import UE4CtrlAPI
 
 
 ROUTE_SOURCE_LABELS = {
+    "route_clear": "全局前沿路径直行（EGO待命）",
     "ego_clear": "EGO B样条生成的直达轨迹",
     "ego_avoid": "EGO A*种子优化后的三维绕障轨迹",
     "depth_guard_clear": "深度估计生成的直线路径",
@@ -22,6 +23,7 @@ ROUTE_SOURCE_LABELS = {
 }
 
 DIRECT_ROUTE_STATUSES = {
+    "route_clear",
     "ego_clear",
     "depth_guard_clear",
     "clear",
@@ -186,8 +188,15 @@ class RflyMultirotorInterface:
         self._require_connection()
 
         if not self.offboard_enabled:
+            position = self.get_position()
+            yaw = float(self.get_euler()[2])
+            if not np.all(np.isfinite(position)) or not math.isfinite(yaw):
+                raise ValueError("Offboard initial position and yaw must be finite")
             print("--- 进入 Offboard 模式…… ----")
+            # 在启动 SDK 的指令发送循环前准备保持当前位置/航向的设定值。
+            self.mav.SendPosNED(*position, yaw)
             self.mav.initOffboard()
+            self.mav.SendPosNED(*position, yaw)
             time.sleep(0.5)
             self.offboard_enabled = True
 
@@ -238,12 +247,12 @@ class RflyMultirotorInterface:
         self.armed = False
         self._shutdown_disarmed = True
 
-    def takeoff(self, height, yaw=0.0):
+    def takeoff(self, height, yaw=None):
         """通过 Offboard 位置控制起飞。
 
         Args:
             height: 相对起飞点高度，单位 m，必须为正数。
-            yaw: 偏航角，单位 rad。
+            yaw: 偏航角，单位 rad；None 保持当前实测航向。
         """
         height = float(height)
 
@@ -252,6 +261,9 @@ class RflyMultirotorInterface:
 
         self._require_offboard()
 
+        yaw = float(self.get_euler()[2]) if yaw is None else float(yaw)
+        if not math.isfinite(yaw):
+            raise ValueError("Takeoff yaw must be finite")
         position = self.get_position()
         target = np.array(
             [position[0], position[1], position[2] - height],
@@ -758,7 +770,7 @@ class RflyMultirotorInterface:
             else:
                 next_update = time.monotonic()
 
-    def align_yaw(self, yaw=0.0, max_yaw_rate=None):
+    def align_yaw(self, yaw=0.0, max_yaw_rate=None, timeout=None, health_check=None):
         """通过最短 yaw 误差和角速度控制原地调整机头方向。"""
         self._require_offboard()
 
@@ -771,7 +783,7 @@ class RflyMultirotorInterface:
         )
         tolerance = float(self.config.align_yaw_tolerance)
         stable_time = float(self.config.align_yaw_stable_time)
-        timeout = float(self.config.align_yaw_timeout)
+        timeout = float(self.config.align_yaw_timeout if timeout is None else timeout)
         update_rate = float(self.config.guided_update_rate)
 
         for name, value in {
@@ -794,6 +806,8 @@ class RflyMultirotorInterface:
         yaw_error = self._wrap_angle(target_yaw - current_yaw)
 
         while True:
+            if health_check is not None:
+                health_check()
             self.raise_if_collision()
             now = time.monotonic()
             if now >= deadline:
@@ -1084,6 +1098,20 @@ class RflyMultirotorInterface:
             ],
             dtype=float,
         )
+
+    def finish_flight_session(self):
+        """Confirm touchdown and reset Offboard state while retaining SDK connections."""
+        self._require_connection()
+        if not self.wait_until_landed():
+            raise TimeoutError("Landing not confirmed; another flight cannot be started")
+        if bool(self.mav.isArmed):
+            self.disarm(force=True)
+        if self.offboard_enabled:
+            self.mav.endOffboard()
+        self.offboard_enabled = False
+        self.armed = False
+        self._landing_commanded = False
+        self._shutdown_disarmed = False
 
     def close(self, disarm=False):
         """关闭控制接口。

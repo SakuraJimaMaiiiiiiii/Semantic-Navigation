@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from config import GlobalSparseMapConfig
+from .vehicle_footprint import vehicle_footprint_indices
 
 
 @dataclass(frozen=True)
@@ -45,9 +46,7 @@ class GlobalSparseMapSnapshot:
 
     @property
     def occupied_count(self) -> int:
-        return int(np.count_nonzero(
-            self.log_odds >= self.occupied_threshold
-        ))
+        return int(np.count_nonzero(self.log_odds >= self.occupied_threshold))
 
     @property
     def bounds_ned(self) -> tuple[np.ndarray, np.ndarray]:
@@ -58,9 +57,7 @@ class GlobalSparseMapSnapshot:
             )
             return position.copy(), position.copy()
         minimum = self.indices.min(axis=0).astype(np.float64) * self.resolution
-        maximum = (
-            self.indices.max(axis=0).astype(np.float64) + 1.0
-        ) * self.resolution
+        maximum = (self.indices.max(axis=0).astype(np.float64) + 1.0) * self.resolution
         return minimum, maximum
 
     def _indices_to_points(self, indices: np.ndarray) -> np.ndarray:
@@ -83,6 +80,7 @@ class GlobalSparseOccupancyMap:
         self.resolution = float(self.config.resolution)
         self._log_odds: dict[tuple[int, int, int], float] = {}
         self._timestamp = 0.0
+        self._last_observation_completed_at = 0.0
         self._drone_position_ned = np.zeros(3, dtype=np.float64)
         self._dropped_new_voxels = 0
         self._snapshot_cache = None
@@ -131,6 +129,7 @@ class GlobalSparseOccupancyMap:
                 occupied_indices,
                 float(self.config.hit_log_odds),
             )
+            self._mark_vehicle_footprint(drone_position_ned)
             self._timestamp = float(timestamp)
             self._drone_position_ned = np.asarray(
                 drone_position_ned,
@@ -138,14 +137,29 @@ class GlobalSparseOccupancyMap:
             ).copy()
             if (
                 not self._trajectory_ned
-                or np.linalg.norm(
-                    self._drone_position_ned - self._trajectory_ned[-1]
-                ) >= 0.5 * self.resolution
+                or np.linalg.norm(self._drone_position_ned - self._trajectory_ned[-1])
+                >= 0.5 * self.resolution
             ):
-                self._trajectory_ned.append(
-                    self._drone_position_ned.copy()
-                )
+                self._trajectory_ned.append(self._drone_position_ned.copy())
             self._snapshot_cache = None
+
+    def _mark_vehicle_footprint(self, position):
+        # Pose certifies the space currently occupied by the vehicle itself.
+        # Never erase a depth hit or extend this evidence towards a planned goal.
+        indices = vehicle_footprint_indices(
+            position,
+            np.zeros(3),
+            self.resolution,
+            self.config.vehicle_free_radius,
+            self.config.vehicle_free_half_height,
+        )
+        for index in indices:
+            key = tuple(int(v) for v in index)
+            if (
+                key not in self._log_odds
+                and len(self._log_odds) < self.config.max_voxels
+            ):
+                self._log_odds[key] = float(self.config.free_threshold)
 
     def rebuild_from_keyframes(self, keyframes) -> None:
         """回环优化后，用全部关键帧校正位姿重新构建全局地图。"""
@@ -186,6 +200,21 @@ class GlobalSparseOccupancyMap:
                 ]
             self._snapshot_cache = None
 
+    @property
+    def last_update_timestamp(self):
+        with self._lock:
+            return self._timestamp
+
+    def mark_observation_completed(self):
+        """Record mapper liveness even when no new keyframe is integrated."""
+        with self._lock:
+            self._last_observation_completed_at = time.monotonic()
+
+    @property
+    def last_observation_completed_at(self):
+        with self._lock:
+            return self._last_observation_completed_at
+
     def snapshot(self) -> GlobalSparseMapSnapshot:
         """返回不会被后续地图更新修改的稀疏地图快照。"""
         with self._lock:
@@ -198,32 +227,22 @@ class GlobalSparseOccupancyMap:
         import h5py
 
         snapshot = self.snapshot()
-        output_path = (
-            Path(path)
-            if path is not None
-            else self._make_output_path()
-        )
+        output_path = Path(path) if path is not None else self._make_output_path()
         output_path.parent.mkdir(parents=True, exist_ok=True)
         # Use HDF5's broadly compatible default format.  ``libver=latest``
         # produced unreadable dataset-layout messages in the Rfly runtime.
         with h5py.File(output_path, mode="w") as h5_file:
             h5_file.attrs["format_version"] = self.FORMAT_VERSION
             h5_file.attrs["created_at_unix"] = time.time()
-            h5_file.attrs["world_frame"] = (
-                "NED: x=north, y=east, z=down"
-            )
+            h5_file.attrs["world_frame"] = "NED: x=north, y=east, z=down"
             h5_file.attrs["map_type"] = "global_sparse_occupancy"
             h5_file.attrs["resolution"] = snapshot.resolution
             h5_file.attrs["timestamp"] = snapshot.timestamp
-            h5_file.attrs["occupied_threshold"] = (
-                snapshot.occupied_threshold
-            )
+            h5_file.attrs["occupied_threshold"] = snapshot.occupied_threshold
             h5_file.attrs["free_threshold"] = snapshot.free_threshold
             h5_file.attrs["voxel_count"] = snapshot.voxel_count
             h5_file.attrs["occupied_count"] = snapshot.occupied_count
-            h5_file.attrs["dropped_new_voxels"] = (
-                snapshot.dropped_new_voxels
-            )
+            h5_file.attrs["dropped_new_voxels"] = snapshot.dropped_new_voxels
             h5_file.create_dataset(
                 "voxel_indices_ned",
                 data=snapshot.indices,
@@ -252,14 +271,10 @@ class GlobalSparseOccupancyMap:
         ``x=North, y=East, z=-Down``。HDF5中的原始NED数据不变。
         """
         snapshot = self.snapshot()
-        occupied_mask = (
-            snapshot.log_odds >= snapshot.occupied_threshold
-        )
+        occupied_mask = snapshot.log_odds >= snapshot.occupied_threshold
         occupied_indices = snapshot.indices[occupied_mask]
         occupied_log_odds = snapshot.log_odds[occupied_mask]
-        points_ned = (
-            occupied_indices.astype(np.float64) + 0.5
-        ) * snapshot.resolution
+        points_ned = (occupied_indices.astype(np.float64) + 0.5) * snapshot.resolution
         points_neu = points_ned.copy()
         if points_neu.size:
             points_neu[:, 2] *= -1.0
@@ -329,9 +344,10 @@ class GlobalSparseOccupancyMap:
         axis = np.linspace(-0.5, 0.5, subdivisions, dtype=np.float64)
         ox, oy, oz = np.meshgrid(axis, axis, axis, indexing="ij")
         offsets = np.column_stack((ox.ravel(), oy.ravel(), oz.ravel()))
-        offsets = offsets[
-            np.any(np.isclose(np.abs(offsets), 0.5), axis=1)
-        ] * snapshot.resolution
+        offsets = (
+            offsets[np.any(np.isclose(np.abs(offsets), 0.5), axis=1)]
+            * snapshot.resolution
+        )
 
         occupied_count = occupied_indices.shape[0]
         samples_per_voxel = offsets.shape[0]
@@ -381,9 +397,7 @@ class GlobalSparseOccupancyMap:
             "end_header\n"
         ).encode("ascii")
 
-        centers_neu = (
-            occupied_indices.astype(np.float64) + 0.5
-        ) * snapshot.resolution
+        centers_neu = (occupied_indices.astype(np.float64) + 0.5) * snapshot.resolution
         if centers_neu.size:
             centers_neu[:, 2] *= -1.0
         offsets_neu = offsets.copy()
@@ -398,8 +412,7 @@ class GlobalSparseOccupancyMap:
             for start in range(0, occupied_count, chunk_voxels):
                 stop = min(start + chunk_voxels, occupied_count)
                 points = (
-                    centers_neu[start:stop, None, :]
-                    + offsets_neu[None, :, :]
+                    centers_neu[start:stop, None, :] + offsets_neu[None, :, :]
                 ).reshape(-1, 3)
                 vertices = np.empty(points.shape[0], dtype=vertex_dtype)
                 vertices["x"] = points[:, 0]
@@ -440,9 +453,7 @@ class GlobalSparseOccupancyMap:
         depth_values = sampled_depth[valid].astype(np.float64)
         normalized_x = (uu[valid].astype(np.float64) - cx) / fx
         normalized_y = (vv[valid].astype(np.float64) - cy) / fy
-        rays = np.column_stack(
-            (normalized_x, normalized_y, np.ones_like(normalized_x))
-        )
+        rays = np.column_stack((normalized_x, normalized_y, np.ones_like(normalized_x)))
         if self.config.depth_is_range:
             rays /= np.linalg.norm(rays, axis=1, keepdims=True)
         return rays * depth_values[:, None]
@@ -493,10 +504,7 @@ class GlobalSparseOccupancyMap:
             active = distances > distance_along_ray + 0.5 * ray_step
             if not np.any(active):
                 continue
-            samples = (
-                camera_origin
-                + directions[active] * distance_along_ray
-            )
+            samples = camera_origin + directions[active] * distance_along_ray
             free_parts.append(self._world_to_indices(samples))
 
         if not free_parts:
@@ -528,11 +536,13 @@ class GlobalSparseOccupancyMap:
                     self._dropped_new_voxels += 1
                     continue
                 previous = 0.0
-            self._log_odds[key] = float(np.clip(
-                previous + delta,
-                minimum,
-                maximum,
-            ))
+            self._log_odds[key] = float(
+                np.clip(
+                    previous + delta,
+                    minimum,
+                    maximum,
+                )
+            )
 
     def _make_snapshot_unlocked(self) -> GlobalSparseMapSnapshot:
         if self._log_odds:

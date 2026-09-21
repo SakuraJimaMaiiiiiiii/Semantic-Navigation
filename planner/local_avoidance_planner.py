@@ -30,6 +30,7 @@ class LocalPlan:
     @property
     def can_move(self) -> bool:
         return self.local_target_ned is not None and self.status in {
+            "route_clear",
             "clear",
             "avoid",
             "ego_clear",

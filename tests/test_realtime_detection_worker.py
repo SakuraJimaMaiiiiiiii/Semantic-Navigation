@@ -90,6 +90,7 @@ class _FakeSegmenter:
     def __init__(self):
         self.received = None
         self.latest_memory = ()
+        self.mapper = SemanticInstanceMapper()
 
     def segment(self, image, detections, **sensor_data):
         self.received = image.copy()

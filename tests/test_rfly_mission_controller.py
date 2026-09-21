@@ -9,6 +9,7 @@ import numpy as np
 
 from mission.rfly_mission_controller import RflyMissionController
 from config.mission_config import MissionConfig
+from vehicle.rfly_multirotor import CollisionDetectedError
 
 
 class _Vehicle:
@@ -40,6 +41,33 @@ class _GlobalPlanner:
 
 
 class GlobalReturnExecutionTest(unittest.TestCase):
+    def test_collision_during_global_return_is_not_retried_as_direct_return(self):
+        vehicle = MagicMock()
+        vehicle.get_position.return_value = np.zeros(3)
+        vehicle.get_euler.return_value = np.zeros(3)
+        controller = RflyMissionController(
+            vehicle, MissionConfig(waypoints=()), global_return_planner=object()
+        )
+        collision = CollisionDetectedError(-1, [1, 2, -1.5], "pillar")
+        controller._return_on_global_path = MagicMock(side_effect=collision)
+        controller._return_with_local_planner = MagicMock()
+
+        with self.assertRaises(CollisionDetectedError):
+            controller.run()
+
+        controller._return_with_local_planner.assert_not_called()
+
+    def test_default_takeoff_preserves_measured_heading_without_alignment(self):
+        vehicle = MagicMock()
+        vehicle.get_position.return_value = np.array([1.0, 2.0, 0.0])
+        vehicle.get_euler.return_value = np.array([0.0, 0.0, -0.7])
+        mission = MissionConfig(waypoints=(), return_to_origin=False)
+
+        RflyMissionController(vehicle, mission).run()
+
+        vehicle.takeoff.assert_called_once_with(mission.takeoff_height, yaw=-0.7)
+        vehicle.align_yaw.assert_not_called()
+
     def test_return_restores_measured_pre_takeoff_yaw_before_landing(self):
         for return_mode in ("local", "global", "fallback"):
             with self.subTest(return_mode=return_mode):
@@ -98,7 +126,7 @@ class GlobalReturnExecutionTest(unittest.TestCase):
         self.assertTrue(vehicle.calls[0][1]["pass_through"])
         self.assertFalse(vehicle.calls[1][1]["pass_through"])
 
-    def test_local_fallback_turns_toward_origin_before_flying(self):
+    def test_local_fallback_turns_during_flight_instead_of_spinning_first(self):
         vehicle = _Vehicle()
         mission = SimpleNamespace()
         local_planner = object()
@@ -111,15 +139,12 @@ class GlobalReturnExecutionTest(unittest.TestCase):
 
         controller._return_with_local_planner()
 
-        self.assertAlmostEqual(
-            vehicle.yaw_calls[0],
-            math.atan2(-3.0, -3.0),
-        )
+        self.assertEqual(vehicle.yaw_calls, [])
         self.assertEqual(len(vehicle.calls), 1)
         waypoint, options = vehicle.calls[0]
         np.testing.assert_allclose(waypoint, [1.0, -1.0, -1.5])
-        self.assertFalse(options["face_direction"])
-        self.assertEqual(options["yaw"], vehicle.yaw_calls[0])
+        self.assertTrue(options["face_direction"])
+        self.assertEqual(options["yaw"], math.atan2(-3.0, -3.0))
         self.assertIs(options["local_planner"], local_planner)
 
     def test_local_return_prefers_dedicated_return_safety_planner(self):

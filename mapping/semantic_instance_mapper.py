@@ -13,6 +13,13 @@ _Matrix3 = tuple[_Vector3, _Vector3, _Vector3]
 _LandmarkKey = tuple[str, int]
 
 
+STRUCTURAL_COLUMN_PROMPTS = (
+    "parking garage structural column",
+    "floor to ceiling concrete column",
+    "concrete column supporting a ceiling beam",
+)
+
+
 COLUMN_CLASS_ALIASES = (
     "column",
     "concrete column",
@@ -21,9 +28,17 @@ COLUMN_CLASS_ALIASES = (
     "support column",
     "support pillar",
     "structural column",
+    *STRUCTURAL_COLUMN_PROMPTS,
 )
 
+SIGNBOARD_CLASS_ALIASES = ("signboard", "wall mounted sign", "directional sign", "direction sign")
+EXIT_SIGN_CLASS_ALIASES = ("exit sign", "exit signage", "emergency exit sign", "illuminated exit sign")
+FIRE_CABINET_CLASS_ALIASES = ("fire cabinet", "fire hose cabinet", "fire equipment cabinet", "fire hydrant cabinet")
+
 SEMANTIC_CLASS_PROPERTIES = {
+    "exit sign": {"aliases": EXIT_SIGN_CLASS_ALIASES, "is_static": True, "is_obstacle": True},
+    "signboard": {"aliases": SIGNBOARD_CLASS_ALIASES, "is_static": True, "is_obstacle": True},
+    "fire cabinet": {"aliases": FIRE_CABINET_CLASS_ALIASES, "is_static": True, "is_obstacle": True},
     "column": {
         "aliases": tuple(
             alias for alias in COLUMN_CLASS_ALIASES if alias != "column"
@@ -37,6 +52,12 @@ SEMANTIC_CLASS_PROPERTIES = {
 def canonical_semantic_class_name(class_name: str) -> str:
     """将开放词汇别名规范为语义地图类别。"""
     normalized = str(class_name).strip().lower()
+    if normalized in EXIT_SIGN_CLASS_ALIASES:
+        return "exit sign"
+    if normalized in SIGNBOARD_CLASS_ALIASES:
+        return "signboard"
+    if normalized in FIRE_CABINET_CLASS_ALIASES:
+        return "fire cabinet"
     if normalized in COLUMN_CLASS_ALIASES:
         return "column"
     if normalized in ("sedan", "suv", "taxi", "police car", "automobile"):
@@ -63,6 +84,7 @@ class SemanticObservation3D:
     bbox_3d_max: np.ndarray
     measurement_covariance: np.ndarray
     appearance: np.ndarray | None = None
+    color_scores: dict[str, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -103,16 +125,17 @@ class SemanticInstanceMapper:
 
     def __init__(
         self,
-        landmark_classes=("column", *VEHICLE_CLASSES),
+        landmark_classes=("column", "signboard", "exit sign", "fire cabinet", *VEHICLE_CLASSES),
         mahalanobis_gate=7.815,                  #三维卡方分布95%置信度阈值
         process_noise_std=0.05,                  # 卡尔曼预测过程噪声标准差
         duplicate_merge_distance_xy=1.5,
-        column_min_vertical_extent=1.5,
+        column_min_vertical_extent=2.2,
         column_min_vertical_aspect_ratio=1.2,
         vehicle_max_association_distance=2.5,
         vehicle_appearance_gate=0.55,
         vehicle_ambiguity_margin=0.12,
-        vehicle_prediction_timeout=3.0,
+        vehicle_viewpoint_noise_std=0.45,
+        vehicle_confirmation_observations=3,
     ) -> None:
         self.landmark_classes = {
             canonical_semantic_class_name(name)
@@ -134,12 +157,15 @@ class SemanticInstanceMapper:
         self._landmarks: dict[_LandmarkKey, _SemanticLandmark] = {}
         self._next_display_instance_id: dict[str, int] = {}
         self._display_instance_ids: dict[_LandmarkKey, int] = {}
+        self._last_timestamp = None
         self._vehicles = VehicleInstanceTracker(
             mahalanobis_gate=mahalanobis_gate,
             max_distance=vehicle_max_association_distance,
             appearance_gate=vehicle_appearance_gate,
             ambiguity_margin=vehicle_ambiguity_margin,
-            prediction_timeout=vehicle_prediction_timeout,
+            process_noise_std=process_noise_std,
+            viewpoint_noise_std=vehicle_viewpoint_noise_std,
+            confirmation_observations=vehicle_confirmation_observations,
         )
 
     def update(
@@ -159,6 +185,9 @@ class SemanticInstanceMapper:
         observed_at = float(timestamp)
         if not np.isfinite(observed_at):
             raise ValueError("timestamp must be finite")
+        if self._last_timestamp is not None and observed_at <= self._last_timestamp:
+            return [None] * item_count
+        self._last_timestamp = observed_at
         canonical_names = [
             canonical_semantic_class_name(name) for name in class_names
         ]
@@ -340,6 +369,8 @@ class SemanticInstanceMapper:
                     else f"{identity_class}_{video_instance_id:02d}"
                 ),
                 "class_name": memory.class_name,
+                "color": self.vehicle_color(memory.instance_id)[0] if identity_class == "vehicle" else "unknown",
+                "color_confidence": self.vehicle_color(memory.instance_id)[1] if identity_class == "vehicle" else 0.0,
                 "aliases": list(memory.aliases),
                 "position_world": list(memory.position_world),
                 "position_covariance": [
@@ -355,6 +386,17 @@ class SemanticInstanceMapper:
                 "is_static": memory.is_static,
                 "is_obstacle": memory.is_obstacle,
             })
+        return records
+
+    def vehicle_color(self, instance_id):
+        track = self._vehicles.tracks.get(instance_id)
+        return ("unknown", 0.0) if track is None else track.color_semantics
+
+    def navigation_records(self, min_observations=3):
+        """Stable online identities; export numbering remains backward compatible."""
+        records = self.semantic_map_records(min_observations)
+        for record in records:
+            record["instance_id"] = record["runtime_instance_id"]
         return records
 
     def snapshot(self) -> tuple[SemanticMemoryInstance, ...]:
@@ -405,7 +447,7 @@ class SemanticInstanceMapper:
                 confidence=track.confidence,
                 observation_count=track.observation_count,
                 last_seen=track.last_seen,
-                is_static=False,
+                is_static=True,
                 is_obstacle=True,
             ))
         return tuple(snapshots)
@@ -483,6 +525,8 @@ class SemanticInstanceMapper:
             duplicate_pair = None
             landmark_keys = sorted(self._landmarks)
             for first_index, first_key in enumerate(landmark_keys):
+                if first_key[0] != "column":
+                    continue
                 first = self._landmarks[first_key]
                 for second_key in landmark_keys[first_index + 1:]:
                     second = self._landmarks[second_key]
@@ -601,6 +645,7 @@ class SemanticInstanceMapper:
             bbox_3d_max=bbox_max.copy(),
             measurement_covariance=self._positive_semidefinite(covariance),
             appearance=appearance,
+            color_scores={str(k): float(v) for k, v in (observation.color_scores or {}).items() if np.isfinite(v) and v > 0},
         )
 
     def _has_valid_landmark_geometry(

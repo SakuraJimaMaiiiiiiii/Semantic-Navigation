@@ -10,7 +10,7 @@ from __future__ import annotations
 import heapq
 import math
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
@@ -107,10 +107,46 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         super().__init__(*args, **kwargs)
         self._trajectory: UniformCubicBSpline | None = None
         self._trajectory_started_at = 0.0
+        self._tracking_floor_time = 0.0
         self._measured_velocity = np.zeros(3, dtype=np.float64)
         self._measured_acceleration = np.zeros(3, dtype=np.float64)
         self._planning_start_velocity = np.zeros(3, dtype=np.float64)
         self._planning_start_acceleration = np.zeros(3, dtype=np.float64)
+        self.navigation_altitude = None
+        self._navigation_config = None
+        self._navigation_global_map = None
+        self._plane_cache = None
+
+    def set_navigation_plane(self, altitude, config, global_map=None):
+        """Constrain exploration splines to the takeoff plane, before validation."""
+        altitude = float(altitude)
+        if not math.isfinite(altitude):
+            raise ValueError("Navigation altitude must be finite")
+        if self.navigation_altitude != altitude:
+            self._trajectory = None
+            self._cached_plan = None
+            self._plane_cache = None
+        self.navigation_altitude = altitude
+        self._navigation_config = config
+        self._navigation_global_map = global_map
+
+    def _plane_snapshot(self, snapshot):
+        if self.navigation_altitude is None:
+            return snapshot
+        from navigation.route import NavigationGrid
+        global_snapshot = self._navigation_global_map.snapshot() if self._navigation_global_map is not None else None
+        key = (snapshot.timestamp, None if global_snapshot is None else global_snapshot.timestamp, self.navigation_altitude)
+        if self._plane_cache is not None and self._plane_cache[0] == key:
+            return self._plane_cache[1]
+        grid = NavigationGrid.from_local(snapshot, self.navigation_altitude, self._navigation_config, global_snapshot)
+        states = np.ones_like(snapshot.states)
+        z = int(math.floor((self.navigation_altitude - snapshot.origin_ned[2]) / snapshot.resolution))
+        if 0 <= z < states.shape[2]:
+            for x, y in grid.free:
+                states[x, y, z] = 0
+        result = replace(snapshot, states=states, inflated_occupied=states != 0)
+        self._plane_cache = key, result
+        return result
 
     def set_motion_state(self, velocity_ned, acceleration_ned=None) -> None:
         """Update measured derivatives without changing the LocalPlan API."""
@@ -182,6 +218,13 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             self._planning_start_acceleration,
         ) = self._start_derivatives(now)
 
+        snapshot = self._plane_snapshot(snapshot)
+        if self.navigation_altitude is not None:
+            target = target.copy()
+            target[2] = self.navigation_altitude
+            self._planning_start_velocity[2] = 0.0
+            self._planning_start_acceleration[2] = 0.0
+
         blocked = np.asarray(snapshot.inflated_occupied, dtype=bool).copy()
         if self.config.unknown_is_occupied:
             blocked |= np.asarray(snapshot.states) == UNKNOWN
@@ -211,6 +254,8 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             if np.array_equal(goal, requested_goal)
             else self.grid_to_world(snapshot, goal)
         )
+        if self.navigation_altitude is not None:
+            local_goal[2] = self.navigation_altitude
 
         direct_clear = self._line_is_free_3d(snapshot, blocked, current, local_goal)
         if direct_clear:
@@ -249,8 +294,16 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             trajectory.duration,
         )
         local_target = trajectory.evaluate(target_time)
-        if np.linalg.norm(local_target - current) < 0.05 and len(sampled_path) > 1:
-            local_target = sampled_path[min(2, len(sampled_path) - 1)]
+        # Repeated end control points make early spline samples almost identical
+        # to the start. Replanning must not keep the target inside flight-control
+        # arrival tolerance indefinitely. Select along the certified curve.
+        minimum = min(0.25, float(self.config.local_target_distance))
+        if np.linalg.norm(local_target - current) < minimum:
+            advancing = np.flatnonzero(np.linalg.norm(sampled_path - current, axis=1) >= minimum)
+            index = int(advancing[0]) if len(advancing) else len(sampled_path) - 1
+            target_time = trajectory.duration * index / max(1, len(sampled_path) - 1)
+            local_target = sampled_path[index]
+        self._tracking_floor_time = target_time
         speed_limit = self._clear_speed_limit(obstacle_distance)
         return self._accept_moving_plan(LocalPlan(
             status=status,
@@ -273,7 +326,7 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         now = time.monotonic() if now is None else float(now)
         elapsed = max(0.0, now - self._trajectory_started_at)
         target_time = min(
-            elapsed + float(self.config.ego_trajectory_lookahead_time),
+            elapsed + self._tracking_floor_time,
             trajectory.duration,
         )
         return trajectory.evaluate(target_time)
@@ -378,6 +431,9 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         return np.clip(current + direction * scale, lower, upper)
 
     def _build_trajectory(self, snapshot, blocked, seed_path):
+        if self.navigation_altitude is not None:
+            seed_path = np.asarray(seed_path).copy()
+            seed_path[:, 2] = self.navigation_altitude
         spacing = float(self.config.ego_control_point_spacing)
         reference = self._resample_polyline(seed_path, spacing)
         if len(reference) < 2:
@@ -495,6 +551,8 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
                 * (points - reference)
             )
             gradient[fixed] = 0.0
+            if self.navigation_altitude is not None:
+                gradient[:, 2] = 0.0
             norm = float(np.linalg.norm(gradient))
             if norm < 1e-7:
                 break

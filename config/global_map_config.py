@@ -14,6 +14,8 @@ class GlobalSparseMapConfig:
     enabled: bool = False  # 试验阶段关闭全局地图；返航改用实时局部规划
     resolution: float = 0.3  # 全局体素边长，m；通常比局部地图更粗
     update_rate: float = 3.0  # 全局地图更新频率，Hz
+    vehicle_free_radius: float = 0.0  # 启用时，仅补足当前机身覆盖的未观测体素
+    vehicle_free_half_height: float = 0.25
     depth_stride: int = 12  # 深度图采样步长，控制全局建图计算量
     min_depth: float = 0.3  # 使用的最小深度，m
     max_depth: float = 10.0  # 使用的最大深度，m

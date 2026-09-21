@@ -1,5 +1,8 @@
 """Run YOLO-World detection and SAM2 segmentation on the latest RGB frame."""
 
+from navigation.perception import SemanticFrameStore
+
+import json
 import queue
 import threading
 import time
@@ -21,6 +24,8 @@ class RealtimeDetectionWorker:
         self.config = config or DetectorConfig()
         self.detector = TiledVehicleDetector(self.config)
         self.segmenter = SAM2Segmenter(self.config)
+        self.semantic_frames = SemanticFrameStore()
+        self._semantic_history = None
         self.processed_frames = 0
         self._stop = threading.Event()
         self._thread = None
@@ -55,6 +60,10 @@ class RealtimeDetectionWorker:
         if not self.config.save_semantic_map:
             return None
         return Path(self.config.semantic_map_path)
+
+    def semantic_snapshot(self):
+        """Thread-safe complete frame for navigation; never exposes the live mapper."""
+        return self.semantic_frames.snapshot()
 
     def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
@@ -98,6 +107,9 @@ class RealtimeDetectionWorker:
         if thread is not None and thread is not threading.current_thread():
             thread.join(timeout=10.0)
         self._stop_video_thread()
+        if self._semantic_history is not None and (thread is None or not thread.is_alive()):
+            self._semantic_history.close()
+            self._semantic_history = None
         if self.config.save_semantic_map:
             try:
                 self.segmenter.save_semantic_map()
@@ -199,6 +211,17 @@ class RealtimeDetectionWorker:
                     1e-6,
                 )
                 elapsed = max(time.monotonic() - started, 1e-6)
+                records = self.segmenter.mapper.navigation_records(self.config.semantic_map_min_observations)
+                self.semantic_frames.publish(sensor_frame.timestamp, records, elapsed)
+                if self.config.save_semantic_map:
+                    if self._semantic_history is None:
+                        history_path = Path(self.config.semantic_map_path).with_name("semantic_observations.jsonl")
+                        history_path.parent.mkdir(parents=True, exist_ok=True)
+                        self._semantic_history = history_path.open("w", encoding="utf-8", buffering=1)
+                    self._semantic_history.write(json.dumps({
+                        "timestamp": float(sensor_frame.timestamp),
+                        "inference_seconds": elapsed, "records": records,
+                    }, ensure_ascii=False, allow_nan=False) + "\n")
                 self.processed_frames += 1
 
                 completed_at = time.monotonic()
@@ -287,6 +310,11 @@ class RealtimeDetectionWorker:
                     "--- WARNING: real-time YOLO-World/SAM2 stopped: "
                     f"{error} ----"
                 )
+
+        finally:
+            if self._semantic_history is not None:
+                self._semantic_history.close()
+                self._semantic_history = None
 
     def _enqueue_video_frames(self, world_frame, sam_frame, timestamp) -> None:
         if not self.config.save_videos or self._video_error is not None:

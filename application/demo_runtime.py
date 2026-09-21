@@ -1,6 +1,9 @@
 """RflySim语义导航演示所需组件的创建、启动与清理。"""
 
 from dataclasses import replace
+from config.semantic_navigation_config import SemanticNavigationConfig
+from navigation.mission import SemanticNavigator
+from navigation.target import SemanticTargetRequest
 
 import config as cfg
 from detections import DetectorConfig, RealtimeDetectionWorker
@@ -32,7 +35,16 @@ from vehicle import RflyMultirotorInterface
 class DemoRuntime:
     """集中管理演示程序的配置、组件和生命周期。"""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, semantic_target: SemanticTargetRequest | None = None, *, exploration=False
+    ) -> None:
+        if semantic_target is not None and not isinstance(
+            semantic_target, SemanticTargetRequest
+        ):
+            raise TypeError("semantic_target must be a SemanticTargetRequest or None")
+        self.exploration_mode = bool(exploration)
+        self.semantic_target = semantic_target
+        self.semantic_navigation_config = SemanticNavigationConfig()
         self._create_run_output_directory()
         self._create_configs()
         self._create_core()
@@ -57,6 +69,27 @@ class DemoRuntime:
             output_dir=self.run_output_dir / "maps",
         )
         self.planner_config = cfg.PlannerConfig()
+        if self.semantic_target is not None or getattr(self, "exploration_mode", False):
+            self.global_map_config = replace(
+                self.global_map_config,
+                enabled=True,
+                loop_closure_enabled=False,
+                visualize=False,
+            )
+            self.planner_config = replace(self.planner_config, unknown_is_occupied=True)
+            body = dict(
+                vehicle_free_radius=self.semantic_navigation_config.clearance_radius,
+                vehicle_free_half_height=self.semantic_navigation_config.vertical_half_extent,
+            )
+            self.mapping_config = replace(self.mapping_config, **body)
+            self.global_map_config = replace(self.global_map_config, **body)
+            if (
+                not self.mapping_config.enabled
+                or self.planner_config.navigation_mode == "depth_guard"
+            ):
+                raise ValueError(
+                    "Semantic navigation requires occupancy mapping and EGO/A* planning"
+                )
         self.astar_visualization_config = replace(
             AStarVisualizationConfig(),
             output_root=self.run_output_dir,
@@ -69,6 +102,24 @@ class DemoRuntime:
             ),
         )
 
+        if getattr(self, "exploration_mode", False):
+            if self.planner_config.navigation_mode not in {"ego", "ego_native"}:
+                raise ValueError("Frontier exploration requires EGO trajectory execution")
+            self.planner_config = replace(self.planner_config, return_navigation_mode=self.planner_config.navigation_mode)
+            # Public semantic output is the coordinate-free scene graph; geometry
+            # is committed separately by the exploration session as a binary cache.
+            self.detector_config = replace(
+                self.detector_config, save_semantic_map=False
+            )
+            self.global_map_config = replace(
+                self.global_map_config,
+                save_on_close=False,
+                export_foxglove_mcap_on_close=False,
+            )
+            self.mission_config = replace(self.mission_config, return_to_origin=True)
+            if not self.detector_config.enabled:
+                raise ValueError("Exploration requires semantic perception")
+
     def _create_core(self) -> None:
         self.vehicle = RflyMultirotorInterface(self.drone_config)
         self.camera = RflyRGBDCamera(
@@ -78,9 +129,7 @@ class DemoRuntime:
             self.vehicle,
             self.camera,
         )
-        self.observation_hub = SynchronizedObservationHub(
-            self.data_stream
-        )
+        self.observation_hub = SynchronizedObservationHub(self.data_stream)
 
     def _create_subscribers(self) -> None:
         hub = self.observation_hub
@@ -125,12 +174,9 @@ class DemoRuntime:
         )
         if self.astar_visualizer.output_dir is not None:
             print(
-                "--- 局部规划二维投影目录："
-                f"{self.astar_visualizer.output_dir} ----"
+                "--- 局部规划二维投影目录：" f"{self.astar_visualizer.output_dir} ----"
             )
-        planner_type = self._local_planner_type(
-            self.planner_config.navigation_mode
-        )
+        planner_type = self._local_planner_type(self.planner_config.navigation_mode)
         self.local_planner = (
             planner_type(
                 self.occupancy_grid,
@@ -163,9 +209,7 @@ class DemoRuntime:
                 self.occupancy_grid,
                 replace(
                     self.planner_config,
-                    navigation_mode=(
-                        self.planner_config.return_navigation_mode
-                    ),
+                    navigation_mode=(self.planner_config.return_navigation_mode),
                 ),
                 visualizer=self.astar_visualizer,
                 visualization_name="return_local",
@@ -180,9 +224,7 @@ class DemoRuntime:
                 "astar": "局部栅格 A*",
                 "depth_guard": "深度估计直线路径",
             }[self.planner_config.return_navigation_mode]
-            print(
-                f"--- 返航航段规划模式：{return_mode_label} ----"
-            )
+            print(f"--- 返航航段规划模式：{return_mode_label} ----")
         self.controller = RflyMissionController(
             self.vehicle,
             self.mission_config,
@@ -228,6 +270,20 @@ class DemoRuntime:
             if self.detector_config.enabled
             else None
         )
+
+        if self.semantic_target is not None:
+            if self.detection_worker is None:
+                raise ValueError("Semantic navigation requires the detector")
+            self.controller.semantic_navigator = SemanticNavigator(
+                self.vehicle,
+                self.detection_worker,
+                self.occupancy_grid,
+                self.global_sparse_map,
+                self.local_planner,
+                self.semantic_target,
+                self.semantic_navigation_config,
+                self.run_output_dir / "evaluation" / "semantic_navigation.json",
+            )
 
         if self.detection_worker is not None:
             self.camera.set_detection_preview_provider(
@@ -277,12 +333,14 @@ class DemoRuntime:
             timeout=float(self.camera.config.first_frame_timeout)
         )
 
-        if any((
-            self.recording_config.enabled,
-            self.mapping_config.enabled,
-            self.global_map_config.enabled,
-            self.detector_config.enabled,
-        )):
+        if any(
+            (
+                self.recording_config.enabled,
+                self.mapping_config.enabled,
+                self.global_map_config.enabled,
+                self.detector_config.enabled,
+            )
+        ):
             self.observation_hub.start()
             self.hub_started = True
         if self.recorder is not None:
@@ -364,10 +422,7 @@ class DemoRuntime:
             try:
                 self.detection_worker.raise_if_failed()
             except RuntimeError as error:
-                print(
-                    "--- WARNING: real-time YOLO-World/SAM2 failed: "
-                    f"{error} ----"
-                )
+                print("--- WARNING: real-time YOLO-World/SAM2 failed: " f"{error} ----")
             else:
                 print(
                     "--- YOLO-World/SAM2 perception summary: "
@@ -376,13 +431,8 @@ class DemoRuntime:
                 for path in self.detection_worker.video_output_paths:
                     if path.is_file():
                         print(f"--- Detection video saved: {path} ----")
-                semantic_map_path = (
-                    self.detection_worker.semantic_map_output_path
-                )
-                if (
-                    semantic_map_path is not None
-                    and semantic_map_path.is_file()
-                ):
+                semantic_map_path = self.detection_worker.semantic_map_output_path
+                if semantic_map_path is not None and semantic_map_path.is_file():
                     print(
                         "--- Persistent semantic map saved: "
                         f"{semantic_map_path} ----"

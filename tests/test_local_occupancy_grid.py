@@ -64,6 +64,16 @@ def _make_plane_observation(timestamp=1.0, position=None):
 
 
 class LocalOccupancyGridTest(unittest.TestCase):
+    def test_empty_depth_frame_still_advances_mapping_heartbeat(self):
+        grid = LocalOccupancyGrid(OccupancyGridConfig(vehicle_free_radius=0.35))
+        observation = _make_plane_observation(timestamp=7.0)
+        observation.sensor_frame.depth[:] = np.nan
+
+        grid.update(observation)
+
+        self.assertEqual(grid.snapshot().timestamp, 7.0)
+        self.assertGreater(grid.last_observation_completed_at, 0.0)
+
     def test_depth_plane_creates_free_rays_and_occupied_surface(self):
         grid = LocalOccupancyGrid(
             OccupancyGridConfig(

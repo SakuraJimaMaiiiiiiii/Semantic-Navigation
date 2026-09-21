@@ -13,8 +13,9 @@ import ultralytics.nn.text_model as ultralytics_text_model
 from ultralytics import SAM, YOLOWorld  # pylint: disable=import-error
 
 from mapping.semantic_instance_mapper import (
-    COLUMN_CLASS_ALIASES,
+    STRUCTURAL_COLUMN_PROMPTS,
     SIGNBOARD_CLASS_ALIASES,
+    EXIT_SIGN_CLASS_ALIASES,
     FIRE_CABINET_CLASS_ALIASES,
     SemanticInstanceMapper,
     SemanticObservation3D,
@@ -40,6 +41,7 @@ SEMANTIC_CLASS_COLORS = {
     "ceiling": (210, 210, 210),
     "column": (0, 165, 255),
     "signboard": (255, 0, 255),
+    "exit sign": (0, 255, 128),
     "fire cabinet": (40, 40, 230),
     "car": (255, 80, 80),
     "truck": (180, 80, 255),
@@ -70,8 +72,9 @@ class DetectorConfig:
         "floor",
         "wall",
         "ceiling",
-        *COLUMN_CLASS_ALIASES,
+        *STRUCTURAL_COLUMN_PROMPTS,
         *SIGNBOARD_CLASS_ALIASES,
+        *EXIT_SIGN_CLASS_ALIASES,
         *FIRE_CABINET_CLASS_ALIASES,
         "car",
         "truck",
@@ -93,13 +96,13 @@ class DetectorConfig:
     inference_fps: float = 30.0
     window_name: str = "YOLO-World Detection / SAM2 Segmentation"
     hidden_box_classes: tuple[str, ...] = ("floor", "ceiling", "wall")
-    semantic_landmark_classes: tuple[str, ...] = ("column", *VEHICLE_CLASSES)
+    semantic_landmark_classes: tuple[str, ...] = ("column", "signboard", "exit sign", "fire cabinet", *VEHICLE_CLASSES)
     instance_duplicate_merge_distance_xy: float = 1.5
     instance_mahalanobis_gate: float = 7.815
     instance_kalman_process_noise_std: float = 0.05
     instance_mask_pixel_noise_std: float = 3.0
     instance_depth_noise_std: float = 0.60
-    column_min_vertical_extent: float = 1.5
+    column_min_vertical_extent: float = 2.2  # 多帧可观测高度下限（米），过滤矮柱
     column_min_vertical_aspect_ratio: float = 1.2
     instance_depth_min: float = 0.3
     instance_depth_max: float = 15.0
@@ -654,7 +657,7 @@ class SAM2Segmenter:
                 columns.append(item)
             elif self._is_semantic_landmark(name) and name in VEHICLE_CLASSES:
                 vehicles.append(item)
-            elif name == "signboard":
+            elif name in ("signboard", "exit sign"):
                 signs.append(item)
             elif name == "fire cabinet":
                 cabinets.append(item)

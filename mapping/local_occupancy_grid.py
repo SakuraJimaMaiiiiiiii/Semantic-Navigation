@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import math
 import threading
+import time
 from dataclasses import dataclass
 
 import numpy as np
 
 from config import OccupancyGridConfig
+from .vehicle_footprint import vehicle_footprint_indices
 from sensors import SynchronizedObservation
-
 
 UNKNOWN = np.int8(-1)
 FREE = np.int8(0)
@@ -28,6 +29,8 @@ class OccupancyGridSnapshot:
     inflated_occupied: np.ndarray
     drone_position_ned: np.ndarray
     forward_clearance: float
+    observed: np.ndarray | None = None
+
 
 class LocalOccupancyGrid:
     """固定尺寸、随无人机平移的世界对齐NED三维占据栅格。"""
@@ -53,12 +56,8 @@ class LocalOccupancyGrid:
             value = float(getattr(self.config, name))
             if not 0.0 < value <= 1.0:
                 raise ValueError(f"{name} must be in (0, 1].")
-        if not 0.0 <= float(
-            self.config.forward_safety_percentile
-        ) <= 100.0:
-            raise ValueError(
-                "forward_safety_percentile must be in [0, 100]."
-            )
+        if not 0.0 <= float(self.config.forward_safety_percentile) <= 100.0:
+            raise ValueError("forward_safety_percentile must be in [0, 100].")
 
         self.shape = tuple(
             np.ceil(self.size_ned / self.resolution).astype(int).tolist()
@@ -67,6 +66,7 @@ class LocalOccupancyGrid:
         self._observed = np.zeros(self.shape, dtype=bool)
         self._origin_ned = None
         self._timestamp = 0.0
+        self._last_observation_completed_at = 0.0
         self._drone_position_ned = np.zeros(3, dtype=np.float64)
         self._forward_clearance = math.inf
         self._inflation_offsets = self._make_inflation_offsets()
@@ -95,7 +95,12 @@ class LocalOccupancyGrid:
         forward_clearance = self._estimate_forward_clearance(depth)
         if points_camera.size == 0:
             with self._lock:
+                self._recenter(drone_position)
+                self._mark_vehicle_footprint(drone_position)
+                self._timestamp = float(frame.timestamp)
+                self._drone_position_ned = drone_position.copy()
                 self._forward_clearance = forward_clearance
+                self._last_observation_completed_at = time.monotonic()
             return
         points_world = (
             transform_world_camera[:3, :3] @ points_camera.T
@@ -104,9 +109,37 @@ class LocalOccupancyGrid:
         with self._lock:
             self._recenter(drone_position)
             self._integrate_rays(camera_origin, points_world)
+            self._mark_vehicle_footprint(drone_position)
             self._timestamp = float(frame.timestamp)
             self._drone_position_ned = drone_position.copy()
             self._forward_clearance = forward_clearance
+            self._last_observation_completed_at = time.monotonic()
+
+    def _mark_vehicle_footprint(self, position):
+        indices = vehicle_footprint_indices(
+            position,
+            self._origin_ned,
+            self.resolution,
+            self.config.vehicle_free_radius,
+            self.config.vehicle_free_half_height,
+        )
+        valid = np.all((indices >= 0) & (indices < np.asarray(self.shape)), axis=1)
+        for index in indices[valid]:
+            key = tuple(index)
+            if not self._observed[key]:
+                self._observed[key] = True
+                self._log_odds[key] = float(self.config.free_threshold)
+
+    @property
+    def last_update_timestamp(self):
+        with self._lock:
+            return self._timestamp
+
+    @property
+    def last_observation_completed_at(self):
+        """Monotonic heartbeat updated after every processed depth frame."""
+        with self._lock:
+            return self._last_observation_completed_at
 
     def snapshot(self) -> OccupancyGridSnapshot:
         """复制当前地图，供规划器等读取方无锁使用。"""
@@ -126,6 +159,7 @@ class LocalOccupancyGrid:
                 inflated_occupied=inflated,
                 drone_position_ned=self._drone_position_ned.copy(),
                 forward_clearance=float(self._forward_clearance),
+                observed=self._observed.copy(),
             )
 
     def _estimate_forward_clearance(self, depth: np.ndarray) -> float:
@@ -133,28 +167,26 @@ class LocalOccupancyGrid:
         height, width = depth.shape
         roi_width = max(
             1,
-            int(round(width * float(
-                self.config.forward_safety_roi_width
-            ))),
+            int(round(width * float(self.config.forward_safety_roi_width))),
         )
         roi_height = max(
             1,
-            int(round(height * float(
-                self.config.forward_safety_roi_height
-            ))),
+            int(round(height * float(self.config.forward_safety_roi_height))),
         )
         left = (width - roi_width) // 2
         top = (height - roi_height) // 2
-        roi = depth[top:top + roi_height, left:left + roi_width]
+        roi = depth[top : top + roi_height, left : left + roi_width]
         valid = np.isfinite(roi)
         valid &= roi >= float(self.config.min_depth)
         valid &= roi <= float(self.config.max_depth)
         if not np.any(valid):
             return math.inf
-        return float(np.percentile(
-            roi[valid],
-            float(self.config.forward_safety_percentile),
-        ))
+        return float(
+            np.percentile(
+                roi[valid],
+                float(self.config.forward_safety_percentile),
+            )
+        )
 
     def _depth_to_camera_points(
         self,
@@ -181,25 +213,24 @@ class LocalOccupancyGrid:
         z_or_range = sampled_depth[valid].astype(np.float64)
         normalized_x = (uu[valid].astype(np.float64) - cx) / fx
         normalized_y = (vv[valid].astype(np.float64) - cy) / fy
-        rays = np.column_stack(
-            (normalized_x, normalized_y, np.ones_like(normalized_x))
-        )
+        rays = np.column_stack((normalized_x, normalized_y, np.ones_like(normalized_x)))
         if self.config.depth_is_range:
             rays /= np.linalg.norm(rays, axis=1, keepdims=True)
             return rays * z_or_range[:, None]
         return rays * z_or_range[:, None]
 
     def _recenter(self, drone_position: np.ndarray) -> None:
-        desired_origin = np.floor(
-            (drone_position - 0.5 * self.size_ned) / self.resolution
-        ) * self.resolution
+        desired_origin = (
+            np.floor((drone_position - 0.5 * self.size_ned) / self.resolution)
+            * self.resolution
+        )
         if self._origin_ned is None:
             self._origin_ned = desired_origin
             return
 
-        shift = np.rint(
-            (desired_origin - self._origin_ned) / self.resolution
-        ).astype(int)
+        shift = np.rint((desired_origin - self._origin_ned) / self.resolution).astype(
+            int
+        )
         if not np.any(shift):
             return
 
@@ -221,12 +252,8 @@ class LocalOccupancyGrid:
                 source_slices.append(slice(0, axis_size + offset))
                 destination_slices.append(slice(-offset, axis_size))
 
-        new_log_odds[tuple(destination_slices)] = self._log_odds[
-            tuple(source_slices)
-        ]
-        new_observed[tuple(destination_slices)] = self._observed[
-            tuple(source_slices)
-        ]
+        new_log_odds[tuple(destination_slices)] = self._log_odds[tuple(source_slices)]
+        new_observed[tuple(destination_slices)] = self._observed[tuple(source_slices)]
         self._log_odds = new_log_odds
         self._observed = new_observed
         self._origin_ned = desired_origin
@@ -236,9 +263,7 @@ class LocalOccupancyGrid:
         camera_origin: np.ndarray,
         endpoints_world: np.ndarray,
     ) -> None:
-        endpoints_indices, valid_endpoints = self._world_to_indices(
-            endpoints_world
-        )
+        endpoints_indices, valid_endpoints = self._world_to_indices(endpoints_world)
         valid_endpoint_indices = endpoints_indices[valid_endpoints]
         occupied_flat = (
             np.unique(
@@ -270,10 +295,7 @@ class LocalOccupancyGrid:
             active = distances > distance_along_ray + 0.5 * ray_step
             if not np.any(active):
                 continue
-            samples = (
-                camera_origin
-                + directions[active] * distance_along_ray
-            )
+            samples = camera_origin + directions[active] * distance_along_ray
             sample_indices, valid_samples = self._world_to_indices(samples)
             if np.any(valid_samples):
                 free_flat_parts.append(
@@ -290,14 +312,10 @@ class LocalOccupancyGrid:
                 occupied_flat,
                 assume_unique=True,
             )
-            self._log_odds.flat[free_flat] -= float(
-                self.config.miss_log_odds
-            )
+            self._log_odds.flat[free_flat] -= float(self.config.miss_log_odds)
             self._observed.flat[free_flat] = True
 
-        self._log_odds.flat[occupied_flat] += float(
-            self.config.hit_log_odds
-        )
+        self._log_odds.flat[occupied_flat] += float(self.config.hit_log_odds)
         self._observed.flat[occupied_flat] = True
         np.clip(
             self._log_odds,
@@ -320,19 +338,15 @@ class LocalOccupancyGrid:
     def _states_unlocked(self) -> np.ndarray:
         states = np.full(self.shape, UNKNOWN, dtype=np.int8)
         states[
-            self._observed
-            & (self._log_odds <= float(self.config.free_threshold))
+            self._observed & (self._log_odds <= float(self.config.free_threshold))
         ] = FREE
         states[
-            self._observed
-            & (self._log_odds >= float(self.config.occupied_threshold))
+            self._observed & (self._log_odds >= float(self.config.occupied_threshold))
         ] = OCCUPIED
         return states
 
     def _make_inflation_offsets(self) -> np.ndarray:
-        radius_voxels = int(
-            math.ceil(self.config.inflation_radius / self.resolution)
-        )
+        radius_voxels = int(math.ceil(self.config.inflation_radius / self.resolution))
         if radius_voxels <= 0:
             return np.zeros((1, 3), dtype=int)
         coordinates = np.arange(-radius_voxels, radius_voxels + 1)
@@ -347,9 +361,7 @@ class LocalOccupancyGrid:
             offsets.astype(float) * self.resolution,
             axis=1,
         )
-        return offsets[
-            distances <= float(self.config.inflation_radius) + 1e-9
-        ]
+        return offsets[distances <= float(self.config.inflation_radius) + 1e-9]
 
     def _inflate_unlocked(self, occupied: np.ndarray) -> np.ndarray:
         occupied_indices = np.argwhere(occupied)
@@ -357,8 +369,7 @@ class LocalOccupancyGrid:
         if occupied_indices.size == 0:
             return inflated
         expanded = (
-            occupied_indices[:, None, :]
-            + self._inflation_offsets[None, :, :]
+            occupied_indices[:, None, :] + self._inflation_offsets[None, :, :]
         ).reshape(-1, 3)
         valid = np.all(expanded >= 0, axis=1)
         valid &= np.all(expanded < np.asarray(self.shape), axis=1)

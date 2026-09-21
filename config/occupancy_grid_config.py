@@ -11,6 +11,8 @@ class OccupancyGridConfig:
     size_ned: tuple[float, float, float] = (10.0, 10.0, 6.0)  # N/E/D范围，m
     resolution: float = 0.2  # 体素边长，m
     update_rate: float = 5.0  # 地图更新频率，Hz
+    vehicle_free_radius: float = 0.0  # 启用时，仅补足当前机身覆盖的未观测体素
+    vehicle_free_half_height: float = 0.25
     depth_stride: int = 8  # 深度图采样步长，越大计算越快但点云越稀疏
     min_depth: float = 0.3  # 建图使用的最小深度，m
     max_depth: float = 8.0  # 建图使用的最大深度，m

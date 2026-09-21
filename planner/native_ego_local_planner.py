@@ -158,6 +158,10 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
                 )
             points = np.asarray(result["control_points"], dtype=np.float64)
             interval = float(result["knot_interval"])
+            if self.navigation_altitude is not None:
+                points = points.copy()
+                points[:, 2] = self.navigation_altitude
+                interval = max(interval, self._feasible_knot_interval(points))
             trajectory = UniformCubicBSpline(points, interval)
             # C++ 已做密集碰撞检测；这里保留 Python 边界的独立复核。
             if self._trajectory_is_free(snapshot, blocked, trajectory):

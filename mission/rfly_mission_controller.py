@@ -4,6 +4,8 @@ import math
 
 import numpy as np
 
+from vehicle.rfly_multirotor import CollisionDetectedError
+
 
 class RflyMissionController:
     """按照 MissionConfig 执行起飞、航点、返航和降落。"""
@@ -15,6 +17,7 @@ class RflyMissionController:
         local_planner=None,
         global_return_planner=None,
         return_safety_planner=None,
+        semantic_navigator=None,
     ) -> None:
         self.vehicle = vehicle
         self.mission = mission
@@ -22,6 +25,7 @@ class RflyMissionController:
         self.global_return_planner = global_return_planner
         self.return_safety_planner = return_safety_planner
         self._return_origin_ned = None
+        self.semantic_navigator = semantic_navigator
 
     def run(self) -> None:
         """执行完整飞行任务；碰撞异常继续交给上层统一处理。"""
@@ -37,21 +41,32 @@ class RflyMissionController:
             f"NED={self._return_origin_ned.round(3).tolist()}，"
             f"起飞前航向={math.degrees(pre_takeoff_yaw):.1f}° ----"
         )
+        takeoff_yaw = pre_takeoff_yaw if mission.initial_yaw is None else float(mission.initial_yaw)
+        if not math.isfinite(takeoff_yaw):
+            raise ValueError("Takeoff yaw must be finite.")
         vehicle.enable_offboard(arm=True)
-        vehicle.takeoff(mission.takeoff_height, yaw=mission.initial_yaw)
+        vehicle.takeoff(mission.takeoff_height, yaw=takeoff_yaw)
         vehicle.wait(mission.takeoff_wait)
         # 升空后再用 yaw 角速度闭环精确对准，避免地面约束导致超时。
-        vehicle.align_yaw(mission.initial_yaw)
+        if mission.initial_yaw is not None:
+            vehicle.align_yaw(takeoff_yaw)
 
-        for waypoint in mission.waypoints:
-            vehicle.move_velocity_guided(
-                waypoint.position_ned,
-                yaw=waypoint.yaw,
-                face_direction=mission.face_path,
-                local_planner=self.local_planner,
-            )
-            if waypoint.hold_time > 0.0:
-                vehicle.wait(waypoint.hold_time)
+        if self.semantic_navigator is not None:
+            self.semantic_navigator.run()
+            configure = getattr(self.return_safety_planner, "set_navigation_plane", None)
+            altitude = getattr(self.semantic_navigator, "altitude", None)
+            if callable(configure) and altitude is not None:
+                configure(altitude, self.semantic_navigator.config, self.semantic_navigator.global_map)
+        else:
+            for waypoint in mission.waypoints:
+                vehicle.move_velocity_guided(
+                    waypoint.position_ned,
+                    yaw=waypoint.yaw,
+                    face_direction=mission.face_path,
+                    local_planner=self.local_planner,
+                )
+                if waypoint.hold_time > 0.0:
+                    vehicle.wait(waypoint.hold_time)
 
         if mission.return_to_origin:
             if self.global_return_planner is None:
@@ -60,6 +75,8 @@ class RflyMissionController:
                 try:
                     self._return_on_global_path()
                 except RuntimeError as error:
+                    if isinstance(error, CollisionDetectedError):
+                        raise
                     print(
                         "--- 全局记忆 A* 返航不可用，"
                         f"退回局部安全规划器：{error} ----"
@@ -91,10 +108,9 @@ class RflyMissionController:
             float(direction[1]),
             float(direction[0]),
         )
-        vehicle.align_yaw(return_yaw)
         print(
-            "--- 无全局路径，局部安全规划器直返：固定航向 "
-            f"yaw={math.degrees(return_yaw):.1f}°，仅调整 NED 平移方向 ----"
+            "--- 无全局路径，局部安全规划器直返：飞行中逐步转向，"
+            f"目标 yaw={math.degrees(return_yaw):.1f}° ----"
         )
         target = position.copy()
         target[:2] = origin[:2]
@@ -105,7 +121,7 @@ class RflyMissionController:
         vehicle.move_velocity_guided(
             target,
             yaw=return_yaw,
-            face_direction=False,
+            face_direction=True,
             local_planner=return_planner,
         )
 

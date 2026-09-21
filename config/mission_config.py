@@ -19,7 +19,7 @@ class MissionConfig:
         face_path: bool = False 表示无人机在飞行过程中始终保持与起飞方向一致的朝向。
     """
 
-    initial_yaw: float = 0.0  # 起飞及升空后对准的目标航向，单位 rad
+    initial_yaw: float | None = None  # None 保持解锁前实测航向；显式数值单位 rad
     takeoff_height: float = 1.5
     takeoff_wait: float = 10.0
 

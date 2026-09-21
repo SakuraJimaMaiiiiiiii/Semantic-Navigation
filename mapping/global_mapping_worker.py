@@ -120,6 +120,7 @@ class GlobalMappingWorker:
                     integrated = self.loop_closure.process(observation)
                 if integrated:
                     self.update_count += 1
+                self.global_map.mark_observation_completed()
 
                 next_update += period
                 wait_time = next_update - time.monotonic()
