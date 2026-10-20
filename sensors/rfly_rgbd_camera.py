@@ -19,6 +19,15 @@ from config.camera_config import CameraConfig
 
 
 @dataclass(frozen=True)
+class RGBFrame:
+    """Copied RGB exposure, independent of depth/pose synchronization."""
+
+    rgb_bgr: np.ndarray
+    rgb_timestamp: float
+    received_at: float
+
+
+@dataclass(frozen=True)
 class RGBDFrame:
     """一帧 RGB-D 观测，以及可选的 RflySim 真值分割图。"""
 
@@ -28,13 +37,13 @@ class RGBDFrame:
     depth_timestamp: float
     received_at: float
     segmentation_bgr: np.ndarray | None = None
-    segmentation_timestamp: float = 0.0
 
     @property
     def timestamp(self) -> float:
-        """返回有效 RGB 与深度时间戳的中间时刻。"""
-        stamps = [s for s in (self.rgb_timestamp, self.depth_timestamp) if s > 0]
-        return float(sum(stamps) / len(stamps)) if stamps else self.received_at
+        """三维反投影使用深度曝光时刻，不使用 RGB/深度的虚拟中间时刻。"""
+        if self.depth_timestamp > 0:
+            return float(self.depth_timestamp)
+        return float(self.rgb_timestamp if self.rgb_timestamp > 0 else self.received_at)
 
     @property
     def sync_skew(self) -> float:
@@ -106,8 +115,10 @@ class RflyRGBDCamera:
             self._started = True
             self._timestamp_offset = None
             try:
+                deadline = time.monotonic() + float(self.config.first_frame_timeout)
+                self._calibrate_sensor_clock(deadline)
                 frame = self.get_frame(
-                    timeout=float(self.config.first_frame_timeout)
+                    timeout=max(0., deadline - time.monotonic())
                 )
             except Exception:
                 self.close()
@@ -115,6 +126,62 @@ class RflyRGBDCamera:
 
         self._start_preview()
         return frame
+
+    def _calibrate_sensor_clock(self, deadline: float) -> None:
+        """Estimate one shared sensor offset before publishing any observations.
+
+        The first polling receipt can include startup delay. Use the smallest
+        receipt-minus-sensor offset over several advancing frames instead. This
+        removes variable startup/polling delay, not the unknown transport latency.
+        Freeze the result for both RGB-D and LiDAR so an existing world map is
+        never mixed with observations retimed midway through a flight.
+        """
+        first_sample = None
+        last_stamp = None
+        offsets = []
+        while time.monotonic() < deadline:
+            if self._indices_have_data(self._rgb_capture_index, self._depth_capture_index):
+                # Read the same SDK-protected timestamps used by image copying.
+                stamps = []
+                for index in (self._rgb_capture_index, self._depth_capture_index):
+                    with self._capture.Img_lock[index]:
+                        stamps.append(self._sensor_timestamp(index))
+                received_at = time.time()
+                now = time.monotonic()
+                stamp = max(stamps)
+                if (all(np.isfinite(s) and s > 0. for s in stamps)
+                        and abs(stamps[0] - stamps[1]) <= self.config.max_rgb_depth_skew
+                        and (last_stamp is None or stamp > last_stamp)):
+                    if first_sample is None:
+                        first_sample = now
+                    last_stamp = stamp
+                    offsets.append(received_at - stamp)
+                    if len(offsets) >= 5 and now - first_sample >= .5:
+                        self._timestamp_offset = min(offsets)
+                        return
+            time.sleep(float(self.config.poll_interval))
+        raise TimeoutError("Sensor clock calibration needs advancing synchronized RGB-D frames")
+
+    def get_rgb_frame(self, timeout=1., after_timestamp=None) -> RGBFrame:
+        """Read the existing RGB receiver using its lock and calibrated clock.
+
+        VIO needs RGB + IMU, so missing depth must not discard a valid exposure.
+        This does not start another sensor or modify RGB-D/map acquisition.
+        """
+        if not self._started or self._capture is None:
+            raise RuntimeError("RGB-D camera is not started.")
+        if self._timestamp_offset is None:
+            raise RuntimeError("RGB-D sensor clock is not calibrated.")
+        deadline = time.monotonic()+float(timeout)
+        while time.monotonic() < deadline:
+            if self._index_has_data(self._rgb_capture_index):
+                rgb, stamp = self._copy_sensor(self._rgb_capture_index)
+                if self._valid_array(rgb) and math.isfinite(stamp) and stamp > 0:
+                    stamp += self._timestamp_offset
+                    if after_timestamp is None or stamp > after_timestamp+1e-9:
+                        return RGBFrame(rgb, stamp, time.time())
+            time.sleep(float(self.config.poll_interval))
+        raise TimeoutError(f"No new RGB exposure within {timeout:.1f} s.")
 
     def get_frame(
         self,
@@ -129,6 +196,8 @@ class RflyRGBDCamera:
         """
         if not self._started or self._capture is None:
             raise RuntimeError("RGB-D camera is not started.")
+        if self._timestamp_offset is None:
+            raise RuntimeError("RGB-D sensor clock is not calibrated.")
 
         deadline = time.monotonic() + float(timeout)
         rgb_index = self._rgb_capture_index
@@ -143,31 +212,16 @@ class RflyRGBDCamera:
                         time.sleep(float(self.config.poll_interval))
                         continue
                     segmentation = None
-                    segmentation_stamp = 0.0
                     if (
                         segmentation_index is not None
                         and self._index_has_data(segmentation_index)
                     ):
-                        candidate, candidate_stamp = self._copy_sensor(
-                            segmentation_index
-                        )
+                        candidate, _ = self._copy_sensor(segmentation_index)
                         if self._valid_array(candidate):
                             segmentation = candidate
-                            segmentation_stamp = candidate_stamp
                     received_at = time.time()
-                    raw_midpoint = 0.5 * (rgb_stamp + depth_stamp)
-                    timestamp_offset = getattr(
-                        self,
-                        "_timestamp_offset",
-                        None,
-                    )
-                    if timestamp_offset is None:
-                        timestamp_offset = received_at - raw_midpoint
-                        self._timestamp_offset = timestamp_offset
-                    rgb_stamp += timestamp_offset
-                    depth_stamp += timestamp_offset
-                    if segmentation_stamp > 0.0:
-                        segmentation_stamp += timestamp_offset
+                    rgb_stamp += self._timestamp_offset
+                    depth_stamp += self._timestamp_offset
                     frame = RGBDFrame(
                         rgb_bgr=rgb,
                         depth_m=self.normalize_depth_to_m(depth_raw),
@@ -175,7 +229,6 @@ class RflyRGBDCamera:
                         depth_timestamp=depth_stamp,
                         received_at=received_at,
                         segmentation_bgr=segmentation,
-                        segmentation_timestamp=segmentation_stamp,
                     )
                     is_new = (
                         after_timestamp is None
@@ -231,9 +284,9 @@ class RflyRGBDCamera:
         """
         sensor = self._rgb_sensor
         translation = np.asarray(sensor["SensorPosXYZ"], dtype=float)
-        roll, pitch, yaw = np.asarray(
+        roll, pitch, yaw = np.deg2rad(np.asarray(
             sensor["SensorAngEular"], dtype=float
-        )
+        ))
         rotation_mount = self._rotation_zyx(roll, pitch, yaw)
         optical_to_mount = np.asarray(
             [
@@ -374,7 +427,7 @@ class RflyRGBDCamera:
             while not self._preview_stop.is_set():
                 frame = (
                     self._latest_frame_snapshot()
-                    if show_camera_preview
+                    if show_camera_preview or self._detection_preview_provider is not None
                     else None
                 )
 
@@ -427,7 +480,9 @@ class RflyRGBDCamera:
                     )
 
                 if self._detection_preview_provider is not None:
-                    detection_preview = self._detection_preview_provider()
+                    detection_preview = self._detection_preview_provider(
+                        None if frame is None else frame.rgb_bgr
+                    )
                     if detection_preview is not None:
                         cv2.imshow(
                             self._detection_window_name,

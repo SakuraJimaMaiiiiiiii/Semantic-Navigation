@@ -5,6 +5,7 @@ import json
 import math
 from pathlib import Path
 import time
+import uuid
 import numpy as np
 
 from .target import select_targets
@@ -22,25 +23,137 @@ class _FlightGuard:
         self._grid_stamp = None
         self._grid = None
         self.last_status = None
+        self._failure_recorder = None
+        self._diagnostic_context = None
+        self.last_plan_detail = None
 
-    def _report(self, plan):
+    def _report(self, plan, rejection=None):
+        attention_limit = getattr(self.navigator, 'vehicle_observation_speed_limit', None)
+        if plan.can_move and callable(attention_limit):
+            plan = replace(plan, speed_limit=min(plan.speed_limit, attention_limit()))
+        self.last_plan_detail = {
+            "status": plan.status, "speed_limit": float(plan.speed_limit),
+            "local_target_ned": None if plan.local_target_ned is None else np.asarray(plan.local_target_ned).tolist(),
+            "path_ned": np.asarray(plan.path_ned).tolist(),
+            "rejection": rejection or getattr(self.inner, "last_rejection", None),
+        }
         if self.last_status != plan.status:
             self.last_status = plan.status
-            self.navigator._event("LOCAL_EXECUTION", status=plan.status)
+            detail = (rejection or getattr(self.inner, "last_rejection", None)) if not plan.can_move else None
+            reason = detail.get("reason") if detail else None
+            self.navigator._event("LOCAL_EXECUTION", status=plan.status, rejection=reason)
+            if not plan.can_move and self._diagnostic_context is not None:
+                self.capture_failure(plan.status, detail)
         return plan
+
+    def capture_failure(self, status, detail=None, terminal=False, waypoint_number=None):
+        nav = self.navigator
+        if not hasattr(nav, 'output_path'):
+            return
+        from .planning_diagnostics import FailureRecorder
+        if self._failure_recorder is None:
+            phase = "returning" if getattr(nav, "phase", None) == "returning" else "exploring"
+            self._failure_recorder = FailureRecorder(
+                nav.output_path.parent / 'private' / 'diagnostics' / f"{phase}_{uuid.uuid4().hex[:12]}"
+            )
+        if terminal or self._diagnostic_context is None:
+            current = nav.vehicle.get_position()
+            context = (nav.local_map.snapshot(), nav.global_map.snapshot(), current, current)
+        else:
+            context = self._diagnostic_context
+        detail = dict(detail or {})
+        detail["planner"] = self.last_plan_detail
+        detail["controller"] = getattr(nav.vehicle, "waypoint_control_state", None)
+        get_velocity = getattr(nav.vehicle, "get_velocity", None)
+        if callable(get_velocity):
+            detail["measured_velocity_ned"] = np.asarray(get_velocity()).tolist()
+        self._failure_recorder.capture(status, *context, nav.altitude, nav.config, detail, terminal=terminal, waypoint_number=waypoint_number)
+
+    def close_diagnostics(self):
+        if self._failure_recorder is not None:
+            self._failure_recorder.close()
 
     def __getattr__(self, name):
         return getattr(self.inner, name)
 
     def tracking_target(self, now=None):
         # Advance the EGO spline only while its current target is certified.
+        revision = getattr(self.navigator.global_map, 'revision', 0)
+        if revision != getattr(self, '_planned_map_revision', revision):
+            return None
         if self.last_status not in {"ego_clear", "ego_avoid"} or self._grid is None:
             return None
         getter = getattr(self.inner, "tracking_target", None)
         target = getter(now=now) if callable(getter) else None
-        if target is not None and self._grid.segment_free(self.navigator.vehicle.get_position(), target):
+        if target is not None and self._grid.segment_free(
+            self.navigator.vehicle.get_position(), target
+        ):
             return target
         return None
+
+    def _braking_rejection(self, grid, current):
+        vehicle = getattr(self.navigator, "vehicle", None)
+        get_velocity = getattr(vehicle, "get_velocity", None)
+        if not callable(get_velocity):
+            return None
+        velocity = np.asarray(get_velocity(), dtype=float)
+        speed = float(np.linalg.norm(velocity[:2]))
+        if speed < 0.05:
+            return None
+        vehicle_config = getattr(vehicle, "config", None)
+        deceleration = float(getattr(vehicle_config, "guided_max_horizontal_acceleration", 0.3))
+        control_rate = float(getattr(vehicle_config, "guided_update_rate", 20.0))
+        map_config = getattr(self.navigator.local_map, "config", None)
+        map_rate = float(getattr(map_config, "update_rate", 5.0))
+        latency = 1.0 / float(getattr(self.config, "replan_rate", 5.0)) + 1.0/control_rate + 1.0/map_rate
+        distance = speed*latency + speed*speed/(2.0*deceleration)
+        stop = np.asarray(current, dtype=float).copy()
+        stop[:2] += velocity[:2] * (distance/speed)
+        if not grid.segment_free(current, stop):
+            return {"reason": "insufficient_braking_corridor",
+                    "speed_mps": speed, "braking_distance_m": distance,
+                    "deceleration_mps2": deceleration,
+                    "braking_endpoint_ned": stop.tolist()}
+        return None
+
+    def revalidate_plan(self, plan, current):
+        """Recheck the tracking chord after synchronous planning, without replanning.
+
+        The map certified by plan() is retained. Re-read body position/velocity
+        and front depth, which may have changed while that call was running.
+        """
+        if not plan.can_move:
+            return plan
+        self.navigator._check_maps()
+        revision = getattr(self.navigator.global_map, 'revision', 0)
+        if revision != getattr(self, '_planned_map_revision', revision):
+            return self._report(LocalPlan('map_revision_changed', None, np.empty((0, 3)), 0.))
+        current = np.asarray(current, dtype=float)
+        target = np.asarray(plan.local_target_ned, dtype=float)
+        rejection = None
+        if self._grid is None or not self._grid.segment_free(current, target):
+            rejection = {"reason": "post_planning_tracking_chord_not_certified",
+                         "current_ned": current.tolist(), "target_ned": target.tolist()}
+            status = "semantic_unknown_or_blocked"
+        else:
+            rejection = self._braking_rejection(self._grid, current)
+            status = "braking_corridor_blocked"
+        snapshot = self.navigator.local_map.snapshot()
+        # EGO may deliberately move sideways around an already observed front
+        # obstacle. A front-only depth scalar cannot invalidate that safe detour.
+        if (rejection is None and plan.status == "route_clear"
+                and float(getattr(snapshot, "forward_clearance", math.inf)) < float(
+                    getattr(self.config, "emergency_stop_distance", .6))):
+            rejection = {"reason": "post_planning_front_depth_blocked",
+                         "forward_clearance": float(snapshot.forward_clearance)}
+            status = "transient_no_path"
+        if rejection is not None:
+            if self._diagnostic_context is not None:
+                local, global_map, _, _ = self._diagnostic_context
+                self._diagnostic_context = (local, global_map, current, target)
+            return self._report(replace(plan, status=status, local_target_ned=None, speed_limit=0.),
+                                rejection=rejection)
+        return plan
 
     def plan(self, current, target):
         nav = self.navigator
@@ -48,10 +161,20 @@ class _FlightGuard:
         nav._sample_position(current)
         snapshot = nav.local_map.snapshot()
         global_source = getattr(nav, "global_map", None)
-        global_snapshot = (
-            global_source.snapshot() if global_source is not None else None
-        )
+        if hasattr(global_source, 'snapshot_with_revision'):
+            global_snapshot, revision = global_source.snapshot_with_revision()
+        else:
+            global_snapshot = global_source.snapshot() if global_source is not None else None
+            revision = 0
+        if revision != getattr(self, '_planned_map_revision', revision):
+            discard = getattr(self.inner, 'discard_trajectory', None)
+            if callable(discard):
+                discard()
+        self._planned_map_revision = revision
+        self._diagnostic_context = (snapshot, global_snapshot, current, target)
         stamp = (
+            float(nav.altitude),
+            revision,
             snapshot.timestamp,
             None if global_snapshot is None else global_snapshot.timestamp,
         )
@@ -63,24 +186,35 @@ class _FlightGuard:
         grid = self._grid
         current = np.asarray(current, dtype=float)
         target = np.asarray(target, dtype=float)
+        braking = self._braking_rejection(grid, current)
+        if braking is not None:
+            return self._report(
+                LocalPlan("braking_corridor_blocked", None, np.empty((0, 3)), 0.0),
+                rejection=braking,
+            )
         forward_clearance = float(getattr(snapshot, "forward_clearance", math.inf))
-        emergency_distance = float(
-            getattr(self.config, "emergency_stop_distance", 0.6)
-        )
+        emergency_distance = float(getattr(self.config, "emergency_stop_distance", 0.6))
         # The frontier/global planner already supplies a known-free route. Follow
         # a clear segment directly; reserve EGO spline generation for an actual
         # local obstruction or loss of corridor evidence.
-        if (
-            forward_clearance >= emergency_distance
-            and grid.segment_free(current, target)
+        if forward_clearance >= emergency_distance and grid.segment_free(
+            current, target
         ):
-            return self._report(LocalPlan(
-                status="route_clear",
-                local_target_ned=target.copy(),
-                path_ned=np.vstack((current, target)),
-                speed_limit=float(getattr(self.config, "cruise_max_speed", 0.6)),
-                obstacle_distance=forward_clearance,
-            ))
+            discard = getattr(self.inner, "discard_trajectory", None)
+            if callable(discard):
+                discard()
+            speed_limit = float(getattr(self.config, "cruise_max_speed", 0.6))
+            limiter = getattr(self.inner, "_clear_speed_limit", None)
+            if callable(limiter):
+                speed_limit = float(limiter(forward_clearance))
+            return self._report(
+                LocalPlan(
+                    status="route_clear",
+                    local_target_ned=target.copy(),
+                    path_ned=np.vstack((current, target)),
+                    speed_limit=speed_limit,
+                )
+            )
 
         configure = getattr(self.inner, "set_navigation_plane", None)
         if callable(configure):
@@ -93,23 +227,19 @@ class _FlightGuard:
         # itself happens to be straight.
         if plan.status == "ego_clear":
             plan = replace(plan, status="ego_avoid")
-        points = [np.asarray(current), np.asarray(plan.local_target_ned)]
-        valid = grid.segment_free(*points)
-        if len(plan.path_ned):
-            # Check the entire proposed trajectory; a spline may leave its chord.
-            valid &= all(
-                grid.segment_free(a, b)
-                for a, b in zip(plan.path_ned[:-1], plan.path_ned[1:])
-            )
-        if not valid:
-            return self._report(
-                replace(
-                    plan,
-                    status="semantic_unknown_or_blocked",
-                    local_target_ned=None,
-                    speed_limit=0.0,
+        segments = [(np.asarray(current), np.asarray(plan.local_target_ned))]
+        segments.extend(zip(plan.path_ned[:-1], plan.path_ned[1:]))
+        for index, (start, end) in enumerate(segments):
+            if not grid.segment_free(start, end):
+                return self._report(
+                    replace(plan, status="semantic_unknown_or_blocked",
+                            local_target_ned=None, speed_limit=0.0),
+                    rejection={
+                        "reason": "tracking_chord_not_certified" if index == 0 else "trajectory_segment_not_certified",
+                        "segment_start_ned": np.asarray(start).tolist(),
+                        "segment_end_ned": np.asarray(end).tolist(),
+                    },
                 )
-            )
         return self._report(plan)
 
 
@@ -226,7 +356,7 @@ class SemanticNavigator:
     def _move(self, path):
         self._check_health()
         goal = next_leg(path, self.config.leg_length)
-        self.vehicle.move_velocity_guided(
+        self.vehicle.move_waypoint_guided(
             goal,
             face_direction=True,
             local_planner=self._guard,

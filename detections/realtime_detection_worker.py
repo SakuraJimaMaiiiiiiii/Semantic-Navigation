@@ -19,13 +19,15 @@ class RealtimeDetectionWorker:
 
     PREVIEW_PANEL_WIDTH = 480
 
-    def __init__(self, observation_source, config=None) -> None:
+    def __init__(self, observation_source, config=None, *, semantic_voxels=None) -> None:
         self.observation_source = observation_source
         self.config = config or DetectorConfig()
         self.detector = TiledVehicleDetector(self.config)
         self.segmenter = SAM2Segmenter(self.config)
+        self.segmenter.mapper.semantic_voxels = semantic_voxels
         self.semantic_frames = SemanticFrameStore()
         self._semantic_history = None
+        self._recording_enabled = True
         self.processed_frames = 0
         self._stop = threading.Event()
         self._thread = None
@@ -44,6 +46,8 @@ class RealtimeDetectionWorker:
         self._video_queue = queue.Queue(maxsize=3)
         self._recording_started_at = None
         self._recorded_frames = 0
+        self._performance = {}
+        self._last_performance_report = 0.0
         output_dir = Path(self.config.video_output_dir)
         self.world_video_path = output_dir / "yolo_world_detection.mp4"
         self.sam_video_path = output_dir / "sam2_segmentation.mp4"
@@ -106,6 +110,9 @@ class RealtimeDetectionWorker:
         self._thread = None
         if thread is not None and thread is not threading.current_thread():
             thread.join(timeout=10.0)
+            if thread.is_alive():
+                self._thread = thread
+                raise TimeoutError("Perception did not stop; recording is still active")
         self._stop_video_thread()
         if self._semantic_history is not None and (thread is None or not thread.is_alive()):
             self._semantic_history.close()
@@ -117,6 +124,17 @@ class RealtimeDetectionWorker:
                 self._semantic_map_error = error
                 print(f"--- WARNING: semantic map save failed: {error} ----")
 
+    def finish_recording(self) -> None:
+        """Flush files at the flight boundary, then resume memory-only perception."""
+        if not self._recording_enabled:
+            return
+        from dataclasses import replace
+        self.close()
+        self.raise_if_failed()
+        self._recording_enabled = False
+        self.config = replace(self.config, save_videos=False, save_semantic_map=False)
+        self.start()
+
     def raise_if_failed(self) -> None:
         error = self._error or self._video_error or self._semantic_map_error
         if error is not None:
@@ -126,7 +144,7 @@ class RealtimeDetectionWorker:
             ) from error
 
     def get_latest_preview(self, fallback_image=None):
-        """返回最新标注帧；可选原图仅用于首帧占位。"""
+        """仅显示 YOLO 检测与 SAM2 分割结果，等待期间显示状态占位图。"""
         with self._preview_lock:
             rendered = self._latest_rendered
         if rendered is not None:
@@ -151,7 +169,7 @@ class RealtimeDetectionWorker:
         if fallback_image is None:
             return None
 
-        preview = fallback_image.copy()
+        preview = np.zeros_like(fallback_image)
         if self._error is None:
             message = "YOLO-World + SAM2: waiting for first inference..."
             color = (0, 255, 255)
@@ -174,6 +192,7 @@ class RealtimeDetectionWorker:
         period = 1.0 / float(self.config.inference_fps)
         try:
             while not self._stop.is_set():
+                acquisition_started = time.monotonic()
                 try:
                     observation = self.observation_source.get_observation(
                         timeout=0.5
@@ -184,9 +203,15 @@ class RealtimeDetectionWorker:
                     break
 
                 started = time.monotonic()
+                acquisition_wait = started - acquisition_started
                 sensor_frame = observation.sensor_frame
                 # 检测和分割只读输入；绘图函数各自创建输出，无需每帧预复制 RGB。
                 rgb_bgr = sensor_frame.rgb
+                # Match while this image's cloud is still in acquisition history;
+                # slow detector inference must not evict its LiDAR counterpart.
+                alignment_provider = getattr(self, "lidar_alignment_provider", None)
+                lidar_options = ({"lidar_alignment": alignment_provider(observation)}
+                                 if alignment_provider is not None else {})
                 world_started = time.monotonic()
                 detections = self.detector.detect(rgb_bgr)
                 world_elapsed = max(
@@ -205,6 +230,7 @@ class RealtimeDetectionWorker:
                     camera_pose_covariance=getattr(
                         observation, "camera_pose_covariance", None
                     ),
+                    **lidar_options,
                 )
                 segmentation_elapsed = max(
                     time.monotonic() - segmentation_started,
@@ -212,16 +238,42 @@ class RealtimeDetectionWorker:
                 )
                 elapsed = max(time.monotonic() - started, 1e-6)
                 records = self.segmenter.mapper.navigation_records(self.config.semantic_map_min_observations)
-                self.semantic_frames.publish(sensor_frame.timestamp, records, elapsed)
-                if self.config.save_semantic_map:
+                evidence = self.segmenter.mapper.semantic_voxels
+                voxel_snapshot = evidence.snapshot(records) if evidence is not None else None
+                batch = getattr(self.segmenter.mapper, "last_observation_batch", None)
+                pending_vehicle = False
+                if batch is not None:
+                    from mapping.vehicle_instance_tracker import VEHICLE_CLASSES, VehicleInstanceTracker
+                    pending_vehicle = any(
+                        name in VEHICLE_CLASSES and identity is None and measurement is not None
+                        and score >= self.config.vehicle_map_min_confidence
+                        and VehicleInstanceTracker._usable_vehicle_surface(measurement)
+                        for name, score, measurement, identity in zip(batch[0], batch[1], batch[2], batch[4]))
+                self.semantic_frames.publish(sensor_frame.timestamp, records, elapsed, voxel_snapshot,
+                    vehicle_observation_pending=pending_vehicle)
+                if self._recording_enabled and getattr(self.segmenter.mapper, "last_observation_batch", None) is not None:
                     if self._semantic_history is None:
                         history_path = Path(self.config.semantic_map_path).with_name("semantic_observations.jsonl")
                         history_path.parent.mkdir(parents=True, exist_ok=True)
                         self._semantic_history = history_path.open("w", encoding="utf-8", buffering=1)
+                    from dataclasses import asdict
+                    from navigation.scene_memory import _numpy_json
+                    names, scores, measurements, stamp, identities = self.segmenter.mapper.last_observation_batch
+                    # Save measurements before accumulated instance fusion. Each
+                    # observation must later receive its own time-indexed correction.
+                    samples = []
+                    for name, score, measurement, identity in zip(names, scores, measurements, identities):
+                        if measurement is None:
+                            continue
+                        item = asdict(measurement)
+                        points = item.get("surface_points_world")
+                        if points is not None and len(points) > 512:
+                            item["surface_points_world"] = points[np.linspace(0, len(points)-1, 512, dtype=int)]
+                        samples.append(dict(class_name=name, confidence=float(score),
+                                            source_instance_id=identity, measurement=item))
                     self._semantic_history.write(json.dumps({
-                        "timestamp": float(sensor_frame.timestamp),
-                        "inference_seconds": elapsed, "records": records,
-                    }, ensure_ascii=False, allow_nan=False) + "\n")
+                        "timestamp": float(stamp), "samples": samples,
+                    }, ensure_ascii=False, allow_nan=False, default=_numpy_json) + "\n")
                 self.processed_frames += 1
 
                 completed_at = time.monotonic()
@@ -300,6 +352,26 @@ class RealtimeDetectionWorker:
                     rendered, segmentation, completed_at
                 )
 
+                total = time.monotonic() - started
+                self._performance = {
+                    "processed_frames": self.processed_frames,
+                    "acquisition_wait_ms": acquisition_wait * 1000.,
+                    "alignment_ms": (world_started-started) * 1000.,
+                    "yolo_ms": world_elapsed * 1000.,
+                    "sam_geometry_association_ms": segmentation_elapsed * 1000.,
+                    "publish_draw_enqueue_ms": (total-elapsed) * 1000.,
+                    "processing_ms": total * 1000.,
+                    "pipeline_fps": self._display_fps,
+                    "sam_prompt_limit": self.config.max_sam_prompts,
+                    "video_write_ms": getattr(self, "_video_write_ms", None),
+                }
+                if self._recording_enabled and time.monotonic() - getattr(self, "_last_performance_report", 0.) >= 10.:
+                    self._last_performance_report = time.monotonic()
+                    from navigation.scene_memory import write_json
+                    try:
+                        write_json(Path(self.config.video_output_dir) / "perception_performance.json", self._performance)
+                    except OSError as error:
+                        print(f"--- 感知耗时报告写入失败：{error} ----")
                 remaining = period - (time.monotonic() - started)
                 if remaining > 0:
                     self._stop.wait(remaining)
@@ -315,6 +387,17 @@ class RealtimeDetectionWorker:
             if self._semantic_history is not None:
                 self._semantic_history.close()
                 self._semantic_history = None
+            # Exploration disables the standalone semantic map, but still needs
+            # association evidence to explain duplicate identities after flight.
+            mapper = getattr(self.segmenter, "mapper", None)
+            if mapper is not None and self._recording_enabled:
+                try:
+                    path = Path(self.config.semantic_map_path).with_name("vehicle_merge_diagnostics.json")
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(json.dumps(mapper.vehicle_merge_diagnostics,
+                                               indent=2, allow_nan=False), encoding="utf-8")
+                except Exception as error:
+                    print(f"--- 车辆关联诊断保存失败：{error} ----")
 
     def _enqueue_video_frames(self, world_frame, sam_frame, timestamp) -> None:
         if not self.config.save_videos or self._video_error is not None:
@@ -343,9 +426,11 @@ class RealtimeDetectionWorker:
                 if item is None:
                     break
                 world_frame, sam_frame, timestamp = item
+                write_started = time.monotonic()
                 self._record_video_frames(
                     world_frame, sam_frame, timestamp
                 )
+                self._video_write_ms = (time.monotonic() - write_started) * 1000.
         except Exception as error:
             self._video_error = error
             print(
@@ -371,6 +456,9 @@ class RealtimeDetectionWorker:
                     pass
         if thread is not threading.current_thread():
             thread.join(timeout=10.0)
+            if thread.is_alive():
+                self._video_thread = thread
+                raise TimeoutError("Detection video writer did not stop")
 
     def _record_video_frames(self, world_frame, sam_frame, timestamp) -> None:
         """按真实经过时间写入定帧率视频，慢推理时用当前帧补齐时长。"""

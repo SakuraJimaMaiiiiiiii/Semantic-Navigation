@@ -38,19 +38,7 @@ class GlobalReturnPlanner:
         )
         cells = self._astar(blocked, start, goal_cell)
         if not cells:
-            path = self._trace_fallback_path(
-                snapshot.trajectory_ned,
-                current,
-                goal,
-            )
-            self._submit_visualization(
-                snapshot,
-                current,
-                goal,
-                path,
-                "recorded_trace",
-            )
-            return path
+            raise RuntimeError("Global return A* found no safe path")
         cells = self._smooth(blocked, cells)
         world_cells = np.asarray(cells, dtype=np.float64) + minimum
         path = np.empty((world_cells.shape[0], 3), dtype=np.float64)
@@ -91,48 +79,6 @@ class GlobalReturnPlanner:
             source_name=source_name,
         )
 
-    def _trace_fallback_path(self, trajectory, current, goal) -> np.ndarray:
-        """地图证据冲突时，沿真实飞过的去程轨迹反向返航。"""
-        points = np.asarray(trajectory, dtype=np.float64).reshape(-1, 3)
-        nearest_current = int(np.argmin(
-            np.linalg.norm(points[:, :2] - current[:2], axis=1)
-        ))
-        nearest_goal = int(np.argmin(
-            np.linalg.norm(points[:, :2] - goal[:2], axis=1)
-        ))
-        lower = min(nearest_current, nearest_goal)
-        upper = max(nearest_current, nearest_goal)
-        trace = points[lower:upper + 1]
-        if nearest_current >= nearest_goal:
-            trace = trace[::-1]
-        trace = self._simplify_trace(
-            trace,
-            max(0.3, float(self.config.global_return_trace_radius)),
-        )
-        trace = self._thin_trace(
-            trace,
-            max(1.0, float(self.config.local_target_distance)),
-        )
-        result = np.vstack((current, trace, goal))
-        keep = np.ones(len(result), dtype=bool)
-        if len(result) > 1:
-            keep[1:] = np.linalg.norm(
-                np.diff(result[:, :2], axis=0),
-                axis=1,
-            ) > 1e-6
-        result = result[keep]
-        result[:, 2] = current[2]
-        result[-1] = goal
-        result = self._limit_segment_length(
-            result,
-            float(self.config.planning_lookahead),
-        )
-        print(
-            "--- 全局占据 A* 无路，改用真实去程轨迹反向返航："
-            f"{len(result)} 个航点 ----"
-        )
-        return result
-
     @staticmethod
     def _limit_segment_length(points, maximum_spacing) -> np.ndarray:
         """将长航段等距切开，使每个目标始终处于局部规划前视范围内。"""
@@ -150,42 +96,6 @@ class GlobalReturnPlanner:
                 ratio = index / segment_count
                 result.append(start + (end - start) * ratio)
         return np.asarray(result, dtype=np.float64)
-
-    @staticmethod
-    def _thin_trace(points, minimum_spacing) -> np.ndarray:
-        if len(points) <= 2:
-            return points.copy()
-        selected = [points[0]]
-        for point in points[1:-1]:
-            if np.linalg.norm(point[:2] - selected[-1][:2]) >= minimum_spacing:
-                selected.append(point)
-        selected.append(points[-1])
-        return np.asarray(selected, dtype=np.float64)
-
-    @classmethod
-    def _simplify_trace(cls, points, tolerance) -> np.ndarray:
-        points = np.asarray(points, dtype=np.float64)
-        if len(points) <= 2:
-            return points.copy()
-        segment = points[-1, :2] - points[0, :2]
-        length = float(np.linalg.norm(segment))
-        if length <= 1e-9:
-            distances = np.linalg.norm(
-                points[1:-1, :2] - points[0, :2],
-                axis=1,
-            )
-        else:
-            relative = points[1:-1, :2] - points[0, :2]
-            distances = np.abs(
-                segment[0] * relative[:, 1]
-                - segment[1] * relative[:, 0]
-            ) / length
-        split = int(np.argmax(distances)) + 1
-        if float(distances[split - 1]) <= tolerance:
-            return points[[0, -1]]
-        left = cls._simplify_trace(points[:split + 1], tolerance)
-        right = cls._simplify_trace(points[split:], tolerance)
-        return np.vstack((left[:-1], right))
 
     def _build_navigation_grid(self, snapshot, current, goal):
         resolution = float(snapshot.resolution)

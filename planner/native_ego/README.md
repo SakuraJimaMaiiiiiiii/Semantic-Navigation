@@ -43,5 +43,5 @@ cmake --build "planner/native_ego/build-vs2026" --config Release
 python -c "from planner import _native_ego; print(_native_ego.__doc__)"
 ```
 
-未编译扩展时，`ego_native` 会按配置自动回退到 Python EGO 实现，飞行安全检查
+未编译扩展时，`ego_native` 在初始化阶段报错；运行失败不再自动改用 Python。飞行安全检查
 不会被绕过。

@@ -64,9 +64,8 @@ class SynchronizedObservation:
 class SynchronizedRGBDStream:
     """缓存飞行状态，并在图像时间上插值得到同步观测。
 
-    RflySim 图像提供 Unix 秒时间戳；PX4MavCtrlV4 只把最新状态保存在
-    数组中，因此本类用主机 Unix 时钟对这些数组做高频快照。返回数据前
-    会检查 RGB/深度时间差以及图像到最近原始位姿样本的时间差。
+    图像使用校准后的共享 Unix 时钟，MAVLink 位姿使用消息接收时间。
+    检查 RGB/深度、姿态/位置消息的时间差及位姿插值跨度。
     """
 
     def __init__(
@@ -148,8 +147,8 @@ class SynchronizedRGBDStream:
     def get_observation(self, timeout: float = 1.0) -> SynchronizedObservation:
         """返回一组通过时间戳对齐的 ``DroneState`` 和 ``SensorFrame``。
 
-        位姿、线速度和角速度使用线性插值；四元数使用最短路径归一化
-        插值。若最近的原始状态样本离图像时刻仍超过配置阈值，则拒绝该
+        位姿、线速度和角速度使用线性插值；四元数使用最短路径球面
+        插值。若原始状态样本的距离或插值跨度超过配置阈值，则拒绝该
         帧并等待下一帧，而不是返回可能造成三维标定误差的数据。
         """
         if self._thread is None or not self._thread.is_alive():
@@ -218,7 +217,8 @@ class SynchronizedRGBDStream:
                         self._calibrated,
                     ),
                     state.linear_velocity, state.angular_velocity,
-                    self._pose_timestamp_std,
+                    max(self._pose_timestamp_std, sync_error,
+                        abs(frame.rgb_timestamp - frame.depth_timestamp)),
                 ),
             )
 
@@ -246,11 +246,13 @@ class SynchronizedRGBDStream:
                     or last_px4_boot_timestamp is None
                     or boot_timestamp != last_px4_boot_timestamp
                 )
-                if is_new_px4_state:
+                if (is_new_px4_state and np.isfinite(state.timestamp)
+                        and state.pose_sync_error <= self.max_sync_error):
                     last_px4_boot_timestamp = boot_timestamp
                     with self._condition:
-                        self._states.append(state)
-                        self._condition.notify_all()
+                        if not self._states or state.timestamp > self._states[-1].timestamp:
+                            self._states.append(state)
+                            self._condition.notify_all()
 
                 next_sample += period
                 wait_time = next_sample - time.monotonic()
@@ -283,24 +285,20 @@ class SynchronizedRGBDStream:
 
         stamps = [state.timestamp for state in states]
         right_index = bisect.bisect_left(stamps, timestamp)
-        if right_index == 0:
-            state = states[0]
-            return state, abs(state.timestamp - timestamp)
-        if right_index >= len(states):
-            state = states[-1]
-            return state, abs(state.timestamp - timestamp)
-
+        # The wait above guarantees a sample at or after the requested time.
+        if right_index == 0 or stamps[right_index] == timestamp:
+            state = states[right_index]
+            return state, max(abs(state.timestamp - timestamp), state.pose_sync_error)
         before = states[right_index - 1]
         after = states[right_index]
         interval = after.timestamp - before.timestamp
         if interval <= 1e-9:
-            return before, abs(before.timestamp - timestamp)
+            return before, max(abs(before.timestamp - timestamp), before.pose_sync_error)
         ratio = (timestamp - before.timestamp) / interval
-        nearest_error = min(
-            timestamp - before.timestamp,
-            after.timestamp - timestamp,
-        )
-        return _interpolate_state(before, after, ratio, timestamp), nearest_error
+        # Half the bracket span bounds the nearest-sample error and also
+        # rejects a long telemetry gap when the query is close to one end.
+        sync_error = max(interval / 2, before.pose_sync_error, after.pose_sync_error)
+        return _interpolate_state(before, after, ratio, timestamp), sync_error
 
     def _raise_sampler_error(self) -> None:
         if self._sampler_error is not None:
@@ -316,7 +314,7 @@ def _interpolate_state(
     timestamp: float,
 ) -> DroneState:
     ratio = float(np.clip(ratio, 0.0, 1.0))
-    quaternion = _normalized_quaternion_lerp(
+    quaternion = _quaternion_slerp(
         before.quaternion,
         after.quaternion,
         ratio,
@@ -347,6 +345,7 @@ def _interpolate_state(
             if before.position_covariance_ned is not None and after.position_covariance_ned is not None
             else None
         ),
+        pose_sync_error=max(before.pose_sync_error, after.pose_sync_error),
     )
 
 
@@ -356,14 +355,20 @@ def _lerp(before, after, ratio: float) -> np.ndarray:
     return before_array + ratio * (after_array - before_array)
 
 
-def _normalized_quaternion_lerp(before, after, ratio: float) -> np.ndarray:
-    q0 = np.asarray(before, dtype=float)
-    q1 = np.asarray(after, dtype=float)
+def _quaternion_slerp(before, after, ratio: float) -> np.ndarray:
+    q0 = np.array(before, dtype=float, copy=True)
+    q1 = np.array(after, dtype=float, copy=True)
     q0 /= np.linalg.norm(q0)
     q1 /= np.linalg.norm(q1)
-    if float(np.dot(q0, q1)) < 0.0:
+    dot = float(np.dot(q0, q1))
+    if dot < 0.0:
         q1 = -q1
-    result = q0 + ratio * (q1 - q0)
+        dot = -dot
+    if dot > .9995:
+        result = q0 + ratio * (q1 - q0)
+    else:
+        angle = math.acos(float(np.clip(dot, -1., 1.)))
+        result = (math.sin((1-ratio)*angle)*q0 + math.sin(ratio*angle)*q1) / math.sin(angle)
     return result / np.linalg.norm(result)
 
 

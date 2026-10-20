@@ -84,6 +84,9 @@ class FlightDataRecorder:
             thread.join(
                 timeout=max(3.0, self.config.observation_timeout + 1.0)
             )
+            if thread.is_alive():
+                self._thread = thread
+                raise TimeoutError("Flight recorder did not stop; files are still open")
 
     def raise_if_failed(self) -> None:
         """记录线程异常时在主线程重新抛出，避免静默丢失数据。"""
@@ -374,7 +377,7 @@ class FlightDataReader:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *_ignored):
         self.close()
 
     def read_state_rows(self) -> list[dict]:

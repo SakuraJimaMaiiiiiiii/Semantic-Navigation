@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import warnings
 
 import numpy as np
 
@@ -11,12 +10,11 @@ from .ego_local_planner import EgoLocalPlanner, UniformCubicBSpline
 
 
 class NativeEgoLocalPlanner(EgoLocalPlanner):
-    """优先使用 C++ 核心，异常时安全回退到 Python EGO 实现。"""
+    """使用指定 C++ 核心；失败上报，不自动切换算法。"""
 
     def __init__(self, *args, native_backend=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._native_backend = native_backend
-        self._native_error: str | None = None
         if self._native_backend is None:
             self._load_native_backend()
 
@@ -27,12 +25,7 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
 
     @property
     def backend_name(self) -> str:
-        return "cpp" if self.native_available else "python_fallback"
-
-    @property
-    def native_error(self) -> str | None:
-        """原生扩展加载或执行失败的原因；正常时为 ``None``。"""
-        return self._native_error
+        return "cpp"
 
     def _load_native_backend(self) -> None:
         try:
@@ -40,18 +33,8 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
             self._native_backend = module.NativeEgoPlanner(
                 self._native_config()
             )
-        except Exception as error:  # 扩展未编译或 ABI 不匹配都要可诊断
-            self._disable_native(error)
-
-    def _disable_native(self, error: Exception) -> None:
-        self._native_backend = None
-        self._native_error = f"{type(error).__name__}: {error}"
-        warnings.warn(
-            "C++ EGO 核心不可用，已回退到 Python EGO："
-            f"{self._native_error}",
-            RuntimeWarning,
-            stacklevel=3,
-        )
+        except Exception as error:
+            raise RuntimeError("C++ EGO 初始化失败，请检查或编译 planner/native_ego") from error
 
     def _native_config(self) -> dict[str, float | int]:
         config = self.config
@@ -91,26 +74,7 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
         local_goal,
         now,
     ):
-        if self._native_backend is None:
-            return super()._collision_seed_path(
-                snapshot,
-                blocked,
-                current,
-                local_goal,
-                now,
-            )
-        remaining = self._remaining_trajectory_seed(
-            snapshot,
-            blocked,
-            current,
-            local_goal,
-            now,
-        )
-        if remaining is not None:
-            return remaining
-        # Match official EGO first initialization: construct a boundary-state
-        # polynomial; C++ then runs A* only for colliding control-point segments.
-        return np.vstack((current, local_goal))
+        return self._direct_seed_path(snapshot, blocked, current, local_goal, now)
 
     def _direct_seed_path(
         self,
@@ -120,22 +84,21 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
         local_goal,
         now,
     ):
-        if self._native_backend is not None:
-            remaining = self._remaining_trajectory_seed(
-                snapshot,
-                blocked,
-                current,
-                local_goal,
-                now,
-            )
-            if remaining is not None:
-                return remaining
+        # Both native paths reuse a certified remainder or initialize the same
+        # boundary-state polynomial. C++ applies A* to colliding segments.
+        remaining = self._remaining_trajectory_seed(
+            snapshot,
+            blocked,
+            current,
+            local_goal,
+            now,
+        )
+        if remaining is not None:
+            return remaining
         return np.vstack((current, local_goal))
 
     def _build_trajectory(self, snapshot, blocked, seed_path):
         backend = self._native_backend
-        if backend is None:
-            return super()._build_trajectory(snapshot, blocked, seed_path)
         try:
             result = backend.rebound_replan(
                 np.ascontiguousarray(seed_path, dtype=np.float64),
@@ -153,9 +116,7 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
                 np.zeros(3, dtype=np.float64),
             )
             if not bool(result["success"]):
-                return self._build_python_fallback_trajectory(
-                    snapshot, blocked, seed_path
-                )
+                return None
             points = np.asarray(result["control_points"], dtype=np.float64)
             interval = float(result["knot_interval"])
             if self.navigation_altitude is not None:
@@ -167,28 +128,5 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
             if self._trajectory_is_free(snapshot, blocked, trajectory):
                 return trajectory
         except Exception as error:
-            self._disable_native(error)
-        return self._build_python_fallback_trajectory(
-            snapshot, blocked, seed_path
-        )
-
-    def _build_python_fallback_trajectory(
-        self,
-        snapshot,
-        blocked,
-        seed_path,
-    ):
-        seed = np.asarray(seed_path, dtype=np.float64)
-        if not self._line_is_free_3d(snapshot, blocked, seed[0], seed[-1]):
-            start = self.world_to_grid(snapshot, seed[0])
-            goal = self.world_to_grid(snapshot, seed[-1])
-            cell_path = super()._astar_3d(blocked, start, goal)
-            if not cell_path:
-                return None
-            cell_path = self._simplify_cells_3d(blocked, cell_path)
-            seed = np.asarray([
-                self.grid_to_world(snapshot, cell) for cell in cell_path
-            ])
-            seed[0] = seed_path[0]
-            seed[-1] = seed_path[-1]
-        return super()._build_trajectory(snapshot, blocked, seed)
+            raise RuntimeError("C++ EGO 轨迹规划失败") from error
+        return None

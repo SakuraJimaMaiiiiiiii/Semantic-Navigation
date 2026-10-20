@@ -64,14 +64,6 @@
 
 
 
-# 深度图 + 同步无人机位姿
-→ 转换为世界点云
-→ 射线融合到滑动占据栅格
-→ 在锁内离散化状态并膨胀障碍
-→ 复制原点、时间戳和数组
-→ 得到 OccupancyGridSnapshot
-→ 交给 A* 规划器
-
 合离线地图和实时感知数据，动态更新图以支持实时语义导航。全局导航依赖预存路径或动态生成的场景图，局部路径规划则基于实时 LiDAR 映射和动态障碍物移除。
 
 YOLOWorld
@@ -84,13 +76,6 @@ YOLOWorld
 自身运动估计：
 通过 LiDAR-惯性里程计系统获取自身运动状态，当运动步长超过阈值时，将位置和速度存储为自身节点，并在图中添加新边。
 自身节点和边存储在 Embodied Graph 中，用于后续的全局规划任务。
-
-ppt里的局部避障
-
-
-
-对A*进行升级
-
 
 
 
@@ -164,7 +149,40 @@ SAM2柱子掩膜
 
 
 体坐标系->极坐标系
-卡尔曼滤波->非线性
 
 
 对墙体的处理
+
+
+
+这个该怎么实现：
+那么系统如果已经观察到：
+停车线
+停车位
+道路
+就可以推测：
+停车区域附近更可能出现车辆
+
+
+
+3d高斯 生成目标影像
+通过生成图像 另一个角度 用对比图给大模型
+
+
+
+Traceback (most recent call last):
+  File "E:\files\Semantic Navigation\run_explore.py", line 155, in <module>
+    main()
+  File "E:\files\Semantic Navigation\run_explore.py", line 105, in main
+    session.explore()
+  File "E:\files\Semantic Navigation\navigation\exploration_session.py", line 190, in explore
+    self.runtime.run_mission()
+  File "E:\files\Semantic Navigation\application\demo_runtime.py", line 393, in run_mission
+    self.controller.run()
+  File "E:\files\Semantic Navigation\mission\rfly_mission_controller.py", line 74, in run
+    self._return_on_global_path()
+  File "E:\files\Semantic Navigation\mission\rfly_mission_controller.py", line 155, in _return_on_global_path
+    vehicle.move_velocity_guided(
+  File "E:\files\Semantic Navigation\vehicle\rfly_multirotor.py", line 460, in move_velocity_guided
+    raise TimeoutError(
+TimeoutError: Velocity-guided move timed out after 90.0 s

@@ -11,6 +11,7 @@ import numpy as np
 
 from config import OccupancyGridConfig
 from .vehicle_footprint import vehicle_footprint_indices
+from .depth_rays import clip_depth_rays
 from sensors import SynchronizedObservation
 
 UNKNOWN = np.int8(-1)
@@ -30,6 +31,7 @@ class OccupancyGridSnapshot:
     drone_position_ned: np.ndarray
     forward_clearance: float
     observed: np.ndarray | None = None
+    observation: object | None = None
 
 
 class LocalOccupancyGrid:
@@ -71,6 +73,15 @@ class LocalOccupancyGrid:
         self._forward_clearance = math.inf
         self._inflation_offsets = self._make_inflation_offsets()
         self._lock = threading.RLock()
+        self._latest_observation = None
+
+    def update_depth_observation(self, observation):
+        """Retain RGB-D for perception/forward stop without inserting depth geometry."""
+        clearance = self._estimate_forward_clearance(observation.sensor_frame.depth)
+        with self._lock:
+            self._latest_observation = observation
+            self._forward_clearance = clearance
+        # Do not refresh LiDAR map freshness from an unrelated camera frame.
 
     def update(self, observation: SynchronizedObservation) -> None:
         """用一帧同步深度数据更新空闲射线与占据端点。"""
@@ -95,25 +106,44 @@ class LocalOccupancyGrid:
         forward_clearance = self._estimate_forward_clearance(depth)
         if points_camera.size == 0:
             with self._lock:
-                self._recenter(drone_position)
+                self._latest_observation = observation
+                self._update_sensor_pose(drone_position, frame.timestamp)
                 self._mark_vehicle_footprint(drone_position)
-                self._timestamp = float(frame.timestamp)
-                self._drone_position_ned = drone_position.copy()
                 self._forward_clearance = forward_clearance
                 self._last_observation_completed_at = time.monotonic()
             return
+        points_camera, hit = clip_depth_rays(
+            points_camera, self.config.max_depth, self.config.depth_is_range)
         points_world = (
             transform_world_camera[:3, :3] @ points_camera.T
         ).T + camera_origin
 
         with self._lock:
-            self._recenter(drone_position)
-            self._integrate_rays(camera_origin, points_world)
+            self._latest_observation = observation
+            self._update_sensor_pose(drone_position, frame.timestamp)
+            self._integrate_rays(camera_origin, points_world, hit)
             self._mark_vehicle_footprint(drone_position)
-            self._timestamp = float(frame.timestamp)
-            self._drone_position_ned = drone_position.copy()
             self._forward_clearance = forward_clearance
             self._last_observation_completed_at = time.monotonic()
+
+    def integrate_lidar_points(self, origin, endpoints, timestamp, drone_position):
+        # LiDAR has rays behind/above the vehicle: range is radial, never optical Z.
+        vectors, hit = clip_depth_rays(np.asarray(endpoints)-origin, self.config.max_depth, True)
+        with self._lock:
+            self._update_sensor_pose(drone_position, timestamp)
+            self._integrate_rays(np.asarray(origin), vectors+origin, hit)
+            self._mark_vehicle_footprint(drone_position)
+            self._last_observation_completed_at = time.monotonic()
+            # Preserve the independent depth-image emergency clearance and observation.
+
+    def _update_sensor_pose(self, position, timestamp):
+        # Caller holds the map lock. Late frames still contribute world-space
+        # rays, but must not move the rolling map back to an older vehicle pose.
+        if float(timestamp) >= self._timestamp:
+            position = np.asarray(position, dtype=np.float64)
+            self._recenter(position)
+            self._drone_position_ned = position.copy()
+            self._timestamp = float(timestamp)
 
     def _mark_vehicle_footprint(self, position):
         indices = vehicle_footprint_indices(
@@ -160,6 +190,7 @@ class LocalOccupancyGrid:
                 drone_position_ned=self._drone_position_ned.copy(),
                 forward_clearance=float(self._forward_clearance),
                 observed=self._observed.copy(),
+                observation=self._latest_observation,
             )
 
     def _estimate_forward_clearance(self, depth: np.ndarray) -> float:
@@ -200,7 +231,6 @@ class LocalOccupancyGrid:
         sampled_depth = depth[np.ix_(rows, columns)]
         valid = np.isfinite(sampled_depth)
         valid &= sampled_depth >= float(self.config.min_depth)
-        valid &= sampled_depth <= float(self.config.max_depth)
         if not np.any(valid):
             return np.empty((0, 3), dtype=np.float64)
 
@@ -262,8 +292,10 @@ class LocalOccupancyGrid:
         self,
         camera_origin: np.ndarray,
         endpoints_world: np.ndarray,
+        hit: np.ndarray,
     ) -> None:
         endpoints_indices, valid_endpoints = self._world_to_indices(endpoints_world)
+        valid_endpoints &= hit
         valid_endpoint_indices = endpoints_indices[valid_endpoints]
         occupied_flat = (
             np.unique(

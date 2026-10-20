@@ -12,6 +12,7 @@ import numpy as np
 
 from config import GlobalSparseMapConfig
 from .vehicle_footprint import vehicle_footprint_indices
+from .depth_rays import clip_depth_rays
 
 
 @dataclass(frozen=True)
@@ -130,18 +131,29 @@ class GlobalSparseOccupancyMap:
                 float(self.config.hit_log_odds),
             )
             self._mark_vehicle_footprint(drone_position_ned)
-            self._timestamp = float(timestamp)
-            self._drone_position_ned = np.asarray(
-                drone_position_ned,
-                dtype=np.float64,
-            ).copy()
-            if (
-                not self._trajectory_ned
-                or np.linalg.norm(self._drone_position_ned - self._trajectory_ned[-1])
-                >= 0.5 * self.resolution
-            ):
-                self._trajectory_ned.append(self._drone_position_ned.copy())
+            if float(timestamp) >= self._timestamp:
+                self._timestamp = float(timestamp)
+                self._drone_position_ned = np.asarray(drone_position_ned, dtype=np.float64).copy()
+                if (not self._trajectory_ned or
+                        np.linalg.norm(self._drone_position_ned - self._trajectory_ned[-1]) >= 0.5 * self.resolution):
+                    self._trajectory_ned.append(self._drone_position_ned.copy())
             self._snapshot_cache = None
+
+    def integrate_lidar_points(self, origin, endpoints, timestamp, drone_position):
+        vectors, hit = clip_depth_rays(np.asarray(endpoints)-origin, self.config.max_depth, True)
+        occupied, free = self._ray_indices(np.asarray(origin), vectors+origin, hit)
+        with self._lock:
+            self._apply_indices(free, -float(self.config.miss_log_odds))
+            self._apply_indices(occupied, float(self.config.hit_log_odds))
+            self._mark_vehicle_footprint(drone_position)
+            if float(timestamp) >= self._timestamp:
+                self._timestamp = float(timestamp)
+                self._drone_position_ned = np.asarray(drone_position).copy()
+                if (not self._trajectory_ned or
+                        np.linalg.norm(self._drone_position_ned-self._trajectory_ned[-1]) >= .5*self.resolution):
+                    self._trajectory_ned.append(self._drone_position_ned.copy())
+            self._snapshot_cache = None
+            self._last_observation_completed_at = time.monotonic()
 
     def _mark_vehicle_footprint(self, position):
         # Pose certifies the space currently occupied by the vehicle itself.
@@ -440,7 +452,6 @@ class GlobalSparseOccupancyMap:
         sampled_depth = depth[np.ix_(rows, columns)]
         valid = np.isfinite(sampled_depth)
         valid &= sampled_depth >= float(self.config.min_depth)
-        valid &= sampled_depth <= float(self.config.max_depth)
         if not np.any(valid):
             return np.empty((0, 3), dtype=np.float64)
 
@@ -471,18 +482,21 @@ class GlobalSparseOccupancyMap:
             transform_world_camera,
             dtype=np.float64,
         )
+        points_camera, hit = clip_depth_rays(
+            points_camera, self.config.max_depth, self.config.depth_is_range)
         camera_origin = transform_world_camera[:3, 3]
         points_world = (
             transform_world_camera[:3, :3] @ points_camera.T
         ).T + camera_origin
-        return self._ray_indices(camera_origin, points_world)
+        return self._ray_indices(camera_origin, points_world, hit)
 
     def _ray_indices(
         self,
         camera_origin: np.ndarray,
         endpoints_world: np.ndarray,
+        hit: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
-        occupied = self._world_to_indices(endpoints_world)
+        occupied = self._world_to_indices(endpoints_world[hit])
         occupied = np.unique(occupied, axis=0)
 
         directions = endpoints_world - camera_origin

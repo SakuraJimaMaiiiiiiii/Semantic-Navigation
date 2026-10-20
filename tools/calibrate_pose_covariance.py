@@ -11,7 +11,6 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
-from pymavlink.dialects.v20 import common as mavlink
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sensors.empirical_pose_covariance import estimate_profile, pose_error
@@ -58,6 +57,7 @@ def main():
     latest = {}
     last_pair = None
     last_truth_stamp = None
+    from pymavlink.dialects.v20 import common as mavlink
     decoder = mavlink.MAVLink(None)
     output = Path(__file__).resolve().parents[1] / 'data' / 'diagnostics' / f'pose_calibration_{datetime.now():%Y%m%d_%H%M%S_%f}'
     output.mkdir(parents=True, exist_ok=False)

@@ -22,7 +22,7 @@ class CameraConfig:
     max_rgb_depth_skew: float = 0.02  # RGB 与深度允许的最大时间差，单位 s
     state_sample_rate: float = 100.0  # 无人机状态历史缓存的采样频率，单位 Hz
     state_history_seconds: float = 5.0  # 状态历史缓存保留时间，单位 s
-    max_state_sync_error: float = 0.03  # 图像与最近原始位姿样本的最大时间差，单位 s
+    max_state_sync_error: float = 0.03  # 位姿最近样本距离、半插值跨度、姿态/位置源时间差上限，s
     # 暂定误差模型，非PX4实时协方差；应与同步仿真真值比较后标定。
     pose_position_std_ned: tuple[float, float, float] = (0.1, 0.1, 0.15)  # m
     pose_rotation_std_body_deg: tuple[float, float, float] = (0.5, 0.5, 1.0)  # 局部小角度，非欧拉角协方差

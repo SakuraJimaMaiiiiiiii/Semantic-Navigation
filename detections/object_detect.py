@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Sequence
 
 import cv2  # pylint: disable=import-error
+from sensors.lidar_camera_alignment import fuse_camera_lidar_points
+from sensors.semantic_support import central_support, reliable_surface_mask
+
 import numpy as np
 import torch  # pylint: disable=import-error
 import ultralytics.nn.text_model as ultralytics_text_model
@@ -14,9 +17,8 @@ from ultralytics import SAM, YOLOWorld  # pylint: disable=import-error
 
 from mapping.semantic_instance_mapper import (
     STRUCTURAL_COLUMN_PROMPTS,
-    SIGNBOARD_CLASS_ALIASES,
-    EXIT_SIGN_CLASS_ALIASES,
-    FIRE_CABINET_CLASS_ALIASES,
+    TRAFFIC_SIGN_PROMPTS,
+    EXIT_SIGN_PROMPTS,
     SemanticInstanceMapper,
     SemanticObservation3D,
     canonical_semantic_class_name as canonical_class_name,
@@ -42,6 +44,7 @@ SEMANTIC_CLASS_COLORS = {
     "column": (0, 165, 255),
     "signboard": (255, 0, 255),
     "exit sign": (0, 255, 128),
+    "exit door": (255, 200, 0),
     "fire cabinet": (40, 40, 230),
     "car": (255, 80, 80),
     "truck": (180, 80, 255),
@@ -73,9 +76,12 @@ class DetectorConfig:
         "wall",
         "ceiling",
         *STRUCTURAL_COLUMN_PROMPTS,
-        *SIGNBOARD_CLASS_ALIASES,
-        *EXIT_SIGN_CLASS_ALIASES,
-        *FIRE_CABINET_CLASS_ALIASES,
+        *TRAFFIC_SIGN_PROMPTS,
+        *EXIT_SIGN_PROMPTS,
+        "emergency exit door",
+        "fire exit door",
+        "fire hose cabinet",
+        "fire hydrant cabinet",
         "car",
         "truck",
         "bus",
@@ -86,17 +92,21 @@ class DetectorConfig:
     tile_size: int = 640
     overlap: float = 0.25
     confidence: float = 0.12
+    vehicle_map_min_confidence: float = 0.25  # 车辆正式地图/视频 ID 的平均置信度下限
+    sign_min_confidence: float = 0.25  # 交通牌和出口指示牌专用门槛
+    safety_landmark_min_confidence: float = 0.30
+    safety_landmark_min_observations: int = 8
     tile_iou: float = 0.50
     nms_iou: float = 0.45
     max_detections: int = 30
-    max_sam_prompts: int = 12
+    max_sam_prompts: int = 6
     device: str | int = 0
     use_fp16: bool = True
     enabled: bool = True
     inference_fps: float = 30.0
     window_name: str = "YOLO-World Detection / SAM2 Segmentation"
     hidden_box_classes: tuple[str, ...] = ("floor", "ceiling", "wall")
-    semantic_landmark_classes: tuple[str, ...] = ("column", "signboard", "exit sign", "fire cabinet", *VEHICLE_CLASSES)
+    semantic_landmark_classes: tuple[str, ...] = ("column", "signboard", "exit sign", "exit door", "fire cabinet", *VEHICLE_CLASSES)
     instance_duplicate_merge_distance_xy: float = 1.5
     instance_mahalanobis_gate: float = 7.815
     instance_kalman_process_noise_std: float = 0.05
@@ -108,6 +118,8 @@ class DetectorConfig:
     instance_depth_max: float = 15.0
     instance_depth_stride: int = 4
     instance_depth_min_points: int = 12
+    instance_center_roi_ratio: float = 0.6  # 定位用中心 ROI；可靠完整表面仍用于范围和体素标签
+    instance_max_incidence_degrees: float = 75.0  # 表面法线与视线夹角上限
     vehicle_max_association_distance: float = 2.5
     vehicle_appearance_gate: float = 0.55
     vehicle_ambiguity_margin: float = 0.12
@@ -135,6 +147,12 @@ class DetectorConfig:
         return 16 if self.use_fp16 and uses_cuda else None
 
     def __post_init__(self) -> None:
+        if not 0 < self.vehicle_map_min_confidence <= 1:
+            raise ValueError("vehicle_map_min_confidence must be in (0, 1]")
+        if not 0 < self.sign_min_confidence <= 1:
+            raise ValueError("sign_min_confidence must be in (0, 1]")
+        if not 0 < self.safety_landmark_min_confidence <= 1 or self.safety_landmark_min_observations < 1:
+            raise ValueError('Invalid safety landmark confirmation thresholds')
         if not self.class_prompts or any(
             not str(prompt).strip() for prompt in self.class_prompts
         ):
@@ -177,6 +195,10 @@ class DetectorConfig:
             raise ValueError("instance_depth_stride 必须大于 0")
         if self.instance_depth_min_points <= 0:
             raise ValueError("instance_depth_min_points 必须大于 0")
+        if not 0 < self.instance_center_roi_ratio <= 1:
+            raise ValueError("instance_center_roi_ratio 必须在 (0, 1] 内")
+        if not 0 < self.instance_max_incidence_degrees < 90:
+            raise ValueError("instance_max_incidence_degrees 必须在 (0, 90) 内")
         for name in (
             "vehicle_max_association_distance", "vehicle_appearance_gate",
             "vehicle_ambiguity_margin", "vehicle_viewpoint_noise_std",
@@ -305,6 +327,16 @@ class TiledVehicleDetector:
             canonical_class_name(self.model.names[int(class_id)])
             for class_id in classes.tolist()
         ]
+        # Filter before NMS/truncation so weak signs do not consume SAM budget.
+        valid = [i for i, name in enumerate(canonical_classes)
+                 if (name not in {"signboard", "exit sign"}
+                     or float(scores[i]) >= self.config.sign_min_confidence)
+                 and (name not in {'exit door', 'fire cabinet'}
+                      or float(scores[i]) >= self.config.safety_landmark_min_confidence)]
+        boxes, scores, classes = boxes[valid], scores[valid], classes[valid]
+        canonical_classes = [canonical_classes[i] for i in valid]
+        if not valid:
+            return []
         keep = self._nms(boxes, scores, canonical_classes)
         keep = keep[:self.config.max_detections]
 
@@ -337,6 +369,8 @@ class TiledVehicleDetector:
             x1, y1, x2, y2 = detection.box
             color = semantic_class_color(detection.class_name)
             label = f"{detection.class_name} {detection.confidence:.2f}"
+            if canonical_class_name(detection.class_name) in {'exit door', 'fire cabinet'}:
+                label += ' [candidate]'
             cv2.rectangle(output, (x1, y1), (x2, y2), color, 2)
             cv2.putText(
                 output,
@@ -448,6 +482,11 @@ class SAM2Segmenter:
         self.model = SAM(str(weights))
         self.mapper = SemanticInstanceMapper(
             landmark_classes=self.config.semantic_landmark_classes,
+            sign_min_confidence=self.config.sign_min_confidence,
+            vehicle_map_min_confidence=self.config.vehicle_map_min_confidence,
+            safety_landmark_min_confidence=self.config.safety_landmark_min_confidence,
+            safety_landmark_min_observations=self.config.safety_landmark_min_observations,
+            sign_min_observations=self.config.instance_display_min_observations,
             mahalanobis_gate=self.config.instance_mahalanobis_gate,
             process_noise_std=(
                 self.config.instance_kalman_process_noise_std
@@ -482,8 +521,10 @@ class SAM2Segmenter:
         camera_pose_world: np.ndarray | None = None,
         timestamp: float | None = None,
         camera_pose_covariance: np.ndarray | None = None,
+        lidar_alignment=None,
     ) -> tuple[np.ndarray, int]:
         """返回分割图；同步深度和位姿可启用持久三维实例关联。"""
+        self.mapper.last_observation_batch = None
         if image is None or image.size == 0:
             raise ValueError("输入图像不能为空")
         all_detections = list(detections)
@@ -526,8 +567,8 @@ class SAM2Segmenter:
                     mask, (width, height), interpolation=cv2.INTER_NEAREST
                 )
             foreground = mask > 0.5
-            if canonical_class_name(detection.class_name) in VEHICLE_CLASSES:
-                # 提示框外的 SAM 泄漏区域不能进入车辆外观和深度测量。
+            if self._is_semantic_landmark(detection.class_name):
+                # 所有地标都只使用提示框内的 SAM 支持，避免柱/牌子泄漏到背景。
                 x1, y1, x2, y2 = detection.box
                 bounded = np.zeros_like(foreground)
                 x1, x2 = np.clip([x1, x2], 0, width)
@@ -544,6 +585,7 @@ class SAM2Segmenter:
                     camera_intrinsics,
                     camera_pose_world,
                     camera_pose_covariance,
+                    lidar_alignment=lidar_alignment,
                 )
                 geometry = observations_3d[detection_index]
                 if geometry is not None and canonical_class_name(detection.class_name) in VEHICLE_CLASSES:
@@ -580,6 +622,9 @@ class SAM2Segmenter:
                     self.config.instance_display_min_observations,
                 )
             )
+            if (canonical_class_name(detection.class_name) in {'exit door', 'fire cabinet'}
+                    and confirmed_instance_id is None):
+                continue
             color = (
                 semantic_class_color(detection.class_name)
                 if confirmed_instance_id is None
@@ -641,7 +686,7 @@ class SAM2Segmenter:
     def _select_sam_detections(
         self, detections: Sequence[Detection]
     ) -> list[tuple[int, Detection]]:
-        """柱子、车辆、标牌和消防箱轮流取得预算，其余目标补充。"""
+        """车辆优先连续观测，其余预算轮转，避免其他实例长期得不到分割。"""
         indexed = list(enumerate(detections))
         indexed.sort(
             key=lambda item: (
@@ -650,7 +695,7 @@ class SAM2Segmenter:
             ),
             reverse=True,
         )
-        columns, vehicles, signs, cabinets, others = [], [], [], [], []
+        columns, vehicles, signs, cabinets, doors, others = [], [], [], [], [], []
         for item in indexed:
             name = canonical_class_name(item[1].class_name)
             if self._is_semantic_landmark(name) and name == "column":
@@ -659,17 +704,28 @@ class SAM2Segmenter:
                 vehicles.append(item)
             elif name in ("signboard", "exit sign"):
                 signs.append(item)
+            elif name == "exit door":
+                doors.append(item)
             elif name == "fire cabinet":
                 cabinets.append(item)
             else:
                 others.append(item)
+        # Reserve most slots for continuous vehicle observations. Keep one
+        # rotating slot for other vehicles/landmarks so they are not starved.
+        limit = self.config.max_sam_prompts
+        reserved = vehicles[:max(1, limit - 1)]
         prioritized = []
-        groups = (columns, vehicles, signs, cabinets)
+        groups = (columns, vehicles[len(reserved):], signs, cabinets, doors)
         for index in range(max(map(len, groups))):
             for group in groups:
                 if index < len(group):
                     prioritized.append(group[index])
-        return (prioritized + others)[:self.config.max_sam_prompts]
+        # Rotate the semantic queue so lower-ranked objects are not starved.
+        offset = getattr(self, "_sam_rotation", 0) % max(1, len(prioritized))
+        rotated = prioritized[offset:] + prioritized[:offset]
+        remaining = limit - len(reserved)
+        self._sam_rotation = (offset + remaining) % max(1, len(prioritized))
+        return reserved + (rotated + others)[:remaining]
 
     @staticmethod
     def _mask_appearance(image: np.ndarray, foreground: np.ndarray) -> np.ndarray | None:
@@ -693,6 +749,7 @@ class SAM2Segmenter:
         camera_intrinsics: np.ndarray | None,
         camera_pose_world: np.ndarray | None,
         camera_pose_covariance: np.ndarray | None = None,
+        lidar_alignment=None,
     ) -> SemanticObservation3D | None:
         """把稀疏掩膜深度反投影为稳健的 NED 中心和三维包围盒。"""
         if (
@@ -704,41 +761,6 @@ class SAM2Segmenter:
         depth_image = np.asarray(depth, dtype=np.float32)
         if depth_image.ndim != 2 or depth_image.size == 0:
             return None
-        mask = np.asarray(foreground)
-        if mask.shape != depth_image.shape:
-            mask = cv2.resize(
-                mask.astype(np.uint8),
-                (depth_image.shape[1], depth_image.shape[0]),
-                interpolation=cv2.INTER_NEAREST,
-            )
-
-        stride = int(self.config.instance_depth_stride)
-        rows, columns = np.nonzero(mask[::stride, ::stride])
-        rows = rows * stride
-        columns = columns * stride
-        if rows.size < self.config.instance_depth_min_points:
-            return None
-        depth_values = depth_image[rows, columns]
-        valid = np.isfinite(depth_values)
-        valid &= depth_values >= float(self.config.instance_depth_min)
-        valid &= depth_values <= float(self.config.instance_depth_max)
-        if np.count_nonzero(valid) < self.config.instance_depth_min_points:
-            return None
-        rows = rows[valid]
-        columns = columns[valid]
-        depth_values = depth_values[valid].astype(np.float64)
-
-        # 去掉掩膜边缘混入的前景/背景深度，保留主体深度簇。
-        median_depth = float(np.median(depth_values))
-        median_deviation = float(np.median(np.abs(depth_values - median_depth)))
-        depth_gate = max(0.25, 3.0 * 1.4826 * median_deviation)
-        inliers = np.abs(depth_values - median_depth) <= depth_gate
-        if np.count_nonzero(inliers) >= self.config.instance_depth_min_points:
-            rows = rows[inliers]
-            columns = columns[inliers]
-            depth_values = depth_values[inliers]
-            median_depth = float(np.median(depth_values))
-
         intrinsics = np.asarray(camera_intrinsics, dtype=np.float64)
         pose = np.asarray(camera_pose_world, dtype=np.float64)
         if intrinsics.shape != (3, 3) or pose.shape != (4, 4):
@@ -749,12 +771,91 @@ class SAM2Segmenter:
         cx, cy = float(intrinsics[0, 2]), float(intrinsics[1, 2])
         if fx <= 0.0 or fy <= 0.0:
             return None
+        mask = np.asarray(foreground, dtype=bool)
+        if mask.shape != depth_image.shape:
+            mask = cv2.resize(
+                mask.astype(np.uint8),
+                (depth_image.shape[1], depth_image.shape[0]),
+                interpolation=cv2.INTER_NEAREST,
+            )
+
+        # 相机和雷达共享同一个内部支持区域；边缘像素不能先污染深度统计。
+        mask = cv2.erode(
+            mask.astype(np.uint8),
+            np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=np.uint8),
+            borderType=cv2.BORDER_CONSTANT, borderValue=0,
+        ).astype(bool)
+        mask &= np.isfinite(depth_image)
+        mask &= depth_image >= float(self.config.instance_depth_min)
+        mask &= depth_image <= float(self.config.instance_depth_max)
+        mask = reliable_surface_mask(depth_image, mask, intrinsics,
+                                     self.config.instance_max_incidence_degrees)
+        min_points = int(self.config.instance_depth_min_points)
+        depth_values = depth_image[mask].astype(np.float64)
+        if depth_values.size < min_points:
+            return None
+
+        # MAD 对两个分离的面可能给出不存在的中间深度。先在完整支持上
+        # 找明显的深度间隙；两个簇都有足够证据时，无法确认哪个是物体，
+        # 拒绝本次定位，而不是按远近或像素多数任意选择前景/背景。
+        ordered = np.sort(depth_values)
+        gaps = np.flatnonzero(np.diff(ordered) > 0.5 + 0.02 * ordered[:-1]) + 1
+        clusters = np.split(ordered, gaps)
+        supported_clusters = [values for values in clusters if values.size >= min_points]
+        if len(supported_clusters) != 1:
+            return None
+        cluster = supported_clusters[0]
+        mask &= (depth_image >= cluster[0]) & (depth_image <= cluster[-1])
+        depth_values = cluster
+        median_depth = float(np.median(depth_values))
+        median_deviation = float(np.median(np.abs(depth_values - median_depth)))
+        depth_gate = max(0.25, 3.0 * 1.4826 * median_deviation)
+        mask &= np.abs(depth_image - median_depth) <= depth_gate
+        if np.count_nonzero(mask) < min_points:
+            return None
+
+        core = central_support(mask, self.config.instance_center_roi_ratio, min_points)
+        core_rows, core_columns = np.nonzero(core)
+        if len(core_rows) < min_points:
+            return None
+        core_depth = depth_image[core_rows, core_columns].astype(float)
+        center_camera = np.column_stack(((core_columns-cx)*core_depth/fx,
+                                        (core_rows-cy)*core_depth/fy, core_depth))
+
+        stride = int(self.config.instance_depth_stride)
+        rows, columns = np.nonzero(mask[::stride, ::stride])
+        rows, columns = rows * stride, columns * stride
+        if rows.size < min_points:
+            # 窄柱/牌子的内部可能落在固定采样格之间，仍可用真实内部像素。
+            rows, columns = np.nonzero(mask)
+        depth_values = depth_image[rows, columns].astype(np.float64)
+        median_depth = float(np.median(depth_values))
 
         point_cloud_camera = np.column_stack((
             (columns.astype(np.float64) - cx) * depth_values / fx,
             (rows.astype(np.float64) - cy) * depth_values / fy,
             depth_values,
         ))
+        if lidar_alignment is not None:
+            lidar_points = lidar_alignment.mask_points(
+                mask, median_depth, depth_gate, mask_is_interior=True,
+            )
+            valid_lidar = ((lidar_points[:, 2] >= self.config.instance_depth_min)
+                           & (lidar_points[:, 2] <= self.config.instance_depth_max))
+            lidar_points = lidar_points[valid_lidar]
+            if len(lidar_points) >= lidar_alignment.min_points:
+                point_cloud_camera = fuse_camera_lidar_points(point_cloud_camera, lidar_points)
+                core_lidar = lidar_alignment.mask_points(core, median_depth, depth_gate, mask_is_interior=True)
+                core_lidar = core_lidar[(core_lidar[:, 2] >= self.config.instance_depth_min)
+                                        & (core_lidar[:, 2] <= self.config.instance_depth_max)]
+                if len(core_lidar) >= lidar_alignment.min_points:
+                    # Use measured LiDAR geometry for the anchor where supported,
+                    # rather than allowing dense camera pixels to dominate it.
+                    center_camera = core_lidar
+                self.lidar_fused_objects = getattr(self, "lidar_fused_objects", 0) + 1
+                self.lidar_fused_points = getattr(self, "lidar_fused_points", 0) + len(lidar_points)
+                # Keep the original camera uncertainty; extra samples alone do
+                # not justify claiming better calibrated absolute accuracy.
         point_cloud_world = (
             point_cloud_camera @ pose[:3, :3].T + pose[:3, 3]
         )
@@ -762,12 +863,12 @@ class SAM2Segmenter:
             return None
 
         # 百分位边界比单点极值更能抑制掩膜边缘残留的少量离群点。
-        position_world = np.median(point_cloud_world, axis=0)
+        position_world = np.median(center_camera @ pose[:3, :3].T + pose[:3, 3], axis=0)
         bbox_3d_min = np.percentile(point_cloud_world, 2.5, axis=0)
         bbox_3d_max = np.percentile(point_cloud_world, 97.5, axis=0)
         # 对像素中心 (u, v) 和光轴深度 d 的噪声做反投影雅可比传播。
-        center_u = float(np.median(columns))
-        center_v = float(np.median(rows))
+        center_u = float(np.median(core_columns))
+        center_v = float(np.median(core_rows))
         pixel_std = float(self.config.instance_mask_pixel_noise_std)
         depth_std = float(self.config.instance_depth_noise_std) * (
             1.0
@@ -811,6 +912,7 @@ class SAM2Segmenter:
             bbox_3d_min=bbox_3d_min,
             bbox_3d_max=bbox_3d_max,
             measurement_covariance=measurement_covariance,
+            surface_points_world=point_cloud_world,
         )
 
     def save_semantic_map(self) -> Path | None:

@@ -355,7 +355,7 @@ class PointCloudLoopClosure:
             return None
         return registration.transformation, fitness, rmse
 
-    def _optimize_pose_graph(self) -> None:
+    def _optimize_pose_graph(self, check_cancelled=None) -> None:
         poses = np.asarray(
             [_pose_vector(frame.corrected_camera_pose)
              for frame in self.keyframes],
@@ -365,6 +365,8 @@ class PointCloudLoopClosure:
             return
 
         for _ in range(int(self.config.pose_graph_iterations)):
+            if check_cancelled is not None:
+                check_cancelled()
             linearized, gradient, diagonal = self._linearize(poses)
             step = _pcg_solve(
                 linearized,

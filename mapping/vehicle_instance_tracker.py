@@ -1,8 +1,10 @@
 """静止车辆的 NED 位置滤波、外观辅助关联；不按距离合并独立车辆。"""
 
 from dataclasses import dataclass, field
+from itertools import combinations
 
 import numpy as np
+from .instance_surface import InstanceSurface
 
 
 VEHICLE_CLASSES = ("car", "truck", "bus", "van")
@@ -23,6 +25,17 @@ class VehicleTrack:
     appearance_gallery: list[np.ndarray] = field(default_factory=list)
     color_votes: dict[str, float] = field(default_factory=dict)
     color_observations: int = 0
+    surface: InstanceSurface = field(default_factory=InstanceSurface)
+    # Unpublished partial surfaces: parent hypotheses are not identity evidence.
+    possible_parents: set[int] = field(default_factory=set)
+    bridge_counts: dict[int, int] = field(default_factory=dict)
+    separate_counts: dict[int, int] = field(default_factory=dict)
+
+    @property
+    def map_position(self):
+        if self.surface.bounds() is not None:
+            return (self.bbox_3d_min+self.bbox_3d_max)*.5
+        return self.state
 
     @property
     def color_semantics(self):
@@ -35,6 +48,8 @@ class VehicleTrack:
 
 class VehicleInstanceTracker:
     """一辆车一个全程不复用的ID；不确定的观测不更新历史身份。"""
+
+    _merge_window_seconds = 2.0
 
     def __init__(self, mahalanobis_gate=7.815, max_distance=2.5,
                  appearance_gate=0.55, ambiguity_margin=0.12,
@@ -60,8 +75,14 @@ class VehicleInstanceTracker:
             raise ValueError("viewpoint_noise_std must be finite and non-negative")
         self.tracks: dict[int, VehicleTrack] = {}
         self._pending: list[VehicleTrack] = []
+        self.redirects = {}
+        self._distinct_pairs = set()
+        self._merge_evidence = {}
+        self.merge_diagnostics = {}
         self._next_id = 1
         self._last_timestamp = None
+        self._last_vehicle_timestamp = None
+        self._confirmation_window = 2.0
         self._identity = np.eye(3)
         self._viewpoint_covariance = self._identity * viewpoint_noise_std**2
         self._process_variance_rate = process_noise_std**2
@@ -72,10 +93,27 @@ class VehicleInstanceTracker:
         if self._last_timestamp is not None and timestamp <= self._last_timestamp:
             return ids
         self._last_timestamp = timestamp
-        # 待确认目标只保留近期连续证据；正式地图在本次运行中长期保留。
-        self._pending = [track for track in self._pending if timestamp - track.last_seen <= 2.0]
-        indices = [i for i, obs in enumerate(observations) if obs is not None]
+        indices = [i for i, obs in enumerate(observations)
+                   if obs is not None and self._usable_vehicle_surface(obs)]
+        # Adapt to slow positive observations, not to missed/invalid detections.
+        if indices:
+            interval = (0.0 if self._last_vehicle_timestamp is None
+                        else timestamp-self._last_vehicle_timestamp)
+            self._last_vehicle_timestamp = timestamp
+            self._confirmation_window = max(2.0, min(15.0, 3.0*interval))
+        confirmation_window = self._confirmation_window
+        self._merge_window_seconds = confirmation_window
+        self._expire_merge_evidence(timestamp)
+        self._pending = [track for track in self._pending
+                         if timestamp-track.last_seen <= confirmation_window]
+        for track in self._pending:
+            track.possible_parents = {self.canonical_id(i) for i in track.possible_parents}
         if not indices:
+            # A missed detection adds no evidence; recent positive evidence may
+            # survive briefly instead of demanding consecutive video frames.
+            for track in self._pending:
+                track.bridge_counts.clear()
+                track.separate_counts.clear()
             return ids
         tracks = list(self.tracks.values()) + self._pending
         predictions = [self._predict(track, timestamp) for track in tracks]
@@ -86,44 +124,71 @@ class VehicleInstanceTracker:
         costs = np.full((len(indices), len(tracks)), np.inf)
         geometric_costs = np.full_like(costs, np.inf)
         close_geometry = np.zeros(costs.shape, dtype=bool)
+        shared_views = np.zeros(costs.shape, dtype=bool)
         for row, index in enumerate(indices):
             obs = observations[index]
             for col, (track, prediction) in enumerate(zip(tracks, predictions)):
                 state, covariance = prediction
                 delta = obs.position_world - state
                 distance = float(np.linalg.norm(delta))
-                if distance > self.max_distance:
-                    continue
+                extent_distance = float(np.linalg.norm(
+                    (obs.bbox_3d_min+obs.bbox_3d_max)*.5-track.map_position))
                 innovation_covariance = covariance + measurement_covariances[index]
                 mahalanobis = float(delta @ np.linalg.pinv(
                     innovation_covariance, hermitian=True
                 ) @ delta)
-                if mahalanobis > self.mahalanobis_gate:
+                low = np.maximum(track.bbox_3d_min, obs.bbox_3d_min)
+                high = np.minimum(track.bbox_3d_max, obs.bbox_3d_max)
+                footprint_iou, containment = self._shared_footprint(track, obs)
+                containment = max(containment, self._partial_view_support(track, obs))
+                surface_match = track.surface.supports(obs.surface_points_world)
+                if (distance > self.max_distance and extent_distance > self.max_distance
+                        and containment < 0.75 and not surface_match):
+                    continue
+                appearance_distance = 0.0
+                has_appearance = track.appearance is not None and obs.appearance is not None
+                if has_appearance:
+                    appearance_distance = min(self._appearance_distance(sample, obs.appearance)
+                                              for sample in track.appearance_gallery or [track.appearance])
+                viewpoint_match = surface_match or (has_appearance
+                                   and appearance_distance <= self.appearance_gate*0.5
+                                   and (footprint_iou >= 0.3 or containment >= 0.75))
+                ordinary_match = (distance <= self.max_distance
+                                  and mahalanobis <= self.mahalanobis_gate)
+                # The centroid of a bumper is not the centroid of the car.
+                # A contained partial surface is a plausible existing identity,
+                # even when appearance is missing/conflicting: defer it instead
+                # of minting another ID. Assignment needs appearance or measured
+                # overlap with a repeatedly observed surface in the same frame.
+                if not ordinary_match and not viewpoint_match and containment < 0.75:
                     continue
                 geometric_costs[row, col] = (
-                    0.5 * mahalanobis / self.mahalanobis_gate
-                    + 0.2 * distance / self.max_distance
+                    0.5 * min(mahalanobis / self.mahalanobis_gate, 1.)
+                    + 0.2 * min((extent_distance if viewpoint_match else distance) / self.max_distance, 1.)
                 )
+                if containment >= 0.75:
+                    # Compare measured extent support, not two different visible
+                    # surface anchors. Competing contained views remain ambiguous.
+                    geometric_costs[row, col] = min(geometric_costs[row, col],
+                                                   0.2 * (1. - containment))
+                shared_views[row, col] = viewpoint_match
                 # 外观突变仅在位置接近且可见包围盒明显重叠时允许恢复。
-                overlap = np.maximum(0.0, np.minimum(track.bbox_3d_max, obs.bbox_3d_max)
-                                     - np.maximum(track.bbox_3d_min, obs.bbox_3d_min))
+                overlap = np.maximum(0.0, high-low)
                 smaller_volume = min(
                     float(np.prod(track.bbox_3d_max - track.bbox_3d_min)),
                     float(np.prod(obs.bbox_3d_max - obs.bbox_3d_min)),
                 )
                 close_geometry[row, col] = (
-                    distance <= 0.75 and smaller_volume > 1e-9
+                    ordinary_match and distance <= 0.75 and smaller_volume > 1e-9
                     and float(np.prod(overlap)) / smaller_volume >= 0.5
                 )
-                appearance_distance = 0.0
-                if track.appearance is not None and obs.appearance is not None:
-                    appearance_distance = min(self._appearance_distance(sample, obs.appearance)
-                                              for sample in track.appearance_gallery or [track.appearance])
-                    if appearance_distance > self.appearance_gate:
-                        continue
+                if not ordinary_match and not viewpoint_match:
+                    continue
+                if has_appearance and appearance_distance > self.appearance_gate and not surface_match:
+                    continue
                 costs[row, col] = (
                     geometric_costs[row, col]
-                    + 0.3 * appearance_distance / self.appearance_gate
+                    + (0. if surface_match else 0.3 * appearance_distance / self.appearance_gate)
                 )
 
         # 唯一的近距离几何对应可跨越颜色变化；邻车或重复框竞争时禁用。
@@ -133,18 +198,49 @@ class VehicleInstanceTracker:
                     and np.count_nonzero(geometric_candidates[:, col]) == 1):
                 costs[row, col] = geometric_costs[row, col] + 0.3
 
+        # A fuller connecting view may explain a published car and its deferred
+        # fragment. Keep assigning the published identity; require repeated
+        # connecting views before importing any fragment geometry.
+        bridges = {}
+        for row in range(len(indices)):
+            parents = [col for col, track in enumerate(tracks)
+                       if track.instance_id and np.isfinite(costs[row, col])]
+            if len(parents) != 1:
+                continue
+            parent_col = parents[0]
+            parent = tracks[parent_col]
+            for col, track in enumerate(tracks):
+                if (not track.instance_id and parent.instance_id in track.possible_parents
+                        and shared_views[row, col] and shared_views[row, parent_col]
+                        and np.isfinite(costs[row, col])):
+                    costs[row, col] = np.inf
+                    bridges.setdefault(row, []).append(track)
         assignments = self._unambiguous_assignments(costs)
+        connected = {id(fragment) for row in assignments for fragment in bridges.get(row, [])}
+        for track in self._pending:
+            if id(track) not in connected:
+                track.bridge_counts.clear()
+        assigned_tracks = {}
         for row, index in enumerate(indices):
             obs = observations[index]
             col = assignments.get(row)
             if col is not None:
                 track = tracks[col]
+                assigned_tracks[index] = track
                 state, covariance = predictions[col]
                 measurement_covariance = measurement_covariances[index]
                 gain = covariance @ np.linalg.pinv(
                     covariance + measurement_covariance,
                     hermitian=True,
                 )
+                # A small face must not pull the anchor of a fuller model.
+                # Fuller observations may still improve the initial partial anchor.
+                old_area = np.prod(track.bbox_3d_max[:2]-track.bbox_3d_min[:2])
+                new_area = np.prod(obs.bbox_3d_max[:2]-obs.bbox_3d_min[:2])
+                if (shared_views[row, col] and new_area < .5*old_area
+                        and np.linalg.norm(obs.position_world-state) > 1.5*InstanceSurface.resolution):
+                    gain = np.zeros_like(gain)
+                    covariance = track.covariance
                 track.state = state + gain @ (obs.position_world - state)
                 residual = self._identity - gain
                 track.covariance = (
@@ -152,10 +248,21 @@ class VehicleInstanceTracker:
                     + gain @ measurement_covariance @ gain.T
                 )
                 track.covariance = (track.covariance + track.covariance.T) * 0.5
-                # 将本帧可见包围盒对齐融合位置，避免累积视角误差造成膨胀。
-                offset = track.state - obs.position_world
-                track.bbox_3d_min = obs.bbox_3d_min + offset
-                track.bbox_3d_max = obs.bbox_3d_max + offset
+                if shared_views[row, col]:
+                    # Keep the fuller measured extent until repeated point-cloud
+                    # evidence updates the union. Never translate a new bumper
+                    # box to the filtered center of an older side view.
+                    if new_area > old_area:
+                        track.bbox_3d_min = obs.bbox_3d_min.copy()
+                        track.bbox_3d_max = obs.bbox_3d_max.copy()
+                else:
+                    offset = track.state - obs.position_world
+                    track.bbox_3d_min = obs.bbox_3d_min + offset
+                    track.bbox_3d_max = obs.bbox_3d_max + offset
+                track.surface.update(obs.surface_points_world)
+                bounds = track.surface.bounds()
+                if bounds is not None:
+                    track.bbox_3d_min, track.bbox_3d_max = bounds
                 self._remember_visuals(track, obs)
                 track.confidence = (
                     track.confidence * track.observation_count + confidences[index]
@@ -163,6 +270,16 @@ class VehicleInstanceTracker:
                 track.observation_count += 1
                 track.last_seen = timestamp
                 ids[index] = self._confirm(track)
+                for fragment in bridges.get(row, []):
+                    parent_id = track.instance_id
+                    fragment.last_seen = timestamp
+                    fragment.bridge_counts[parent_id] = fragment.bridge_counts.get(parent_id, 0)+1
+                    if fragment.bridge_counts[parent_id] >= self.confirmation_observations:
+                        track.surface.merge(fragment.surface)
+                        bounds = track.surface.bounds()
+                        if bounds is not None:
+                            track.bbox_3d_min, track.bbox_3d_max = bounds
+                        self._pending = [item for item in self._pending if item is not fragment]
             elif not np.any(geometric_candidates[row]):
                 track = VehicleTrack(
                     instance_id=0,
@@ -176,15 +293,258 @@ class VehicleInstanceTracker:
                     observation_count=1,
                     last_seen=timestamp,
                 )
+                track.surface.update(obs.surface_points_world)
                 self._remember_visuals(track, obs)
+                track.possible_parents = self._partial_parent_candidates(obs)
                 self._pending.append(track)
+                assigned_tracks[index] = track
                 ids[index] = self._confirm(track)
             # 有候选但分配不唯一时保持 None，不造新ID也不污染已有轨迹。
-        return ids
+        # Repeated separate, one-to-one detections provide independence evidence.
+        # Merely revisiting an isolated face must never release its hypothesis.
+        observed_ids = {track.instance_id for track in assigned_tracks.values() if track.instance_id}
+        for index, track in assigned_tracks.items():
+            if track.instance_id or not track.possible_parents:
+                continue
+            for parent in list(track.possible_parents):
+                track.separate_counts[parent] = (track.separate_counts.get(parent, 0)+1
+                                                  if parent in observed_ids else 0)
+                if track.separate_counts[parent] >= self.confirmation_observations:
+                    track.possible_parents.remove(parent)
+            ids[index] = self._confirm(track)
+        self._distinct_pairs.update(combinations(sorted(set(i for i in ids if i is not None)), 2))
+        # Ambiguous observations do not update tracks, but can confirm that two
+        # previously split IDs repeatedly explain the same measured surface.
+        observed_pairs = set()
+        for row in range(len(indices)):
+            candidates = sorted(track.instance_id for col, track in enumerate(tracks)
+                                if track.instance_id and shared_views[row, col])
+            observed_pairs.update(combinations(candidates, 2))
+        self._merge_duplicates(timestamp, observed_pairs)
+        return [None if identity is None else self.canonical_id(identity) for identity in ids]
+
+    def canonical_id(self, identity):
+        while identity in self.redirects:
+            identity = self.redirects[identity]
+        return identity
+
+    def _partial_parent_candidates(self, observation):
+        """Defer nearby similarly colored thin faces; never merge by this test.
+
+        Separation along the thin axis can represent the other end of a vehicle.
+        Require lateral and vertical overlap so ordinary side-by-side cars are
+        not all held just because they have the same paint.
+        """
+        result = set()
+        size = observation.bbox_3d_max-observation.bbox_3d_min
+        axis = int(np.argmin(size[:2]))
+        lateral = 1-axis
+        if size[axis] > .35*max(size[lateral], InstanceSurface.resolution):
+            return result
+        for identity, track in self.tracks.items():
+            if track.appearance is None or observation.appearance is None:
+                continue
+            if min(self._appearance_distance(a, observation.appearance)
+                   for a in track.appearance_gallery or [track.appearance]) > self.appearance_gate*.5:
+                continue
+            low = np.maximum(track.bbox_3d_min, observation.bbox_3d_min)
+            high = np.minimum(track.bbox_3d_max, observation.bbox_3d_max)
+            if high[lateral] <= low[lateral] or high[2] <= low[2]:
+                continue
+            gap = max(0., low[axis]-high[axis])
+            if gap <= 2*self.max_distance:
+                result.add(identity)
+        return result
+
+    @staticmethod
+    def _usable_vehicle_surface(observation):
+        # A broad planar side/bumper is valid even with almost zero thickness.
+        # A tiny edge/floor strip must neither mint an ID nor move an existing car.
+        size = np.asarray(observation.bbox_3d_max)-observation.bbox_3d_min
+        return bool(np.isfinite(size).all() and (size >= 0).all()
+                    and size[2] >= 2*InstanceSurface.resolution
+                    and max(size[:2]) >= 4*InstanceSurface.resolution)
+
+    @staticmethod
+    def _partial_view_support(first, second):
+        """Contain a partial face in an already measured fuller extent.
+
+        Allow one surface matching tolerance at its border, not a car-sized
+        expansion. Require actual XY intersection and vertical overlap; two
+        separated parked cars cannot qualify by color or proximity alone.
+        """
+        items = (first, second)
+        sizes = [np.maximum(item.bbox_3d_max[:2]-item.bbox_3d_min[:2],
+                            InstanceSurface.resolution) for item in items]
+        areas = [float(np.prod(size)) for size in sizes]
+        small, large = (0, 1) if areas[0] <= areas[1] else (1, 0)
+        if areas[large] < 2*areas[small]:
+            return 0.
+        a, b = items[small], items[large]
+        low, high = np.maximum(a.bbox_3d_min, b.bbox_3d_min), np.minimum(a.bbox_3d_max, b.bbox_3d_max)
+        min_height = min(a.bbox_3d_max[2]-a.bbox_3d_min[2], b.bbox_3d_max[2]-b.bbox_3d_min[2])
+        if np.any(high[:2] < low[:2]) or high[2]-low[2] < .5*min_height or min_height <= 0:
+            return 0.
+        tolerance = 1.5*InstanceSurface.resolution
+        center = (a.bbox_3d_min[:2]+a.bbox_3d_max[:2])*.5
+        if np.any(center < b.bbox_3d_min[:2]) or np.any(center > b.bbox_3d_max[:2]):
+            return 0.
+        small_low, small_high = center-sizes[small]*.5, center+sizes[small]*.5
+        overlap = np.maximum(0., np.minimum(small_high, b.bbox_3d_max[:2]+tolerance)
+                             - np.maximum(small_low, b.bbox_3d_min[:2]-tolerance))
+        fraction = float(np.prod(overlap)/areas[small])
+        return fraction if fraction >= .85 else 0.
+
+    @staticmethod
+    def _shared_footprint(first, second):
+        """IoU and partial/full containment of *measured* vehicle extents.
+
+        One surface voxel is the minimum footprint thickness for planar scans;
+        boxes are not expanded by pose covariance or vehicle association radius.
+        Containment is reserved for different-sized views, not adjacent full cars.
+        """
+        low = np.maximum(first.bbox_3d_min, second.bbox_3d_min)
+        high = np.minimum(first.bbox_3d_max, second.bbox_3d_max)
+        z_size = min(first.bbox_3d_max[2]-first.bbox_3d_min[2],
+                     second.bbox_3d_max[2]-second.bbox_3d_min[2])
+        if high[2]-low[2] <= 0 or high[2]-low[2] < 0.5*z_size:
+            return 0., 0.
+        sizes, centers = [], []
+        for item in (first, second):
+            sizes.append(np.maximum(item.bbox_3d_max[:2]-item.bbox_3d_min[:2],
+                                    InstanceSurface.resolution))
+            centers.append((item.bbox_3d_min[:2]+item.bbox_3d_max[:2])*0.5)
+        overlap = np.maximum(0., np.minimum(centers[0]+sizes[0]*0.5, centers[1]+sizes[1]*0.5)
+                             - np.maximum(centers[0]-sizes[0]*0.5, centers[1]-sizes[1]*0.5))
+        intersection = float(np.prod(overlap))
+        areas = [float(np.prod(size)) for size in sizes]
+        iou = intersection / (sum(areas)-intersection)
+        smaller, larger = min(areas), max(areas)
+        containment = intersection/smaller if larger >= 2.*smaller else 0.
+        return iou, containment
+
+    def _merge_duplicates(self, timestamp, observed_pairs=()):
+        self._expire_merge_evidence(timestamp)
+        evidence = dict(self._merge_evidence)
+        candidates = []
+        for first, second in combinations(sorted(self.tracks), 2):
+            a, b = self.tracks[first], self.tracks[second]
+            pair = (first, second)
+            if max(a.last_seen, b.last_seen) != timestamp and pair not in observed_pairs:
+                continue
+            if pair in self._distinct_pairs:
+                evidence.pop(pair, None)
+                self._record_merge_decision(pair, timestamp, 'coobserved_distinct')
+                continue
+            iou, containment = self._shared_footprint(a, b)
+            partial_support = self._partial_view_support(a, b)
+            containment = max(containment, partial_support)
+            # Compare the same measured-surface anchors exported to map/HTML.
+            # Filtered observation centroids can sit at opposite ends of a car.
+            distance = float(np.linalg.norm(a.map_position-b.map_position))
+            # Far, disjoint objects are not plausible duplicates. This broad
+            # phase is only a query bound, never evidence for merging.
+            if distance > self.max_distance and iou == 0. and containment == 0.:
+                evidence.pop(pair, None)
+                continue
+            common_surface = (a.surface.supports(b.surface.supported_points())
+                              or b.surface.supports(a.surface.supported_points()))
+            difference = (min(self._appearance_distance(x, y)
+                              for x in a.appearance_gallery for y in b.appearance_gallery)
+                          if a.appearance_gallery and b.appearance_gallery else None)
+            common_appearance = difference is not None and difference <= self.appearance_gate*.5
+            shared_patch = (common_appearance and iou > 0.
+                            and distance <= self.max_distance and a.surface.shares_patch(b.surface))
+            geometry_match = containment >= .75 or (iou >= .5 and distance <= self.max_distance)
+            # A bumper/side view can have a poor box IoU with a whole-car view.
+            # Override that gate only when stable world surfaces AND a fresh
+            # shared observation support the same two identities. No ICP fit.
+            surface_override = (common_surface and pair in observed_pairs) or shared_patch
+            metrics = dict(footprint_iou=iou, containment=containment,
+                           partial_view_support=partial_support,
+                           center_distance_m=distance, common_surface=bool(common_surface),
+                           filtered_center_distance_m=float(np.linalg.norm(a.state-b.state)),
+                           shared_current_view=pair in observed_pairs, appearance_distance=difference)
+            metrics['shared_surface_patch'] = bool(shared_patch)
+            if not geometry_match and not surface_override:
+                evidence.pop(pair, None)
+                self._record_merge_decision(pair, timestamp, 'geometry_without_shared_surface', **metrics)
+                continue
+            if not common_surface and not common_appearance:
+                evidence.pop(pair, None)
+                self._record_merge_decision(pair, timestamp, 'appearance_and_surface_unconfirmed', **metrics)
+                continue
+            stamps = evidence.get(pair, ())
+            if not stamps or timestamp > stamps[-1]:
+                stamps = (*stamps, timestamp)[-self.confirmation_observations:]
+            evidence[pair] = stamps
+            self._record_merge_decision(pair, timestamp, 'confirming',
+                                       supporting_frames=len(stamps),
+                                       evidence_span_seconds=float(stamps[-1]-stamps[0]), **metrics)
+            candidates.append(pair)
+        # A track must have exactly one plausible duplicate. Do not collapse a
+        # row of similar parked cars via transitive proximity.
+        counts = {i: sum(i in pair for pair in candidates) for i in self.tracks}
+        for first, second in candidates:
+            if counts[first] != 1 or counts[second] != 1:
+                evidence.pop((first, second), None)
+                self._record_merge_decision((first, second), timestamp, 'multiple_partners')
+                continue
+            if len(evidence[(first,second)]) < self.confirmation_observations:
+                continue
+            self._record_merge_decision((first, second), timestamp, 'merged')
+            a, b = self.tracks[first], self.tracks.pop(second)
+            total = a.observation_count+b.observation_count
+            a.confidence = (a.confidence*a.observation_count+b.confidence*b.observation_count)/total
+            # Keep the fuller extent for a partial/full pair, even if the bumper
+            # has been observed more often. Do not average two surface anchors
+            # into an invented box between them.
+            _, containment = self._shared_footprint(a, b)
+            containment = max(containment, self._partial_view_support(a, b))
+            prefer_b_extent = (
+                np.prod(b.bbox_3d_max[:2]-b.bbox_3d_min[:2])
+                > np.prod(a.bbox_3d_max[:2]-a.bbox_3d_min[:2])
+            ) if containment >= .75 else b.observation_count > a.observation_count
+            if b.observation_count > a.observation_count:
+                a.state, a.covariance = b.state.copy(), b.covariance.copy()
+            if prefer_b_extent:
+                a.bbox_3d_min, a.bbox_3d_max = b.bbox_3d_min.copy(), b.bbox_3d_max.copy()
+            a.surface.merge(b.surface)
+            bounds = a.surface.bounds()
+            if bounds is not None:
+                a.bbox_3d_min, a.bbox_3d_max = bounds
+            a.observation_count = total
+            a.last_seen = max(a.last_seen,b.last_seen)
+            a.appearance_gallery = (a.appearance_gallery+b.appearance_gallery)[-8:]
+            for color, value in b.color_votes.items():
+                a.color_votes[color] = a.color_votes.get(color,0.)+value
+            a.color_observations += b.color_observations
+            self.redirects[second] = first
+            self._distinct_pairs = {tuple(sorted((self.canonical_id(x), self.canonical_id(y))))
+                                    for x,y in self._distinct_pairs if self.canonical_id(x) != self.canonical_id(y)}
+        self._merge_evidence = {pair: stamps for pair, stamps in evidence.items()
+                                if all(identity in self.tracks for identity in pair)}
+
+    def _expire_merge_evidence(self, timestamp):
+        for pair, stamps in list(self._merge_evidence.items()):
+            recent = tuple(stamp for stamp in stamps if 0 <= timestamp-stamp <= self._merge_window_seconds)
+            if recent and all(identity in self.tracks for identity in pair) and pair not in self._distinct_pairs:
+                self._merge_evidence[pair] = recent
+            else:
+                self._merge_evidence.pop(pair)
+                self._record_merge_decision(pair, timestamp, 'confirmation_expired')
+
+    def _record_merge_decision(self, pair, timestamp, reason, **metrics):
+        # Aggregate per pair/reason, not an unbounded per-frame point-cloud log.
+        key = '|'.join(f'vehicle_{identity:02d}' for identity in pair)
+        entry = self.merge_diagnostics.setdefault(key, {})
+        previous = entry.get(reason, {})
+        entry[reason] = dict(count=previous.get('count', 0)+1,
+                             last_timestamp=float(timestamp), **metrics)
 
     def _confirm(self, track):
         if track.instance_id == 0:
-            if track.observation_count < self.confirmation_observations:
+            if track.possible_parents or track.observation_count < self.confirmation_observations:
                 return None
             track.instance_id = self._next_id
             self._next_id += 1

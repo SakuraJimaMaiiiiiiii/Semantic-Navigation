@@ -3,3 +3,10 @@ detections/Yolomode/sam2.1_t.pt
 detections/Yolomode/yolo26x.pt
 detections/weights/clip/ViT-B-32.pt
 detections/Yolomode/mobileclip_blt.ts
+# Optional native VINS build artifacts
+.tools/vcpkg/
+localization/native_vins/build*/
+localization/native_vins/vcpkg_installed/
+localization/_native_vins*.pyd
+localization/_native_vins*.so
+localization/*.dll

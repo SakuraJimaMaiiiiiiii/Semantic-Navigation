@@ -8,6 +8,7 @@ import heapq
 import math
 from collections import deque
 import numpy as np
+from planner.vertical_projection import height_band_indices
 
 
 class NavigationGrid:
@@ -34,10 +35,9 @@ class NavigationGrid:
         }
 
     @classmethod
-    def from_global(cls, snapshot, altitude, config):
+    def from_global(cls, snapshot, altitude, config, local_snapshot=None, current=None):
         r = float(snapshot.resolution)
-        zmin = math.floor((altitude - config.vertical_half_extent) / r)
-        zmax = math.floor((altitude + config.vertical_half_extent) / r)
+        zmin, zmax = height_band_indices(altitude, config.vertical_half_extent, r)
         mask = (snapshot.indices[:, 2] >= zmin) & (snapshot.indices[:, 2] <= zmax)
         counts, occupied = {}, set()
         for index, odds in zip(snapshot.indices[mask], snapshot.log_odds[mask]):
@@ -47,16 +47,53 @@ class NavigationGrid:
             elif odds <= snapshot.free_threshold:
                 counts[cell] = counts.get(cell, 0) + 1
         free = {cell for cell, count in counts.items() if count == zmax - zmin + 1}
+        if local_snapshot is not None and current is not None:
+            # Temporary evidence fusion near the vehicle only. A coarse world
+            # cell is certified only when its ENTIRE volume is locally free;
+            # center sampling would miss walls with different grid resolutions.
+            local = local_snapshot
+            if abs(local.timestamp - snapshot.timestamp) <= config.map_timeout:
+                # Fresh local hits must veto stale global free space before
+                # clearance erosion. Project occupied voxel volumes, not just
+                # centers (the two maps can have different resolutions/origins).
+                lr = float(local.resolution)
+                lzmin, lzmax = height_band_indices(
+                    altitude, config.vertical_half_extent, lr, local.origin_ned[2]
+                )
+                lzmin, lzmax = max(0, lzmin), min(local.states.shape[2]-1, lzmax)
+                if lzmin <= lzmax:
+                    hits = np.argwhere(np.any(local.states[:, :, lzmin:lzmax+1] == 1, axis=2))
+                    for hit in hits:
+                        low = local.origin_ned[:2] + hit*lr
+                        first = np.floor(low/r + 1e-8).astype(int)
+                        last = np.ceil((low+lr)/r - 1e-8).astype(int)-1
+                        occupied.update((x,y) for x in range(first[0],last[0]+1)
+                                        for y in range(first[1],last[1]+1))
+                    free.difference_update(occupied)
+                center = np.floor(np.asarray(current)[:2] / r).astype(int)
+                extent = math.ceil((2.4 + config.clearance_radius) / r)
+                lr = float(local.resolution)
+                zlo = math.floor((zmin*r-local.origin_ned[2])/lr + 1e-8)
+                zhi = math.ceil(((zmax+1)*r-local.origin_ned[2])/lr - 1e-8)
+                if 0 <= zlo < zhi <= local.states.shape[2]:
+                    for x in range(center[0]-extent, center[0]+extent+1):
+                        for y in range(center[1]-extent, center[1]+extent+1):
+                            cell = (x, y)
+                            if cell in occupied or cell in free:
+                                continue
+                            low = np.floor((np.array(cell)*r-local.origin_ned[:2])/lr + 1e-8).astype(int)
+                            high = np.ceil(((np.array(cell)+1)*r-local.origin_ned[:2])/lr - 1e-8).astype(int)
+                            if np.any(low < 0) or np.any(high > local.states.shape[:2]):
+                                continue
+                            if np.all(local.states[low[0]:high[0], low[1]:high[1], zlo:zhi] == 0):
+                                free.add(cell)
         return cls(free, occupied, r, (0, 0), altitude, config)
 
     @classmethod
     def from_local(cls, snapshot, altitude, config, global_snapshot=None):
         r = float(snapshot.resolution)
-        zmin = math.floor(
-            (altitude - config.vertical_half_extent - snapshot.origin_ned[2]) / r
-        )
-        zmax = math.floor(
-            (altitude + config.vertical_half_extent - snapshot.origin_ned[2]) / r
+        zmin, zmax = height_band_indices(
+            altitude, config.vertical_half_extent, r, snapshot.origin_ned[2]
         )
         if zmin < 0 or zmax >= snapshot.states.shape[2]:
             return cls(set(), set(), r, snapshot.origin_ned, altitude, config)

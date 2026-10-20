@@ -136,7 +136,7 @@ class ExplorationSession:
             vehicle=runtime.vehicle,
             perception=self.perception,
             local_map=runtime.occupancy_grid,
-            global_map=runtime.global_sparse_map,
+            global_map=getattr(runtime, "navigation_map", runtime.global_sparse_map),
             local_planner=runtime.local_planner,
             request=request,
             config=runtime.semantic_navigation_config,
@@ -146,6 +146,13 @@ class ExplorationSession:
 
     def annotate(self, selected=None, approach=None, route=None, state="exploring"):
         self.selected, self.approach, self.route = selected, approach, route
+        live_map = getattr(self.runtime, 'live_loop_mapping', None)
+        if live_map is not None:
+            live_map.update_display(state=state, vehicle=self.runtime.vehicle.get_position(),
+                                    route=route, approach=approach,
+                                    waypoints=getattr(self, "exploration_waypoints", []),
+                                    timestamp=self.runtime.global_sparse_map.snapshot().timestamp)
+            return
         render_map(
             self.map_path,
             self.runtime.global_sparse_map.snapshot(),
@@ -155,33 +162,62 @@ class ExplorationSession:
             route=route,
             vehicle=self.runtime.vehicle.get_position(),
             state=state,
+            navigation_config=self.runtime.semantic_navigation_config,
+            exploration_waypoints=getattr(self, "exploration_waypoints", []),
         )
 
     def checkpoint(self, explorer):
         self.memory.checkpoint(self.directory)
-        route = None
-        if explorer.frontiers.visit_order:
-            route = [self.runtime.vehicle.get_position()]
-            grid = explorer._grid()
-            for key in explorer.frontiers.visit_order:
-                segment = grid.path(route[-1], explorer.frontiers.candidates[key].point)
-                if segment is None:
-                    break
-                route.extend(segment[1:])
-        self.annotate(route=route, state="exploring: frontier regions / fixed-height EGO")
+        self.exploration_waypoints = list(getattr(explorer, "exploration_waypoints", []))
+        # Geometry is private navigation data, not part of the semantic graph.
+        write_json(self.directory / "private" / "exploration_waypoints.json", self.exploration_waypoints)
+        self.annotate(route=getattr(explorer, "active_route", None),
+                      state=f"{getattr(explorer, 'phase', 'exploring')}: {explorer.motion_backend}")
 
     def _confirm_home(self):
-        self.runtime.vehicle.finish_flight_session()
+        try:
+            self.runtime.vehicle.finish_flight_session()
+        except TimeoutError as error:
+            write_json(self.directory / "private" / "landing_failure.json", {
+                "confirmed": False, "error": str(error),
+                "home_ned": np.asarray(self.home).tolist(),
+                "landing": getattr(self.runtime.vehicle, "landing_confirmation", None),
+            })
+            raise
         self.watch.check()
-        if (
-            np.linalg.norm(self.runtime.vehicle.get_position() - self.home)
-            > self.config.home_tolerance
-        ):
+        current = np.asarray(self.runtime.vehicle.get_position(), dtype=float)
+        delta = current-self.home
+        finite = bool(np.isfinite(current).all())
+        distance = float(np.linalg.norm(delta)) if finite else None
+        detail = {
+            "confirmed": finite and distance <= self.config.home_tolerance,
+            "home_ned": self.home.tolist(),
+            "current_ned": current.tolist() if finite else None,
+            "horizontal_error_m": float(np.linalg.norm(delta[:2])) if finite else None,
+            "vertical_error_m": abs(float(delta[2])) if finite else None,
+            "distance_3d_m": distance, "tolerance_m": self.config.home_tolerance,
+            "landing": getattr(self.runtime.vehicle, "landing_confirmation", None),
+        }
+        self.memory.exploration["home_confirmation"] = detail
+        write_json(self.directory / "private" / "home_confirmation.json", detail)
+        if not detail["confirmed"]:
             raise RuntimeError(
-                "Return-to-home position not confirmed; saved-map navigation is disabled"
+                "Return-to-home position not confirmed; saved-map navigation is disabled; "
+                f"home={detail['home_ned']}, current={detail['current_ned']}, "
+                f"horizontal_error={detail['horizontal_error_m']} m, "
+                f"vertical_error={detail['vertical_error_m']} m, "
+                f"tolerance_3d={self.config.home_tolerance} m"
             )
 
     def explore(self):
+        lidar = getattr(self.runtime, 'lidar_worker', None)
+        detector = getattr(lidar, 'loop_detector', None)
+        if detector is not None and getattr(self.runtime, 'live_loop_mapping', None) is None:
+            from mapping.live_loop_mapping import LiveLoopMapping
+            self.runtime.live_loop_mapping = LiveLoopMapping(
+                detector, self.runtime.run_output_dir, self.home, self.home_yaw,
+                navigation_map=getattr(self.runtime, "navigation_map", None))
+            self.runtime.live_loop_mapping.start()
         explorer = FrontierExplorer(
             **self._arguments(None, self.directory / "exploration_report.json"),
             exploration_config=self.config,
@@ -192,6 +228,7 @@ class ExplorationSession:
         try:
             self.runtime.run_mission()
             self._confirm_home()
+            self.runtime.finish_exploration_recording()
             frame = self.perception.semantic_snapshot()
             if frame is not None:
                 self.memory.observe(frame, "place_0000")
@@ -201,13 +238,18 @@ class ExplorationSession:
                 self.directory / "exploration_report.json", self.memory.exploration
             )
             self.memory.save_bundle(
-                self.directory, self.runtime.global_sparse_map.snapshot()
+                self.directory, self.runtime.global_sparse_map.snapshot(), explorer.config
             )
             self.annotate(state="READY: returned home")
-        except BaseException:
+        except BaseException as error:
             self.memory.exploration["returned_home"] = False
+            self.memory.exploration["failure_phase"] = getattr(explorer, "phase", "exploring")
+            self.memory.exploration["error"] = str(error)
             try:
                 self.memory.checkpoint(self.directory)
+                self.memory.save_bundle(self.directory, self.runtime.global_sparse_map.snapshot(), explorer.config)
+                write_json(self.directory / "exploration_report.json", self.memory.exploration)
+                self.annotate(state=f"未确认返航完成：{getattr(explorer, 'phase', 'exploring')} / {error}")
             except Exception as error:
                 print(f"--- 无法保存异常检查点：{error}；保留原始异常 ----")
             raise

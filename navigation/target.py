@@ -63,6 +63,7 @@ def select_targets(records, request, current_ned, frame_timestamp, *, check_age=
     import numpy as np
 
     by_id = {r["runtime_instance_id"]: r for r in records}
+    by_id.update({old: record for record in records for old in record.get("merged_from", [])})
     anchor = by_id.get(request.near_instance_id) if request.near_instance_id else None
     if request.near_instance_id and (
         anchor is None
@@ -82,7 +83,9 @@ def select_targets(records, request, current_ned, frame_timestamp, *, check_age=
             or record["observation_count"] < request.min_observations
         ):
             continue
-        if request.instance_id and record["runtime_instance_id"] != request.instance_id:
+        if request.instance_id and request.instance_id not in {
+            record["runtime_instance_id"], *record.get("merged_from", [])
+        }:
             continue
         names = {record["class_name"], *record.get("aliases", [])}
         if record["class_name"] in ("car", "truck", "bus", "van"):

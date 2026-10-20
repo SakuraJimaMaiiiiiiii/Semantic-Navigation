@@ -25,7 +25,6 @@ class LocalPlan:
     local_target_ned: np.ndarray | None
     path_ned: np.ndarray
     speed_limit: float
-    obstacle_distance: float
 
     @property
     def can_move(self) -> bool:
@@ -35,7 +34,6 @@ class LocalPlan:
             "avoid",
             "ego_clear",
             "ego_avoid",
-            "sensor_clear_fallback",
             "depth_guard_clear",
         }
 
@@ -62,8 +60,6 @@ class LocalAvoidancePlanner:
         self._consecutive_clear_path = 0
         self._last_avoidance_plan = None
         self._active_global_target = None
-        self.last_map_obstacle_distance = math.inf
-        self.last_forward_clearance = math.inf
 
     def plan(
         self,
@@ -150,8 +146,6 @@ class LocalAvoidancePlanner:
             getattr(snapshot, "forward_clearance", math.inf)
         )
         if self.config.navigation_mode == "depth_guard":
-            self.last_map_obstacle_distance = math.inf
-            self.last_forward_clearance = forward_clearance
             if not math.isfinite(forward_clearance):
                 return self._cache(self._stop_plan(
                     "invalid_front_depth",
@@ -161,7 +155,6 @@ class LocalAvoidancePlanner:
             ):
                 return self._cache(self._stop_plan(
                     "emergency_stop",
-                    forward_clearance,
                 ))
             local_target = self._direct_local_target(current, target)
             return self._accept_moving_plan(LocalPlan(
@@ -171,7 +164,6 @@ class LocalAvoidancePlanner:
                 speed_limit=self._clear_speed_limit(
                     forward_clearance
                 ),
-                obstacle_distance=forward_clearance,
             ))
 
         blocked = self._project_blocked(snapshot, current[2])
@@ -180,8 +172,6 @@ class LocalAvoidancePlanner:
             current,
             target,
         )
-        self.last_map_obstacle_distance = map_obstacle_distance
-        self.last_forward_clearance = forward_clearance
         obstacle_distance = min(
             map_obstacle_distance,
             forward_clearance,
@@ -195,7 +185,6 @@ class LocalAvoidancePlanner:
             self._consecutive_no_path = 0
             return self._cache(self._stop_plan(
                 "emergency_stop",
-                obstacle_distance,
             ))
 
         start = self.world_to_grid(snapshot, current)[:2]
@@ -203,7 +192,6 @@ class LocalAvoidancePlanner:
             self._consecutive_no_path = 0
             return self._cache(self._stop_plan(
                 "outside_map",
-                obstacle_distance,
             ))
         blocked[tuple(start)] = False
 
@@ -224,7 +212,6 @@ class LocalAvoidancePlanner:
                 self._consecutive_no_path = 0
                 return self._cache(self._stop_plan(
                     "map_boundary",
-                    obstacle_distance,
                 ))
             direct_goal = self.world_to_grid(
                 snapshot,
@@ -271,7 +258,6 @@ class LocalAvoidancePlanner:
                 local_target_ned=local_target,
                 path_ned=path,
                 speed_limit=self._clear_speed_limit(obstacle_distance),
-                obstacle_distance=obstacle_distance,
             ))
 
         self._consecutive_clear_path = 0
@@ -296,16 +282,7 @@ class LocalAvoidancePlanner:
         )
         cell_path = [] if goal is None else self._astar(blocked, start, goal)
         if not cell_path:
-            fallback = self._sensor_clear_fallback(
-                current,
-                target,
-                map_obstacle_distance,
-                forward_clearance,
-                obstacle_distance,
-            )
-            if fallback is not None:
-                return fallback
-            return self._handle_no_path(obstacle_distance)
+            return self._handle_no_path()
         cell_path = self._smooth_path(blocked, cell_path)
         path = np.asarray([
             self.grid_to_world(snapshot, np.asarray(
@@ -328,16 +305,7 @@ class LocalAvoidancePlanner:
             target,
             float(self.config.minimum_forward_progress),
         ):
-            fallback = self._sensor_clear_fallback(
-                current,
-                target,
-                map_obstacle_distance,
-                forward_clearance,
-                obstacle_distance,
-            )
-            if fallback is not None:
-                return fallback
-            return self._handle_no_path(obstacle_distance)
+            return self._handle_no_path()
         local_target[2] = self._vertical_local_target(
             current[2],
             target[2],
@@ -350,7 +318,6 @@ class LocalAvoidancePlanner:
                 float(self.config.avoidance_max_speed),
                 self._speed_limit(obstacle_distance),
             ),
-            obstacle_distance=obstacle_distance,
         ))
 
     @staticmethod
@@ -424,16 +391,20 @@ class LocalAvoidancePlanner:
             relative[:, 0] * direction[1]
             - relative[:, 1] * direction[0]
         )
-        vertical_limit = (
-            float(self.config.vertical_band)
-            + float(snapshot.resolution)
-        )
+        navigation_config = getattr(self, "_navigation_config", None)
+        half_height = float(getattr(navigation_config, "vertical_half_extent", self.config.vertical_band))
+        # Test voxel volume against the same body band as A*. Do not add a
+        # whole extra layer: car roofs/ceilings outside the band are not walls.
+        half_voxel = .5 * float(snapshot.resolution)
+        band_low = min(float(current[2]), float(target[2])) - half_height
+        band_high = max(float(current[2]), float(target[2])) + half_height
         relevant = longitudinal >= 0.0
         relevant &= (
             lateral
             <= float(self.config.safety_corridor_half_width)
         )
-        relevant &= np.abs(relative[:, 2]) <= vertical_limit
+        relevant &= (points[:, 2]+half_voxel > band_low+1e-9)
+        relevant &= (points[:, 2]-half_voxel < band_high-1e-9)
         if not np.any(relevant):
             return math.inf
         return float(np.min(
@@ -578,7 +549,6 @@ class LocalAvoidancePlanner:
                 float(self.config.avoidance_max_speed),
                 self._speed_limit(obstacle_distance),
             ),
-            obstacle_distance=obstacle_distance,
         )
 
     @staticmethod
@@ -618,35 +588,6 @@ class LocalAvoidancePlanner:
         step = float(self.config.vertical_target_step)
         return float(current_down) + float(np.clip(error, -step, step))
 
-    def _sensor_clear_fallback(
-        self,
-        current,
-        target,
-        map_obstacle_distance,
-        forward_clearance,
-        obstacle_distance,
-    ) -> LocalPlan | None:
-        """A*假阻塞但两套前向安全证据均通过时低速直行。"""
-        required = float(self.config.fallback_min_clearance)
-        if (
-            not math.isfinite(forward_clearance)
-            or map_obstacle_distance
-            < float(self.config.fallback_min_map_clearance)
-            or forward_clearance < required
-        ):
-            return None
-        local_target = self._direct_local_target(current, target)
-        path = np.vstack((current, local_target))
-        return self._accept_moving_plan(LocalPlan(
-            status="sensor_clear_fallback",
-            local_target_ned=local_target,
-            path_ned=path,
-            speed_limit=float(
-                self.config.sensor_clear_fallback_speed
-            ),
-            obstacle_distance=obstacle_distance,
-        ))
-
     def _speed_limit(self, obstacle_distance: float) -> float:
         maximum = float(self.config.avoidance_max_speed)
         if not math.isfinite(obstacle_distance):
@@ -665,10 +606,7 @@ class LocalAvoidancePlanner:
             self._speed_limit(obstacle_distance),
         )
 
-    def _handle_no_path(
-        self,
-        obstacle_distance: float,
-    ) -> LocalPlan:
+    def _handle_no_path(self) -> LocalPlan:
         """对无路结果计数，但任何失败帧都先悬停，绝不盲走旧路径。"""
         self._consecutive_no_path += 1
         confirmation_count = int(
@@ -681,7 +619,6 @@ class LocalAvoidancePlanner:
         )
         return self._cache(self._stop_plan(
             status,
-            obstacle_distance,
         ))
 
     def _accept_moving_plan(
@@ -852,13 +789,12 @@ class LocalAvoidancePlanner:
         return path[-1].copy()
 
     @staticmethod
-    def _stop_plan(status, obstacle_distance=math.inf):
+    def _stop_plan(status):
         return LocalPlan(
             status=status,
             local_target_ned=None,
             path_ned=np.empty((0, 3), dtype=np.float64),
             speed_limit=0.0,
-            obstacle_distance=float(obstacle_distance),
         )
 
     def _cache(self, plan):

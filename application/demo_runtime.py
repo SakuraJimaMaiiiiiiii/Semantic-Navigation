@@ -1,6 +1,11 @@
 """RflySim语义导航演示所需组件的创建、启动与清理。"""
 
 from dataclasses import replace
+import json
+from config.lidar_config import LidarConfig
+from mapping.lidar_mapping_worker import LidarMappingWorker
+from mapping.semantic_voxels import SemanticVoxelEvidence
+from config.exploration_config import FrontierExplorationConfig
 from config.semantic_navigation_config import SemanticNavigationConfig
 from navigation.mission import SemanticNavigator
 from navigation.target import SemanticTargetRequest
@@ -14,7 +19,6 @@ from mapping import (
     LocalMappingWorker,
     LocalOccupancyGrid,
     Open3DGlobalMapVisualizer,
-    PointCloudLoopClosure,
 )
 from mission import RflyMissionController
 from planner import (
@@ -36,13 +40,22 @@ class DemoRuntime:
     """集中管理演示程序的配置、组件和生命周期。"""
 
     def __init__(
-        self, semantic_target: SemanticTargetRequest | None = None, *, exploration=False
+        self,
+        semantic_target: SemanticTargetRequest | None = None,
+        *,
+        exploration=False,
+        exploration_config: FrontierExplorationConfig | None = None,
     ) -> None:
         if semantic_target is not None and not isinstance(
             semantic_target, SemanticTargetRequest
         ):
             raise TypeError("semantic_target must be a SemanticTargetRequest or None")
         self.exploration_mode = bool(exploration)
+        self.exploration_config = (
+            exploration_config or FrontierExplorationConfig()
+            if self.exploration_mode
+            else None
+        )
         self.semantic_target = semantic_target
         self.semantic_navigation_config = SemanticNavigationConfig()
         self._create_run_output_directory()
@@ -67,18 +80,22 @@ class DemoRuntime:
         self.global_map_config = replace(
             cfg.GlobalSparseMapConfig(),
             output_dir=self.run_output_dir / "maps",
+            # Depth-only keyframe rebuilding would discard fused LiDAR evidence.
+            loop_closure_enabled=False,
         )
         self.planner_config = cfg.PlannerConfig()
-        if self.semantic_target is not None or getattr(self, "exploration_mode", False):
+        if self.semantic_target is not None or self.exploration_mode:
             self.global_map_config = replace(
                 self.global_map_config,
                 enabled=True,
-                loop_closure_enabled=False,
                 visualize=False,
             )
             self.planner_config = replace(self.planner_config, unknown_is_occupied=True)
+            clearance = self.semantic_navigation_config.clearance_radius
+            if self.exploration_config is not None:
+                clearance = max(clearance, self.exploration_config.flight_clearance)
             body = dict(
-                vehicle_free_radius=self.semantic_navigation_config.clearance_radius,
+                vehicle_free_radius=clearance,
                 vehicle_free_half_height=self.semantic_navigation_config.vertical_half_extent,
             )
             self.mapping_config = replace(self.mapping_config, **body)
@@ -102,9 +119,9 @@ class DemoRuntime:
             ),
         )
 
-        if getattr(self, "exploration_mode", False):
+        if self.exploration_mode:
             if self.planner_config.navigation_mode not in {"ego", "ego_native"}:
-                raise ValueError("Frontier exploration requires EGO trajectory execution")
+                raise ValueError("Waypoint exploration requires ego/ego_native local avoidance")
             self.planner_config = replace(self.planner_config, return_navigation_mode=self.planner_config.navigation_mode)
             # Public semantic output is the coordinate-free scene graph; geometry
             # is committed separately by the exploration session as a binary cache.
@@ -122,9 +139,16 @@ class DemoRuntime:
 
     def _create_core(self) -> None:
         self.vehicle = RflyMultirotorInterface(self.drone_config)
-        self.camera = RflyRGBDCamera(
-            cfg.CameraConfig(copter_id=self.drone_config.copter_id)
-        )
+        camera_config = cfg.CameraConfig(copter_id=self.drone_config.copter_id)
+        self.lidar_config = LidarConfig()
+        sensors = json.loads(camera_config.sensor_json.read_text(encoding="utf-8"))
+        if any(int(s["SeqID"]) == self.lidar_config.seq_id for s in sensors["VisionSensors"]):
+            raise ValueError("LiDAR SeqID conflicts with an existing sensor")
+        sensors["VisionSensors"].append(self.lidar_config.sensor(self.drone_config.copter_id))
+        combined = self.run_output_dir / "sensors_rgbd_lidar.json"
+        combined.write_text(json.dumps(sensors, indent=2), encoding="utf-8")
+        camera_config = replace(camera_config, sensor_json=combined)
+        self.camera = RflyRGBDCamera(camera_config)
         self.data_stream = SynchronizedRGBDStream(
             self.vehicle,
             self.camera,
@@ -177,10 +201,17 @@ class DemoRuntime:
                 "--- 局部规划二维投影目录：" f"{self.astar_visualizer.output_dir} ----"
             )
         planner_type = self._local_planner_type(self.planner_config.navigation_mode)
+        local_config = self.planner_config
+        if self.exploration_mode:
+            local_config = replace(
+                local_config,
+                ego_max_acceleration=min(local_config.ego_max_acceleration,
+                                         self.drone_config.guided_max_horizontal_acceleration),
+            )
         self.local_planner = (
             planner_type(
                 self.occupancy_grid,
-                self.planner_config,
+                local_config,
                 visualizer=self.astar_visualizer,
                 visualization_name="local",
             )
@@ -192,9 +223,12 @@ class DemoRuntime:
             if self.global_map_config.enabled
             else None
         )
+        from mapping.online_loop_navigation import OnlineLoopNavigationMap
+        self.navigation_map = (OnlineLoopNavigationMap(self.global_sparse_map)
+                               if self.global_sparse_map is not None else None)
         self.global_return_planner = (
             GlobalReturnPlanner(
-                self.global_sparse_map,
+                self.navigation_map,
                 self.planner_config,
                 visualizer=self.astar_visualizer,
             )
@@ -237,27 +271,19 @@ class DemoRuntime:
                 self.mapping_source,
                 self.occupancy_grid,
                 update_rate=self.mapping_config.update_rate,
+                integrate_depth=False,
             )
             if self.mapping_config.enabled
             else None
         )
         self.global_visualizer = self._create_global_visualizer()
-        self.loop_closure = (
-            PointCloudLoopClosure(
-                self.global_sparse_map,
-                self.global_map_config,
-            )
-            if self.global_map_config.enabled
-            and self.global_map_config.loop_closure_enabled
-            else None
-        )
         self.global_mapping_worker = (
             GlobalMappingWorker(
                 self.global_mapping_source,
                 self.global_sparse_map,
                 self.global_map_config,
                 visualizer=self.global_visualizer,
-                loop_closure=self.loop_closure,
+                integrate_depth=False,
             )
             if self.global_map_config.enabled
             else None
@@ -266,10 +292,24 @@ class DemoRuntime:
             RealtimeDetectionWorker(
                 self.detection_source,
                 self.detector_config,
+                semantic_voxels=SemanticVoxelEvidence(
+                    self.global_map_config.resolution, self.global_map_config.max_voxels
+                ) if self.global_map_config.enabled else None,
             )
             if self.detector_config.enabled
             else None
         )
+
+        from mapping.lidar_loop_detector import LidarLoopDetector
+        self.lidar_worker = LidarMappingWorker(
+            self.camera, self.data_stream, self.occupancy_grid,
+            self.navigation_map, self.lidar_config,
+            loop_detector=LidarLoopDetector(self.global_map_config,
+                self.run_output_dir / 'maps' / 'lidar_loop_closures.json'),
+        )
+        self.lidar_worker.alignment_preview_path = self.run_output_dir / "lidar_camera_alignment.png"
+        if self.detection_worker is not None:
+            self.detection_worker.lidar_alignment_provider = self.lidar_worker.align_to_camera
 
         if self.semantic_target is not None:
             if self.detection_worker is None:
@@ -278,7 +318,7 @@ class DemoRuntime:
                 self.vehicle,
                 self.detection_worker,
                 self.occupancy_grid,
-                self.global_sparse_map,
+                self.navigation_map,
                 self.local_planner,
                 self.semantic_target,
                 self.semantic_navigation_config,
@@ -352,6 +392,8 @@ class DemoRuntime:
         if self.global_mapping_worker is not None:
             self.global_mapping_worker.start()
             self.global_mapping_started = True
+        self.lidar_worker.start(timeout=self.camera.config.first_frame_timeout)
+        print("--- LiDAR enabled: Type20 / 360° / body FRD / LiDAR-only occupancy / camera semantic association ----")
         if self.detection_worker is not None:
             self.detection_worker.start()
             self.detection_started = True
@@ -364,27 +406,87 @@ class DemoRuntime:
         """任务异常时安全悬停并降落。"""
         if not self.vehicle.connected or not bool(self.vehicle.mav.isArmed):
             return
+        if getattr(self.vehicle, "_landing_commanded", False):
+            return  # Do not overwrite an active AUTO.LAND with a hover request.
         if hover_first:
-            self.vehicle.hover()
+            try:
+                self.vehicle.hover()
+            except Exception as error:
+                print(f"--- 降落前悬停失败，继续发送降落请求：{error} ----")
         self.vehicle.land()
+
+    def finish_exploration_recording(self) -> None:
+        """Finalize exploration files while keeping live navigation sensors running."""
+        if getattr(self, "_exploration_recording_finished", False):
+            return
+        if getattr(self, "live_loop_mapping", None) is not None:
+            self.live_loop_mapping.close()
+        if self.recorder_started:
+            self.recorder.close()
+            self.recorder.raise_if_failed()
+        lidar = getattr(self, "lidar_worker", None)
+        if lidar is not None:
+            lidar._preview_saved = True
+            lidar._alignment_sample_saved = True
+        if self.detection_started:
+            self.detection_worker.finish_recording()
+        if lidar is not None:
+            if lidar.loop_detector is not None:
+                lidar.loop_detector.close()
+            self._save_alignment_report()
+        self.astar_visualizer.close()
+        if getattr(self, "live_loop_mapping", None) is not None:
+            print("--- 正在保存最终回环校正地图与语义关联；完成后停止后台写入 ----")
+            self.live_loop_mapping.finalize()
+        self._exploration_recording_finished = True
+
+    def _save_alignment_report(self) -> None:
+        report = dict(self.lidar_worker.alignment_statistics)
+        report["semantic_fused_objects"] = getattr(
+            self.detection_worker.segmenter, "lidar_fused_objects", 0) if self.detection_worker else 0
+        report["semantic_lidar_points"] = getattr(
+            self.detection_worker.segmenter, "lidar_fused_points", 0) if self.detection_worker else 0
+        (self.run_output_dir / "lidar_camera_alignment.json").write_text(
+            json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
 
     def close(self) -> None:
         """按依赖关系逆序停止组件并输出运行结果。"""
+        errors = []
+
+        def stop(name, action):
+            try:
+                action()
+            except Exception as error:
+                errors.append(error)
+                print(f"--- 组件关闭失败 [{name}]：{type(error).__name__}: {error} ----")
+
+        if getattr(self, "live_loop_mapping", None) is not None:
+            stop("live loop mapping", self.live_loop_mapping.close)
+        if getattr(self, "lidar_worker", None) is not None:
+            stop("lidar", self.lidar_worker.close)
+            print(f"--- LiDAR mapping frames: {self.lidar_worker.update_count} ----")
         if self.detection_started:
-            self.detection_worker.close()
+            stop("detection", self.detection_worker.close)
+        if (getattr(self, "lidar_worker", None) is not None
+                and not getattr(self, "_exploration_recording_finished", False)):
+            stop("lidar report", self._save_alignment_report)
         if self.global_mapping_started:
-            self.global_mapping_worker.close()
+            stop("global mapping", self.global_mapping_worker.close)
         if self.mapping_started:
-            self.mapping_worker.close()
+            stop("local mapping", self.mapping_worker.close)
         if self.recorder_started:
-            self.recorder.close()
+            stop("recorder", self.recorder.close)
         if self.hub_started:
-            self.observation_hub.close()
-        self.data_stream.close()
-        self.camera.close()
-        self.vehicle.close(disarm=True)
-        self.astar_visualizer.close()
-        self._report_results()
+            stop("observation hub", self.observation_hub.close)
+        stop("data stream", self.data_stream.close)
+        stop("camera", self.camera.close)
+        # Each remaining component still gets cleanup if touchdown times out.
+        # Vehicle.close retains its no-disarm/no-disconnect protection.
+        stop("vehicle", lambda: self.vehicle.close(disarm=True))
+        stop("planner visualizer", self.astar_visualizer.close)
+        stop("results", self._report_results)
+        if errors:
+            raise errors[0]
 
     def _report_results(self) -> None:
         if self.astar_visualizer.output_dir is not None:
@@ -458,11 +560,4 @@ class DemoRuntime:
             print(
                 "--- Foxglove MCAP saved: "
                 f"{self.global_mapping_worker.foxglove_output_path} ----"
-            )
-        if self.loop_closure is not None:
-            print(
-                "--- Loop closure summary: "
-                f"{self.loop_closure.loop_count} accepted, "
-                f"{self.loop_closure.rejected_loop_count} rejected, "
-                f"{len(self.loop_closure.keyframes)} keyframes ----"
             )

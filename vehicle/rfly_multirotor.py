@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Sequence
 
 import numpy as np
+from copy import deepcopy
 
 import PX4MavCtrlV4 as PX4MavCtrl
 import ReqCopterSim
@@ -13,23 +14,14 @@ import UE4CtrlAPI
 
 
 ROUTE_SOURCE_LABELS = {
-    "route_clear": "全局前沿路径直行（EGO待命）",
+    "braking_corridor_blocked": "停止：当前速度的刹停通路不足",
+    "route_clear": "A* 路线航点跟随（当前航段畅通，EGO待命）",
     "ego_clear": "EGO B样条生成的直达轨迹",
     "ego_avoid": "EGO A*种子优化后的三维绕障轨迹",
     "depth_guard_clear": "深度估计生成的直线路径",
     "avoid": "A* 生成的绕障路径",
     "clear": "A* 地图验证后的直线路径",
-    "sensor_clear_fallback": "深度与地图安全兜底直线路径",
 }
-
-DIRECT_ROUTE_STATUSES = {
-    "route_clear",
-    "ego_clear",
-    "depth_guard_clear",
-    "clear",
-    "sensor_clear_fallback",
-}
-
 
 @dataclass(frozen=True)
 class DroneState:
@@ -50,15 +42,17 @@ class DroneState:
     euler_rpy: np.ndarray
     px4_boot_timestamp: float
     position_covariance_ned: np.ndarray | None = None
+    pose_sync_error: float = 0.0  # ATTITUDE / LOCAL_POSITION_NED source-time difference, seconds
 
 
 class CollisionDetectedError(RuntimeError):
     """Raised when RflySim reports a collision during a flight task."""
 
-    def __init__(self, target_id, position, object_name=""):
+    def __init__(self, target_id, position, object_name="", flight_context=None):
         self.target_id = int(target_id)
         self.position = np.asarray(position, dtype=float).copy()
         self.object_name = str(object_name)
+        self.flight_context = flight_context
         object_text = f", object={self.object_name}" if self.object_name else ""
         super().__init__(
             f"Collision detected: target_id={self.target_id}, "
@@ -98,7 +92,9 @@ class RflyMultirotorInterface:
         self.armed = False
         self._ground_down = 0.0
         self._landing_commanded = False
+        self._landing_requested_at = None
         self._shutdown_disarmed = False
+        self.landing_confirmation = None
 
     def setup_ue(self):
         """初始化 RflySim3D 显示接口。"""
@@ -173,6 +169,7 @@ class RflyMultirotorInterface:
         self.connected = True
         # 以连接时的实际地面位置为降落判定基准，避免依赖手工配置原点。
         self._ground_down = float(self.get_position()[2])
+        self._landing_ground_sources = self._landing_height_diagnostics()
         print(f"--- {copter_id} 号多旋翼连接成功，IP: {target_ip} ----")
 
     def enable_offboard(self, arm=True):
@@ -290,6 +287,10 @@ class RflyMultirotorInterface:
             float(down),
             float(yaw),
         )
+        self._last_position_command = {
+            "position_ned": [float(north), float(east), float(down)],
+            "yaw": float(yaw), "monotonic_time": time.monotonic(),
+        }
 
     def wait(self, duration, check_interval=0.1):
         """Wait while monitoring RflySim collision state."""
@@ -308,470 +309,251 @@ class RflyMultirotorInterface:
                 return
             time.sleep(min(check_interval, remaining))
 
-    def move_velocity_guided(
-        self,
-        waypoint,
-        yaw=0.0,
-        face_direction=True,
-        max_forward_speed=None,
-        max_z_speed=None,
-        timeout=None,
-        local_planner=None,
-        pass_through=False,
+    def move_waypoint_guided(
+        self, waypoint, yaw=None, face_direction=False, timeout=None,
+        local_planner=None, pass_through=False, control_horizon=None, xy_tolerance=None,
     ):
-        """使用位置外环生成机体系前向速度和 yaw 角速度飞向目标点。
+        """Execute certified NED position waypoints using the PX4 position loop.
 
-        位置误差只用于计算运动方向、速度大小和到达条件。飞行过程中持续
-        发送 ``SendVelFRD``，使前视相机通过弧形转向自然面向运动方向；
-        到达后切换到当前位置悬停。
-
-        Args:
-            waypoint: 目标 ``[north, east, down]``，采用本地 NED，单位 m。
-            yaw: ``face_direction=False`` 时使用的固定目标 yaw，单位 rad。
-            face_direction: 是否根据当前位置到目标点的方向实时计算机头朝向。
-            max_forward_speed: 最大机头前向速度，单位 m/s。
-            max_z_speed: 最大升降速度，单位 m/s。
-            timeout: 最长导航时间，单位秒。
-            local_planner: 可选局部避障规划器。不可安全移动时将悬停等待。
-            pass_through: 是否把目标作为连续通过点，不悬停、不等待稳定。
-
-        Returns:
-            实际导航耗时，单位秒。
+        No Python velocity outer loop is used. PX4 position-mode parameters
+        govern physical speed/acceleration. Planner speed limits bound position
+        lead using the configured guidance gain, not a MAVLink velocity command.
+        A zero limit latches a hold until stopped and continuously clear.
+        A horizon return leaves only the last certified position target active.
         """
         self._require_offboard()
         target = self._vector3(waypoint, "waypoint")
-
-        max_forward_speed = float(
-            self.config.guided_max_forward_speed
-            if max_forward_speed is None
-            else max_forward_speed
-        )
-        max_horizontal_acceleration = float(
-            self.config.guided_max_horizontal_acceleration
-        )
-        max_z_speed = float(
-            self.config.guided_max_z_speed
-            if max_z_speed is None
-            else max_z_speed
-        )
-        position_kp = float(self.config.guided_position_kp)
-        z_kp = float(self.config.guided_z_kp)
-        z_kd = float(self.config.guided_z_kd)
-        max_z_acceleration = float(self.config.guided_max_z_acceleration)
-        z_target_filter_time_constant = float(
-            self.config.guided_z_target_filter_time_constant
-        )
-        yaw_kp = float(self.config.guided_yaw_kp)
-        max_yaw_rate = float(self.config.guided_max_yaw_rate)
-        yaw_stop_angle = float(self.config.guided_yaw_stop_angle)
-        xy_tolerance = float(self.config.guided_xy_tolerance)
-        z_tolerance = float(self.config.guided_z_tolerance)
-        stable_time = float(self.config.guided_stable_time)
-        pass_through_radius = float(
-            self.config.guided_pass_through_radius
-        )
-        timeout = float(
-            self.config.guided_timeout if timeout is None else timeout
-        )
-        update_rate = float(self.config.guided_update_rate)
-
-        positive_values = {
-            "max_forward_speed": max_forward_speed,
-            "max_horizontal_acceleration": max_horizontal_acceleration,
-            "max_z_speed": max_z_speed,
-            "position_kp": position_kp,
-            "z_kp": z_kp,
-            "z_kd": z_kd,
-            "max_z_acceleration": max_z_acceleration,
-            "z_target_filter_time_constant": z_target_filter_time_constant,
-            "yaw_kp": yaw_kp,
-            "max_yaw_rate": max_yaw_rate,
-            "yaw_stop_angle": yaw_stop_angle,
-            "xy_tolerance": xy_tolerance,
-            "z_tolerance": z_tolerance,
-            "stable_time": stable_time,
-            "pass_through_radius": pass_through_radius,
-            "timeout": timeout,
-            "update_rate": update_rate,
-        }
-        for name, value in positive_values.items():
-            if not math.isfinite(value) or value <= 0.0:
-                raise ValueError(f"{name} must be a positive finite number")
-        if yaw_stop_angle > math.pi:
-            raise ValueError("guided_yaw_stop_angle must not exceed pi")
-        if pass_through_radius <= xy_tolerance:
-            raise ValueError(
-                "guided_pass_through_radius must exceed "
-                "guided_xy_tolerance"
-            )
-
-        fixed_yaw = self._wrap_angle(float(yaw))
-        period = 1.0 / update_rate
-        started_at = time.monotonic()
-        deadline = started_at + timeout
-        next_update = started_at
+        timeout = float(self.config.guided_timeout if timeout is None else timeout)
+        tolerance = float(self.config.guided_xy_tolerance if xy_tolerance is None else xy_tolerance)
+        period = 1.0 / float(self.config.guided_update_rate)
+        if not np.isfinite(target).all() or timeout <= 0 or tolerance <= 0:
+            raise ValueError("Waypoint and tolerances must be finite and valid")
+        if not math.isfinite(timeout) or not math.isfinite(tolerance):
+            raise ValueError("Waypoint timeout and tolerance must be finite")
+        if control_horizon is not None and (not math.isfinite(control_horizon) or control_horizon <= 0):
+            raise ValueError("control_horizon must be positive and finite")
+        initial = self.get_position()
+        if yaw is None:
+            delta = target[:2] - initial[:2]
+            yaw = (math.atan2(delta[1], delta[0]) if face_direction and np.linalg.norm(delta) > tolerance
+                   else float(self.get_euler()[2]))
+        yaw = float(yaw)
+        if not math.isfinite(yaw):
+            raise ValueError("Waypoint yaw must be finite")
+        started = time.monotonic()
         stable_since = None
-        last_plan_status = None
-        filtered_down_target = None
-        commanded_down_speed = 0.0
-        last_vertical_update = started_at
-        last_motion_velocity = None
-        last_motion_update = None
-        filtered_acceleration = np.zeros(3, dtype=float)
-        commanded_horizontal_velocity = None
-        commanded_forward_speed = None
-        last_horizontal_update = started_at
-
-        while True:
-            # 航点导航已经发生在起飞之后，此时地面接触也属于异常，
-            # 不再像起飞和降落阶段那样忽略 CrashType=-2。
-            self.raise_if_collision(include_ground=True)
-            now = time.monotonic()
-            if now >= deadline:
-                self.hover()
-                position = self.get_position()
-                final_delta = target - position
-                print(
-                    "导航结果：未到达，"
-                    f"目标NED={target.round(3).tolist()}，"
-                    f"实际NED={position.round(3).tolist()}，"
-                    f"水平误差={np.linalg.norm(final_delta[:2]):.2f} m，"
-                    f"高度误差={abs(float(final_delta[2])):.2f} m"
-                )
-                raise TimeoutError(
-                    f"Velocity-guided move timed out after {timeout:.1f} s"
-                )
-
-            position = self.get_position()
-            current_velocity = self.get_velocity()
-            delta = target - position
-            distance_xy = float(np.linalg.norm(delta[:2]))
-            down_error = float(delta[2])
-            current_yaw = self._wrap_angle(float(self.get_euler()[2]))
-
-            if (
-                pass_through
-                and distance_xy <= pass_through_radius
-                and abs(down_error) <= z_tolerance
-            ):
-                elapsed = now - started_at
-                print(
-                    "导航结果：已连续通过中间航点，"
-                    f"目标NED={target.round(3).tolist()}，"
-                    f"实际NED={position.round(3).tolist()}，"
-                    f"水平误差={distance_xy:.2f} m，"
-                    f"耗时={elapsed:.1f} s"
-                )
-                return elapsed
-
-            active_target = target
-            planner_speed_limit = max_forward_speed
-            using_local_target = False
-            using_direct_heading = False
-            if local_planner is not None:
-                motion_state_updater = getattr(
-                    local_planner,
-                    "set_motion_state",
-                    None,
-                )
-                if callable(motion_state_updater):
-                    if (
-                        last_motion_velocity is not None
-                        and last_motion_update is not None
-                    ):
-                        motion_dt = max(1e-3, now - last_motion_update)
-                        raw_acceleration = (
-                            current_velocity - last_motion_velocity
-                        ) / motion_dt
-                        configured_acceleration = float(getattr(
-                            getattr(local_planner, "config", None),
-                            "ego_max_acceleration",
-                            1.2,
-                        ))
-                        raw_acceleration = np.clip(
-                            raw_acceleration,
-                            -2.0 * configured_acceleration,
-                            2.0 * configured_acceleration,
-                        )
-                        filtered_acceleration += 0.2 * (
-                            raw_acceleration - filtered_acceleration
-                        )
-                    motion_state_updater(
-                        current_velocity,
-                        filtered_acceleration,
-                    )
-                    last_motion_velocity = current_velocity.copy()
-                    last_motion_update = now
-                plan = local_planner.plan(position, target)
-                if plan.status != last_plan_status:
-                    obstacle_text = (
-                        "inf"
-                        if not math.isfinite(plan.obstacle_distance)
-                        else f"{plan.obstacle_distance:.2f} m"
-                    )
-                    speed_text = (
-                        "vehicle-limit"
-                        if not math.isfinite(plan.speed_limit)
-                        else f"{plan.speed_limit:.2f} m/s"
-                    )
-                    map_distance = float(getattr(
-                        local_planner,
-                        "last_map_obstacle_distance",
-                        math.inf,
-                    ))
-                    forward_clearance = float(getattr(
-                        local_planner,
-                        "last_forward_clearance",
-                        math.inf,
-                    ))
-                    map_text = (
-                        "inf"
-                        if not math.isfinite(map_distance)
-                        else f"{map_distance:.2f} m"
-                    )
-                    forward_text = (
-                        "inf"
-                        if not math.isfinite(forward_clearance)
-                        else f"{forward_clearance:.2f} m"
-                    )
-                    route_source = ROUTE_SOURCE_LABELS.get(
-                        plan.status,
-                        "停止：当前没有可执行路径",
-                    )
-                    detail = (
-                        f"状态={plan.status} | 障碍={obstacle_text} | "
-                        f"地图={map_text} | 前向深度={forward_text} | "
-                        f"限速={speed_text}"
-                    )
-                    width = max(len(route_source), len(detail)) + 4
-                    border = "-" * width
-                    print(
-                        f"\n{border}\n"
-                        f"  当前路径来源：{route_source}\n"
-                        f"  {detail}\n"
-                        f"{border}"
-                    )
-                    last_plan_status = plan.status
-                if not plan.can_move:
-                    self.send_body_velocity([0.0, 0.0, 0.0])
-                    commanded_horizontal_velocity = np.zeros(2, dtype=float)
-                    commanded_forward_speed = 0.0
-                    last_horizontal_update = now
-                    commanded_down_speed = 0.0
-                    filtered_down_target = float(position[2])
-                    last_vertical_update = now
-                    next_update += period
-                    sleep_time = next_update - time.monotonic()
-                    if sleep_time > 0.0:
-                        time.sleep(sleep_time)
+        last_status = None
+        hold_target = getattr(self, "_waypoint_hold_target", None)
+        clear_since = getattr(self, "_waypoint_clear_since", None)
+        braking = bool(getattr(self, "_waypoint_braking", False))
+        # Preserve the command ramp across rolling horizons; measured speed
+        # noise must not re-seed the position lead on every planning cycle.
+        lead_speed = float(getattr(self, "_waypoint_lead_speed", 0.0))
+        lead_acceleration = float(getattr(self, "_waypoint_lead_acceleration", 0.0))
+        lead_jerk = float(self.config.guided_position_lead_jerk)
+        if not math.isfinite(lead_jerk) or lead_jerk <= 0:
+            raise ValueError("guided_position_lead_jerk must be positive and finite")
+        try:
+            while True:
+                self.raise_if_collision(include_ground=True)
+                now = time.monotonic()
+                if now-started >= timeout:
+                    raise TimeoutError(f"Position waypoint timed out: target={target.round(3).tolist()}, status={last_status}")
+                if control_horizon is not None and now-started >= control_horizon:
+                    return now-started
+                current = self.get_position()
+                delta = target-current
+                reached = (np.linalg.norm(delta[:2]) <= tolerance
+                           and abs(delta[2]) <= self.config.guided_z_tolerance)
+                command = target
+                status = "position_waypoint"
+                can_move = True
+                speed_limit = float(self.config.guided_max_forward_speed)
+                if local_planner is not None:
+                    updater = getattr(local_planner, "set_motion_state", None)
+                    if callable(updater):
+                        updater(self.get_velocity())
+                    plan = local_planner.plan(current, target)
+                    # Planning may block while the UAV continues flying.
+                    # Never issue its result after an intervening collision.
+                    self.raise_if_collision(include_ground=True)
+                    revalidate = getattr(local_planner, "revalidate_plan", None)
+                    if callable(revalidate):
+                        current = self.get_position()
+                        plan = revalidate(plan, current)
+                        delta = target-current
+                        reached = (np.linalg.norm(delta[:2]) <= tolerance
+                                   and abs(delta[2]) <= self.config.guided_z_tolerance)
+                    status = plan.status
+                    speed_limit = min(speed_limit, float(plan.speed_limit))
+                    can_move = plan.can_move and math.isfinite(speed_limit) and speed_limit > 0
+                    if can_move:
+                        command = self._vector3(plan.local_target_ned, "local waypoint")
+                        if not np.isfinite(command).all():
+                            raise ValueError("Planner returned a non-finite waypoint")
+                command_time = time.monotonic()
+                last_command_time = getattr(self, "_waypoint_command_time", None)
+                control_dt = min(1.0, max(period, command_time - (
+                    started-period if last_command_time is None else last_command_time)))
+                self._waypoint_command_time = command_time
+                # Rolling-horizon calls retain the same waypoint; only report
+                # a changed status or changed displayed target across calls.
+                log_key = (status, *target.round(3).tolist())
+                if log_key != getattr(self, "_waypoint_log_key", None):
+                    print(f"--- 位置航点控制：{ROUTE_SOURCE_LABELS.get(status, status)}；目标NED={target.round(3).tolist()} ----")
+                    self._waypoint_log_key = log_key
+                last_status = status
+                if not can_move:
+                    if hold_target is None:
+                        hold_target = current.copy()
+                        braking = status == "braking_corridor_blocked"
+                    clear_since = None
+                elif hold_target is not None:
+                    # Do not release braking on a single clear frame, including
+                    # across rolling control-horizon calls.
+                    if not braking and np.linalg.norm(self.get_velocity()) <= self.config.landed_speed_tolerance:
+                        clear_since = now if clear_since is None else clear_since
+                        if now-clear_since >= self.config.guided_stable_time:
+                            hold_target = None
+                            clear_since = None
                     else:
-                        next_update = time.monotonic()
-                    continue
-                active_target = np.asarray(
-                    plan.local_target_ned,
-                    dtype=float,
-                )
-                using_local_target = True
-                using_direct_heading = plan.status in DIRECT_ROUTE_STATUSES
-                trajectory_target = getattr(
-                    local_planner,
-                    "tracking_target",
-                    None,
-                )
-                if callable(trajectory_target):
-                    moving_target = trajectory_target(now=now)
-                    if moving_target is not None:
-                        active_target = np.asarray(
-                            moving_target,
-                            dtype=float,
-                        )
-                planner_speed_limit = min(
-                    max_forward_speed,
-                    float(plan.speed_limit),
-                )
-
-            active_delta = active_target - position
-            active_distance_xy = float(np.linalg.norm(active_delta[:2]))
-            active_target_tolerance = (
-                min(xy_tolerance, 0.05)
-                if using_local_target
-                else xy_tolerance
-            )
-            heading_delta = delta if using_direct_heading else active_delta
-            heading_distance_xy = (
-                distance_xy if using_direct_heading else active_distance_xy
-            )
-
-            if (
-                face_direction
-                and heading_distance_xy > active_target_tolerance
-            ):
-                desired_yaw = math.atan2(
-                    float(heading_delta[1]),
-                    float(heading_delta[0]),
-                )
-            elif face_direction:
-                desired_yaw = current_yaw
-            else:
-                desired_yaw = fixed_yaw
-
-            # 每一轮都重新计算最短航向误差，结果始终位于 [-pi, pi)。
-            yaw_error = self._wrap_angle(desired_yaw - current_yaw)
-            yaw_rate = float(
-                np.clip(yaw_kp * yaw_error, -max_yaw_rate, max_yaw_rate)
-            )
-
-            if pass_through:
-                # 中间返航点是路径采样点，不是停车点。保持规划器给出的
-                # 通过速度，避免每隔一个航段先抬头刹车、再低头加速。
-                requested_horizontal_speed = planner_speed_limit
-            else:
-                requested_horizontal_speed = min(
-                    planner_speed_limit,
-                    position_kp * (
-                        distance_xy
-                        if using_local_target
-                        else active_distance_xy
-                    ),
-                )
-            if face_direction and abs(yaw_error) >= yaw_stop_angle:
-                requested_horizontal_speed = 0.0
-            elif face_direction:
-                # 航向偏差增大时连续减速，避免边大角度转向边向侧面飞。
-                requested_horizontal_speed *= max(
-                    0.0,
-                    math.cos(yaw_error),
-                )
-            if active_distance_xy <= active_target_tolerance:
-                requested_horizontal_speed = 0.0
-
-            horizontal_dt = max(1e-3, now - last_horizontal_update)
-            max_horizontal_step = (
-                max_horizontal_acceleration * horizontal_dt
-            )
-            horizontal_direction = np.zeros(2, dtype=float)
-            if active_distance_xy > active_target_tolerance:
-                horizontal_direction = active_delta[:2] / active_distance_xy
-            if face_direction:
-                if commanded_forward_speed is None:
-                    commanded_forward_speed = float(
-                        np.linalg.norm(current_velocity[:2])
+                        clear_since = None
+                if hold_target is not None and braking:
+                    # Zero horizontal position error requests deceleration from
+                    # PX4 without pulling back toward the trigger location.
+                    # Keep the original Z and yaw; latch XY once actually slow.
+                    hold_target[:2] = current[:2]
+                    if np.linalg.norm(self.get_velocity()[:2]) <= .05:
+                        braking = False
+                self._waypoint_braking = braking
+                self.waypoint_control_state = {
+                    "status": ("braking_without_pullback" if braking else
+                               "holding_for_stable_clearance" if hold_target is not None else status),
+                    "target_ned": target.tolist(),
+                    "hold_ned": None if hold_target is None else hold_target.tolist(),
+                    "velocity_ned": self.get_velocity().tolist(),
+                    "speed_limit": speed_limit,
+                    "control_dt_seconds": control_dt,
+                    "planning_seconds": command_time-now,
+                    "flight_status": self._flight_status(),
+                }
+                self._waypoint_hold_target = hold_target
+                self._waypoint_clear_since = clear_since
+                if hold_target is not None:
+                    lead_speed = 0.0
+                    lead_acceleration = 0.0
+                    stable_since = None
+                    self._waypoint_position_reference = hold_target.copy()
+                    self.waypoint_control_state["command_ned"] = hold_target.tolist()
+                    self.send_position(hold_target, yaw)
+                else:
+                    if reached and pass_through:
+                        # Continue through straight subgoals without snapping
+                        # the position reference to the arrival-radius boundary.
+                        return now-started
+                    acceleration = self.config.guided_max_horizontal_acceleration
+                    offset = command-current
+                    horizontal = float(np.linalg.norm(offset[:2]))
+                    previous_reference = getattr(self, "_waypoint_position_reference", None)
+                    along = (0. if previous_reference is None or horizontal <= 1e-9 else
+                             float(np.dot(previous_reference[:2]-current[:2], offset[:2]/horizontal)))
+                    along = float(np.clip(along, 0., horizontal))
+                    desired_lead = speed_limit
+                    if not pass_through:
+                        # Brake the moving reference before IT reaches the end,
+                        # rather than waiting for the lagging vehicle to arrive.
+                        # The gain term tapers the final approach; the extra
+                        # time allows the acceleration ramp to unwind.
+                        remaining = horizontal-along
+                        ramp_speed = acceleration*acceleration/lead_jerk
+                        desired_lead = min(desired_lead,
+                                           self.config.guided_position_kp*remaining,
+                                           math.sqrt(ramp_speed*ramp_speed + 2.*acceleration*remaining)-ramp_speed)
+                    # Integrate real elapsed control time in small substeps.
+                    # Slow map/planner calls must not turn 8 wall seconds into
+                    # only a few tenths of a second of reference motion.
+                    reference_distance = 0.0
+                    steps = max(1, int(math.ceil(control_dt/period-1e-9)))
+                    step_dt = control_dt/steps
+                    for _ in range(steps):
+                        error = desired_lead-lead_speed
+                        # Taper acceleration before reaching cruise, rather than
+                        # stepping immediately between zero and maximum acceleration.
+                        requested_acceleration = math.copysign(
+                            min(acceleration, math.sqrt(2.*lead_jerk*abs(error))), error
+                        ) if abs(error) > 1e-9 else 0.0
+                        lead_acceleration += float(np.clip(requested_acceleration-lead_acceleration,
+                                                           -lead_jerk*step_dt, lead_jerk*step_dt))
+                        next_speed = lead_speed + lead_acceleration*step_dt
+                        if (desired_lead-lead_speed)*(desired_lead-next_speed) <= 0:
+                            next_speed = desired_lead
+                        # Emergency stops / tighter safety caps are never delayed.
+                        lead_speed = max(0., min(speed_limit, next_speed))
+                        reference_distance += lead_speed*step_dt
+                    # Only shorten the currently certified chord. Blending old
+                    # and new avoidance points could cut across an obstacle.
+                    fraction = 1.0
+                    if horizontal > 1e-9:
+                        # The safety cap bounds lead, independently of the
+                        # reference's deceleration. Shrinking lead with its
+                        # speed would pull the target backwards while braking.
+                        fraction = min(fraction, speed_limit /
+                                       (self.config.guided_position_kp*horizontal))
+                    if abs(offset[2]) > 1e-9:
+                        fraction = min(fraction, self.config.guided_max_z_speed /
+                                       (self.config.guided_z_kp*abs(offset[2])))
+                    reference = current + offset*fraction
+                    if horizontal > 1e-9:
+                        # Continue the reference along this certified chord,
+                        # instead of jumping to current position + full lead.
+                        # Reproject only its scalar distance: never blend across
+                        # a corner or an unchecked obstacle-avoidance chord.
+                        distance = min(horizontal*fraction,
+                                       along + reference_distance)
+                        reference = current + offset*(distance/horizontal)
+                    else:
+                        # A height-only waypoint also needs a moving reference,
+                        # not a fresh fixed lead above/below the measured pose.
+                        previous_z = current[2] if previous_reference is None else previous_reference[2]
+                        reference[2] = np.clip(reference[2],
+                                               previous_z-self.config.guided_max_z_speed*control_dt,
+                                               previous_z+self.config.guided_max_z_speed*control_dt)
+                        reference[2] = np.clip(reference[2], min(current[2], command[2]), max(current[2], command[2]))
+                    # Do not jump to the final target merely because the UAV
+                    # entered its arrival radius. Finish the shaped reference
+                    # and verify low measured speed before a stopping arrival.
+                    reference_finished = (np.array_equal(command, target)
+                                          and np.linalg.norm(reference-target) <=
+                                          min(1e-3, .25*acceleration*period*period))
+                    if reference_finished:
+                        reference = target.copy()
+                    self._waypoint_position_reference = reference.copy()
+                    self.waypoint_control_state.update(
+                        command_ned=reference.tolist(),
+                        lead_speed=lead_speed, lead_acceleration=lead_acceleration,
                     )
-                horizontal_speed = float(np.clip(
-                    requested_horizontal_speed,
-                    commanded_forward_speed - max_horizontal_step,
-                    commanded_forward_speed + max_horizontal_step,
-                ))
-                commanded_forward_speed = horizontal_speed
-            else:
-                requested_horizontal_velocity = (
-                    requested_horizontal_speed * horizontal_direction
-                )
-                if commanded_horizontal_velocity is None:
-                    commanded_horizontal_velocity = np.asarray(
-                        current_velocity[:2],
-                        dtype=float,
-                    ).copy()
-                horizontal_change = (
-                    requested_horizontal_velocity
-                    - commanded_horizontal_velocity
-                )
-                change_norm = float(np.linalg.norm(horizontal_change))
-                if change_norm > max_horizontal_step:
-                    horizontal_change *= (
-                        max_horizontal_step / max(change_norm, 1e-9)
-                    )
-                commanded_horizontal_velocity += horizontal_change
-            last_horizontal_update = now
-
-            # 直达航段的高度基准必须固定在最终目标，不跟随
-            # 5 Hz 重规划时不断重建的 B 样条前视点。绕障航段仍使用
-            # 三维轨迹高度，但先低通滤波，避免拓扑切换直接变成
-            # 升降速度阶跃。
-            raw_down_target = float(
-                target[2] if using_direct_heading else active_target[2]
-            )
-            vertical_dt = max(1e-3, now - last_vertical_update)
-            if filtered_down_target is None:
-                filtered_down_target = float(position[2])
-            target_alpha = vertical_dt / (
-                z_target_filter_time_constant + vertical_dt
-            )
-            filtered_down_target += target_alpha * (
-                raw_down_target - filtered_down_target
-            )
-            active_down_error = filtered_down_target - float(position[2])
-
-            vertical_velocity = float(current_velocity[2])
-            requested_down_speed = float(
-                np.clip(
-                    z_kp * active_down_error - z_kd * vertical_velocity,
-                    -max_z_speed,
-                    max_z_speed,
-                )
-            )
-            if abs(raw_down_target - float(position[2])) <= z_tolerance:
-                # 进入高度保持区后立即交给 PX4 的速度环刹停，
-                # 不再因前视点小幅变化反复翻转指令方向。
-                requested_down_speed = 0.0
-
-            max_z_speed_step = max_z_acceleration * vertical_dt
-            down_speed = float(np.clip(
-                requested_down_speed,
-                commanded_down_speed - max_z_speed_step,
-                commanded_down_speed + max_z_speed_step,
-            ))
-            commanded_down_speed = down_speed
-            last_vertical_update = now
-
-            arrived = (
-                distance_xy <= xy_tolerance
-                and abs(down_error) <= z_tolerance
-            )
-            if arrived:
-                if stable_since is None:
-                    stable_since = now
-                elif now - stable_since >= stable_time:
-                    self.hover()
-                    elapsed = now - started_at
-                    position = self.get_position()
-                    final_delta = target - position
-                    print(
-                        "导航结果：已到达，"
-                        f"目标NED={target.round(3).tolist()}，"
-                        f"实际NED={position.round(3).tolist()}，"
-                        f"水平误差={np.linalg.norm(final_delta[:2]):.2f} m，"
-                        f"高度误差={abs(float(final_delta[2])):.2f} m，"
-                        f"耗时={elapsed:.1f} s"
-                    )
-                    return elapsed
-            else:
-                stable_since = None
-
-            if face_direction:
-                self.send_body_velocity(
-                    [horizontal_speed, 0.0, down_speed],
-                    yaw_rate=yaw_rate,
-                )
-            else:
-                self.send_velocity(
-                    [
-                        commanded_horizontal_velocity[0],
-                        commanded_horizontal_velocity[1],
-                        down_speed,
-                    ],
-                    yaw_rate=yaw_rate,
-                )
-
-            next_update += period
-            sleep_time = next_update - time.monotonic()
-            if sleep_time > 0.0:
-                time.sleep(sleep_time)
-            else:
-                next_update = time.monotonic()
+                    self.send_position(reference, yaw)
+                    if (not pass_through and reached and reference_finished
+                            and np.linalg.norm(self.get_velocity()) <= .05):
+                        stable_since = now if stable_since is None else stable_since
+                        if now-stable_since >= self.config.guided_stable_time:
+                            self._waypoint_lead_speed = 0.0
+                            self._waypoint_lead_acceleration = 0.0
+                            return now-started
+                    else:
+                        stable_since = None
+                self._waypoint_lead_speed = lead_speed
+                self._waypoint_lead_acceleration = lead_acceleration
+                time.sleep(max(0., period-(time.monotonic()-now)))
+        except BaseException:
+            try:
+                self.hover()
+            except Exception as hold_error:
+                print(f"--- 航点异常后位置保持失败：{hold_error}；保留原始异常 ----")
+            raise
 
     def align_yaw(self, yaw=0.0, max_yaw_rate=None, timeout=None, health_check=None):
-        """通过最短 yaw 误差和角速度控制原地调整机头方向。"""
+        """锁住当前位置，通过限速的位置模式航向设定点原地转向。"""
         self._require_offboard()
 
         target_yaw = self._wrap_angle(float(yaw))
@@ -804,6 +586,8 @@ class RflyMultirotorInterface:
         stable_since = None
         current_yaw = self._wrap_angle(float(self.get_euler()[2]))
         yaw_error = self._wrap_angle(target_yaw - current_yaw)
+        hold_position = self.get_position().copy()
+        command_yaw = current_yaw
 
         while True:
             if health_check is not None:
@@ -832,9 +616,12 @@ class RflyMultirotorInterface:
                 stable_since = None
 
             yaw_rate = float(
-                np.clip(yaw_kp * yaw_error, -max_yaw_rate, max_yaw_rate)
+                np.clip(yaw_kp * self._wrap_angle(target_yaw-command_yaw), -max_yaw_rate, max_yaw_rate)
             )
-            self.send_body_velocity([0.0, 0.0, 0.0], yaw_rate=yaw_rate)
+            # Ramp the heading setpoint while keeping XYZ fixed. Actual yaw
+            # feedback still determines arrival and timeout.
+            command_yaw = self._wrap_angle(command_yaw + yaw_rate * period)
+            self.send_position(hold_position, command_yaw)
 
             next_update += period
             sleep_time = next_update - time.monotonic()
@@ -884,16 +671,52 @@ class RflyMultirotorInterface:
         position = self.get_position()
 
         # Stop pursuing the old waypoint before handing control to the caller.
+        # Capture BEFORE hover overwrites the position command that preceded impact.
+        context = {
+            "timestamp": time.time(),
+            "position_ned": position.tolist(),
+            "velocity_ned": self.get_velocity().tolist(),
+            "euler_rpy": self.get_euler().tolist(),
+            "last_position_command": deepcopy(getattr(self, "_last_position_command", None)),
+            "waypoint_controller": deepcopy(getattr(self, "waypoint_control_state", None)),
+            "landing_commanded": self._landing_commanded,
+            "ground_down": self._ground_down,
+            "flight_status": self._flight_status(),
+        }
         if self.offboard_enabled:
             yaw = float(self.get_euler()[2])
-            self.send_position(position, yaw)
+            try:
+                self.send_position(position, yaw)
+            except Exception as error:
+                context["hold_error"] = str(error)
+                print(f"--- 碰撞后位置保持失败：{error} ----")
 
         print(
             "WARNING: 检测到碰撞 原地降落. "
             f"target_id={target_id}, position_ned={position.tolist()}, "
             f"object={object_name or 'unknown'}"
         )
-        raise CollisionDetectedError(target_id, position, object_name)
+        print(f"--- 碰撞前控制证据：{context} ----")
+        raise CollisionDetectedError(target_id, position, object_name, context)
+
+    def _flight_status(self):
+        """Read available SDK/MAVLink state; do not infer actual mode from our flag."""
+        messages = getattr(getattr(self.mav, "the_connection", None), "messages", {})
+        heartbeat = messages.get("HEARTBEAT")
+        battery = messages.get("BATTERY_STATUS")
+        sender = getattr(self.mav, "t2", None)
+        received = getattr(heartbeat, "_timestamp", None)
+        return {
+            "armed": bool(getattr(self.mav, "isArmed", False)),
+            "offboard_requested": self.offboard_enabled,
+            "offboard_sender_alive": None if sender is None else sender.is_alive(),
+            "custom_mode": None if heartbeat is None else int(heartbeat.custom_mode),
+            "base_mode": None if heartbeat is None else int(heartbeat.base_mode),
+            "system_status": None if heartbeat is None else int(heartbeat.system_status),
+            "heartbeat_age_seconds": None if received is None else time.time()-float(received),
+            "battery_remaining_percent": None if battery is None else int(battery.battery_remaining),
+            "battery_voltages_mv": None if battery is None else [int(v) for v in battery.voltages],
+        }
 
     def send_velocity(self, velocity, yaw_rate=0.0):
         """发送 NED 速度指令。
@@ -913,25 +736,6 @@ class RflyMultirotorInterface:
             float(yaw_rate),
         )
 
-    def send_body_velocity(self, velocity, yaw_rate=0.0):
-        """发送机体系 FRD 速度指令。
-
-        Args:
-            velocity: ``[forward, right, down]``，采用机体系 FRD，单位为
-                m/s。正值分别表示向前、向右和向下。
-            yaw_rate: 偏航角速度，单位为 rad/s。
-        """
-        self._require_offboard()
-
-        vx, vy, vz = self._vector3(velocity, "velocity")
-
-        self.mav.SendVelFRD(
-            float(vx),
-            float(vy),
-            float(vz),
-            float(yaw_rate),
-        )
-
     def hover(self):
         """保持调用时的当前位置。"""
         self._require_offboard()
@@ -940,26 +744,140 @@ class RflyMultirotorInterface:
         yaw = float(self.get_euler()[2])
 
         self.send_position(position, yaw)
+        self._waypoint_lead_speed = 0.0
+        self._waypoint_lead_acceleration = 0.0
+        self._waypoint_position_reference = None
+        self._waypoint_command_time = None
+
+    def _ue_landing_diagnostics(self):
+        """Read the existing UE stream, independently of PX4's movable home."""
+        ue = getattr(self, 'ue', None)
+        if ue is None:
+            return None
+        packet = ue.getUE4Data(int(self.config.copter_id))
+        if packet is None or isinstance(packet, (int, float)):
+            return None
+        stamp = float(getattr(packet, 'runnedTime', float('nan')))
+        if not math.isfinite(stamp):
+            return None
+        now = time.monotonic()
+        previous = getattr(self, '_ue_landing_sample', None)
+        changed = previous is None or stamp != previous[0]
+        if changed:
+            self._ue_landing_sample = (stamp, now)
+        age = 0.0 if changed else now-previous[1]
+        def vector(name):
+            value = np.asarray(getattr(packet, name, []), dtype=float)
+            return value.tolist() if value.size and np.isfinite(value).all() else None
+        return dict(timestamp=stamp, observed_age_seconds=age,
+                    position=vector('PosE'), velocity=vector('VelE'),
+                    motor_rpms=vector('MotorRPMS'), rays_raw=vector('ray'),
+                    crash_type=int(getattr(packet, 'CrashType', 0)),
+                    object_name=str(getattr(packet, 'CrashedName', '')))
+
+    def _landing_height_diagnostics(self):
+        """Keep independent altitude sources with ages; do not certify touchdown."""
+        messages = getattr(getattr(self.mav, "the_connection", None), "messages", {})
+        result = {}
+        fields = {
+            "GLOBAL_POSITION_INT": ("alt", "relative_alt", "lat", "lon"),
+            "HOME_POSITION": ("altitude", "x", "y", "z"),
+            "ALTITUDE": ("altitude_local", "altitude_relative", "altitude_terrain", "bottom_clearance"),
+            "DISTANCE_SENSOR": ("current_distance", "min_distance", "max_distance", "orientation", "id"),
+        }
+        for name, names in fields.items():
+            message = messages.get(name)
+            if message is None:
+                continue
+            item = {}
+            for key in names:
+                value = getattr(message, key, None)
+                item[key] = float(value) if value is not None and math.isfinite(float(value)) else None
+            stamp = getattr(message, "_timestamp", None)
+            item["age_seconds"] = (time.time()-float(stamp) if stamp is not None
+                                   and math.isfinite(float(stamp)) else None)
+            result[name] = item
+        result["units"] = "MAVLink native: GLOBAL_POSITION_INT/HOME altitude mm; DISTANCE_SENSOR cm; ALTITUDE m"
+        result["sdk_point_mode"] = bool(getattr(self.mav, "isInPointMode", False))
+        result['ue_vehicle'] = self._ue_landing_diagnostics()
+        baseline = getattr(self, '_landing_ground_sources', {}).get('ue_vehicle')
+        current_ue = result['ue_vehicle']
+        if (baseline and current_ue and baseline.get('position') is not None
+                and current_ue.get('position') is not None):
+            result['ue_position_change_from_takeoff_ground'] = (
+                np.asarray(current_ue['position'])-np.asarray(baseline['position'])).tolist()
+        result["sim_truth_received"] = bool(getattr(self.mav, "hasTrueDataRec", False))
+        if result["sim_truth_received"]:
+            position = np.asarray(self.mav.truePosNED, dtype=float)
+            result["sim_position_world_ned"] = position.tolist() if np.isfinite(position).all() else None
+            # SDK truth clock is not assumed to share the PX4 NED origin/timebase.
+            stamp = float(getattr(self.mav, "trueTimeStmp", 0.))
+            result["sim_timestamp_raw"] = stamp if math.isfinite(stamp) else None
+        return result
 
     def land(self):
-        """在当前位置执行 PX4 自动降落。"""
+        """Use SDK land command; retire position streaming after AUTO.LAND acknowledgement."""
         self._require_connection()
-
+        if self._landing_commanded:
+            self._wait_for_landing_handoff()
+            return
         position = self.get_position()
-
+        if getattr(self.mav, "the_connection", None) is not None:
+            # Diagnostic telemetry only; does not change flight mode or setpoints.
+            self.mav.SendMavCmdLong(511, 245, 200000)
+        self.landing_confirmation = None
+        self._landing_start_evidence = self._landing_height_diagnostics()
+        self._landing_requested_at = time.time()
         self._landing_commanded = True
-        self.mav.sendMavLand(
-            float(position[0]),
-            float(position[1]),
-            0.0,
-        )
+        self.mav.sendMavLand(float(position[0]), float(position[1]), 0.0)
+        print("--- 已发送 PX4 降落指令 sendMavLand，等待 AUTO.LAND 接管 ----")
+        self._wait_for_landing_handoff()
+
+    def _wait_for_landing_handoff(self):
+        """Complete mode handoff before callers start slow shutdown/checkpoints."""
+        connection = getattr(self.mav, "the_connection", None)
+        if connection is None:
+            return  # Direct SDK mode exposes no MAVLink heartbeat cache.
+        deadline = time.monotonic() + min(5., float(self.config.landing_timeout))
+        while time.monotonic() < deadline:
+            heartbeat = getattr(connection, "messages", {}).get("HEARTBEAT")
+            stamp = getattr(heartbeat, "_timestamp", float('nan'))
+            if (math.isfinite(stamp) and self._landing_requested_at is not None
+                    and stamp > self._landing_requested_at and 0 <= time.time()-stamp < 2.):
+                mode = int(heartbeat.custom_mode)
+                if (mode >> 16) & 255 == 4 and (mode >> 24) & 255 == 6:
+                    self._handoff_landing_stream(heartbeat)
+                    return
+            time.sleep(.05)
+        # Permit an explicit retry; never claim a completed handoff on timeout.
+        self._landing_commanded = False
+        raise TimeoutError("PX4 did not acknowledge AUTO.LAND within 5 seconds; "
+                           f"flight_status={self._flight_status()}")
+
+    def _handoff_landing_stream(self, heartbeat):
+        """Stop only the SDK sender, without a second mode or disarm command."""
+        requested = self._landing_requested_at
+        if not self.offboard_enabled or requested is None or heartbeat is None:
+            return
+        if heartbeat._timestamp <= requested:
+            return
+        mode = int(heartbeat.custom_mode)
+        if (mode >> 16) & 255 != 4 or (mode >> 24) & 255 != 6:
+            return
+        sender = getattr(self.mav, "t2", None)
+        if sender is None or not hasattr(self.mav, "isInOffboard"):
+            return
+        # SDK endOffboard also sends NAV_GUIDED_ENABLE(False). Avoid changing
+        # the acknowledged landing mode; its sender exits on this flag alone.
+        self.mav.isInOffboard = False
+        sender.join(timeout=1.0)
+        if sender.is_alive():
+            raise TimeoutError("AUTO.LAND acknowledged but Offboard sender did not stop")
+        self.offboard_enabled = False
+        print("--- PX4 AUTO.LAND 已接管，停止旧悬停位置指令发送 ----")
 
     def wait_until_landed(self, timeout=None):
-        """Wait until PX4 auto-disarms or touchdown is stably detected.
-
-        PX4MavCtrlV4 does not expose MAV_LANDED_STATE, so the fallback check
-        uses local-NED height and total speed for a continuous stable period.
-        """
+        """Confirm ground proximity and motion, checking PX4 landing telemetry."""
         self._require_connection()
 
         if timeout is None:
@@ -970,26 +888,98 @@ class RflyMultirotorInterface:
         stable_time = float(self.config.landed_stable_time)
         deadline = time.monotonic() + float(timeout)
         stable_since = None
+        first_sample = None
+        last_flight_status = None
+        conflict_since = None
+        conflict_sample = None
 
         while time.monotonic() < deadline:
-            # Automatic post-landing disarm is the strongest signal exposed by
-            # this SDK and takes precedence over the kinematic fallback.
-            if not bool(self.mav.isArmed):
-                self.armed = False
-                return True
+            connection = getattr(self.mav, "the_connection", None)
+            messages = getattr(connection, "messages", {})
+            now = time.time()
 
-            position = self.get_position()
-            velocity = self.get_velocity()
+            def fresh(name):
+                message = messages.get(name)
+                stamp = getattr(message, "_timestamp", float('nan'))
+                return message if math.isfinite(stamp) and 0 <= now-stamp < 2.0 else None
+
+            heartbeat, local = fresh("HEARTBEAT"), fresh("LOCAL_POSITION_NED")
+            self._handoff_landing_stream(heartbeat)
+            extended = fresh("EXTENDED_SYS_STATE")
+            requested = self._landing_requested_at
+            if extended is not None and requested is not None and extended._timestamp < requested:
+                extended = None
+            landed_state = None if extended is None else int(extended.landed_state)
+            telemetry_fresh = connection is None or (heartbeat is not None and local is not None)
+            if local is not None:
+                # Position and speed from one immutable telemetry packet.
+                position = np.array([local.x, local.y, local.z], dtype=float)
+                velocity = np.array([local.vx, local.vy, local.vz], dtype=float)
+            else:
+                position = self.get_position()
+                velocity = self.get_velocity()
             height_error = abs(float(position[2]) - self._ground_down)
             speed = float(np.linalg.norm(velocity))
+            position_finite = bool(np.isfinite(position).all())
+            velocity_finite = bool(np.isfinite(velocity).all())
+            finite = position_finite and velocity_finite and math.isfinite(height_error)
 
-            if height_error <= height_tolerance and speed <= speed_tolerance:
+            # A stopped/disarmed simulator can freeze above the floor. Even
+            # ON_GROUND must not bypass the measured ground-height check.
+            ground_evidence = height_error <= height_tolerance and landed_state in (None, 0, 1)
+            sample = None if local is None else local._timestamp
+            if finite and telemetry_fresh and ground_evidence and speed <= speed_tolerance:
                 if stable_since is None:
                     stable_since = time.monotonic()
-                elif time.monotonic() - stable_since >= stable_time:
-                    return True
+                    first_sample = sample
             else:
                 stable_since = None
+            stable_for = 0. if stable_since is None else time.monotonic()-stable_since
+            advancing = connection is None or (sample is not None and first_sample is not None and sample > first_sample)
+            confirmed = stable_since is not None and stable_for >= stable_time and advancing
+            self.landing_confirmation = {
+                "confirmed": confirmed, "source": "stable_ground_height_and_speed",
+                "position_ned": position.tolist() if position_finite else None,
+                "velocity_ned": velocity.tolist() if velocity_finite else None,
+                "ground_down": float(self._ground_down) if math.isfinite(self._ground_down) else None,
+                "height_error_m": height_error if math.isfinite(height_error) else None,
+                "speed_mps": speed if math.isfinite(speed) else None,
+                "height_tolerance_m": height_tolerance, "speed_tolerance_mps": speed_tolerance,
+                "stable_seconds": stable_for, "required_stable_seconds": stable_time,
+                "armed_reported": bool(self.mav.isArmed),
+                "px4_landed_state": landed_state, "telemetry_fresh": telemetry_fresh,
+                "extended_state_age_seconds": None if extended is None else now-extended._timestamp,
+                "flight_status": self._flight_status(),
+                "height_sources": self._landing_height_diagnostics(),
+                "landing_start_height_sources": getattr(self, "_landing_start_evidence", None),
+                "takeoff_ground_height_sources": getattr(self, "_landing_ground_sources", None),
+            }
+            # A fresh PX4-disarmed/on-ground state can conflict with height.
+            # Fail promptly rather than wait for stopped motors to descend;
+            # this is NOT touchdown evidence and cannot enable another mission.
+            disarmed_conflict = (finite and telemetry_fresh and heartbeat is not None
+                and not (int(heartbeat.base_mode) & 128) and not bool(self.mav.isArmed)
+                and landed_state == 1 and height_error > height_tolerance
+                and speed <= speed_tolerance)
+            if disarmed_conflict:
+                if conflict_since is None:
+                    conflict_since, conflict_sample = time.monotonic(), sample
+                if (time.monotonic()-conflict_since >= stable_time and sample is not None
+                        and conflict_sample is not None and sample > conflict_sample):
+                    self.landing_confirmation['failure_reason'] = 'disarmed_height_conflict'
+                    return False
+            else:
+                conflict_since = None
+            flight = self.landing_confirmation["flight_status"]
+            state_key = (flight["custom_mode"], flight["armed"], landed_state)
+            if state_key != last_flight_status:
+                last_flight_status = state_key
+                print(f"--- PX4 降落反馈：mode={flight['custom_mode']}，armed={flight['armed']}，"
+                      f"landed_state={landed_state}，距起飞地面={height_error:.2f} m ----")
+            if confirmed:
+                if not bool(self.mav.isArmed):
+                    self.armed = False
+                return True
 
             time.sleep(0.1)
 
@@ -1023,20 +1013,7 @@ class RflyMultirotorInterface:
         return self._copy_vector(self.mav.uavAngEular)
 
     def get_quaternion(self):
-        """获取机体 FRD 到世界 NED 的姿态四元数 [w, x, y, z]。
-
-        若当前 PX4 数据流没有发送 ``ATTITUDE_QUATERNION``，则使用最新
-        roll、pitch、yaw 计算四元数，避免返回 SDK 的初始全零值。
-        """
-        self._require_connection()
-        quaternion = np.asarray(
-            getattr(self.mav, "uavAngQuatern", [0.0] * 4),
-            dtype=float,
-        ).reshape(-1)
-        if quaternion.size == 4:
-            norm = float(np.linalg.norm(quaternion))
-            if math.isfinite(norm) and norm > 1e-6:
-                return (quaternion / norm).copy()
+        """与当前 ATTITUDE 一致的 FRD→NED 四元数，避免复用旧四元数消息。"""
         return self._euler_to_quaternion(self.get_euler())
 
     def get_angular_velocity(self):
@@ -1047,34 +1024,48 @@ class RflyMultirotorInterface:
     def get_drone_state(self, timestamp=None):
         """对当前 PX4 状态做一次完整快照。
 
-        ``timestamp`` 默认采用读取前后的主机 Unix 时间中点。RflySim 图像
-        时间戳同样使用 Unix 秒，因此该状态可以进入时间同步缓存。
+        MAVLink 模式按完整消息读取，使用 ATTITUDE 接收时间，避免轮询
+        延迟以及旧 ATTITUDE_QUATERNION 混入当前姿态。位置消息的源时间
+        差单独交给同步器检查；不把尚未同步的位置外推为精确测量。
         """
         self._require_connection()
         from sensors.empirical_pose_covariance import position_covariance_from_odometry
 
         before = time.time()
-        position = self.get_position()
-        velocity = self.get_velocity()
-        euler = self.get_euler()
-        angular_velocity = self.get_angular_velocity()
-        quaternion = self.get_quaternion()
+        messages = getattr(getattr(self.mav, "the_connection", None), "messages", {})
+        attitude, local_position = messages.get("ATTITUDE"), messages.get("LOCAL_POSITION_NED")
+        pose_sync_error = 0.0
+        if attitude is not None and local_position is not None:
+            # Cached message objects remain intact when the receiver publishes
+            # their replacements; SDK component arrays are updated in-place.
+            euler = np.array([attitude.roll, attitude.pitch, attitude.yaw], dtype=float)
+            angular_velocity = np.array([attitude.rollspeed, attitude.pitchspeed, attitude.yawspeed], dtype=float)
+            position = np.array([local_position.x, local_position.y, local_position.z], dtype=float)
+            velocity = np.array([local_position.vx, local_position.vy, local_position.vz], dtype=float)
+            boot_timestamp = float(attitude.time_boot_ms) / 1000.0
+            pose_sync_error = abs(float(attitude.time_boot_ms) - float(local_position.time_boot_ms)) / 1000.0
+            received_at = float(attitude._timestamp)
+        else:
+            # Direct SDK/UDP mode has no MAVLink message cache.
+            position, velocity = self.get_position(), self.get_velocity()
+            euler, angular_velocity = self.get_euler(), self.get_angular_velocity()
+            boot_timestamp = float(getattr(self.mav, "uavTimeStmp", 0.0))
+            received_at = before
         after = time.time()
         sample_timestamp = (
-            0.5 * (before + after) if timestamp is None else float(timestamp)
+            received_at if timestamp is None else float(timestamp)
         )
         return DroneState(
             timestamp=sample_timestamp,
             position_xyz=position,
-            quaternion=quaternion,
+            quaternion=self._euler_to_quaternion(euler),
             linear_velocity=velocity,
             angular_velocity=angular_velocity,
             euler_rpy=euler,
-            px4_boot_timestamp=float(
-                getattr(self.mav, "uavTimeStmp", 0.0)
-            ),
+            px4_boot_timestamp=boot_timestamp,
+            pose_sync_error=pose_sync_error,
             position_covariance_ned=position_covariance_from_odometry(
-                getattr(getattr(self.mav, "the_connection", None), "messages", {}).get("ODOMETRY"),
+                messages.get("ODOMETRY"),
                 after,
             ),
         )
@@ -1103,7 +1094,8 @@ class RflyMultirotorInterface:
         """Confirm touchdown and reset Offboard state while retaining SDK connections."""
         self._require_connection()
         if not self.wait_until_landed():
-            raise TimeoutError("Landing not confirmed; another flight cannot be started")
+            raise TimeoutError("Landing not confirmed; another flight cannot be started; "
+                               f"evidence={getattr(self, 'landing_confirmation', None)}")
         if bool(self.mav.isArmed):
             self.disarm(force=True)
         if self.offboard_enabled:
@@ -1111,6 +1103,7 @@ class RflyMultirotorInterface:
         self.offboard_enabled = False
         self.armed = False
         self._landing_commanded = False
+        self._landing_requested_at = None
         self._shutdown_disarmed = False
 
     def close(self, disarm=False):
@@ -1133,11 +1126,15 @@ class RflyMultirotorInterface:
                 )
 
             if not self.wait_until_landed():
-                raise TimeoutError(
-                    "Landing was not confirmed before timeout. To prevent an "
-                    "in-air motor stop, disarm and communication shutdown were "
-                    "not performed."
-                )
+                if (self.landing_confirmation or {}).get('failure_reason') == 'disarmed_height_conflict':
+                    print('--- PX4 已停桨，但高度与落地状态冲突；关闭通信，未确认落地，禁止继续任务 ----')
+                    self.armed = False
+                else:
+                    raise TimeoutError(
+                        "Landing was not confirmed before timeout. To prevent an "
+                        "in-air motor stop, disarm and communication shutdown were "
+                        f"not performed. evidence={self.landing_confirmation}"
+                    )
 
             # The kinematic fallback may confirm touchdown before PX4's own
             # automatic-disarm delay has expired.
@@ -1158,7 +1155,7 @@ class RflyMultirotorInterface:
 
         self.connected = False
         shutdown_events = []
-        if self._landing_commanded:
+        if self._landing_commanded and (self.landing_confirmation or {}).get('confirmed'):
             shutdown_events.append("无人机降落")
         if self._shutdown_disarmed:
             shutdown_events.append("无人机上锁")

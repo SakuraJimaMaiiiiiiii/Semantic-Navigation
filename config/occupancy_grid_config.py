@@ -24,6 +24,6 @@ class OccupancyGridConfig:
     occupied_threshold: float = 1.2  # 约需连续两次命中才判为占据，减少单帧假障碍
     free_threshold: float = -0.2  # 判定为空闲的log-odds阈值
     inflation_radius: float = 0.3  # 障碍膨胀半径，m；缩小以保留更多可通行空间
-    forward_safety_roi_width: float = 0.5  # 前向急停区域占图像宽度的比例
+    forward_safety_roi_width: float = 0.7  # 覆盖机体两侧，避免细柱只出现在中央ROI外
     forward_safety_roi_height: float = 0.5  # 前向急停区域占图像高度的比例
-    forward_safety_percentile: float = 5.0  # 用近距离分位数抑制单像素噪声
+    forward_safety_percentile: float = 2.0  # UE深度稳定，保留少量抗噪同时响应细柱

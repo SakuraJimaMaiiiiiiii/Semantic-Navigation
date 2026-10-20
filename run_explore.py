@@ -1,21 +1,39 @@
-"""Terminal 1: FUEL-inspired frontiers + fixed-height EGO, return/land, target service."""
+"""Terminal 1: Utility frontier decisions + existing A* paths + EGO local avoidance, return/land, target service."""
 
 import argparse
 from dataclasses import replace
 from pathlib import Path
 import queue
+import sys
 import uuid
+import webbrowser
 
 from config.exploration_config import FrontierExplorationConfig
-from navigation.session_server import SessionServer
-from navigation.exploration_session import ExplorationSession, TargetUnavailableError
 
 DEFAULT_SESSION_FILE = (
     Path(__file__).resolve().parent / "data" / "exploration_session.json"
 )
 
 
-def main():
+def shutdown_session(server, runtime, primary_error=None):
+    """Attempt every cleanup step without hiding the fault that ended flight."""
+    steps = [("session state", lambda: server.set_state("STOPPING")),
+             ("session server", server.close)]
+    if runtime is not None:
+        steps.extend([("landing request", lambda: runtime.land_if_armed(hover_first=True)),
+                      ("runtime shutdown", runtime.close)])
+    errors = []
+    for name, stop in steps:
+        try:
+            stop()
+        except Exception as error:
+            errors.append(error)
+            print(f"--- 清理失败 [{name}]: {type(error).__name__}: {error} ----", file=sys.stderr)
+    if errors and primary_error is None:
+        raise errors[0]
+
+
+def parse_config(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     defaults = FrontierExplorationConfig()
     parser.add_argument("--port", type=int, default=defaults.server_port)
@@ -39,6 +57,11 @@ def main():
         default=defaults.completion_frontier_area,
     )
     parser.add_argument(
+        "--coverage-plateau-seconds", type=float,
+        default=defaults.coverage_plateau_seconds,
+        help="Seconds without meaningful map expansion before a frontier review",
+    )
+    parser.add_argument(
         "--minimum-map-gain-area",
         type=float,
         default=defaults.minimum_map_gain_area,
@@ -48,8 +71,8 @@ def main():
         type=float,
         default=defaults.return_time_reserve,
     )
-    args = parser.parse_args()
-    config = replace(
+    args = parser.parse_args(argv)
+    return replace(
         defaults,
         server_port=args.port,
         timeout=args.timeout,
@@ -60,8 +83,16 @@ def main():
         frontier_empty_min_duration=args.frontier_empty_seconds,
         completion_frontier_area=args.completion_frontier_area,
         minimum_map_gain_area=args.minimum_map_gain_area,
+        coverage_plateau_seconds=args.coverage_plateau_seconds,
         return_time_reserve=args.return_reserve,
     )
+
+
+def main():
+    config = parse_config()
+    from navigation.session_server import SessionServer
+    from navigation.exploration_session import ExplorationSession, TargetUnavailableError
+
     # Acquire the single local control endpoint BEFORE sending any scene command.
     server = SessionServer(uuid.uuid4().hex, config.server_port)
     runtime = None
@@ -69,15 +100,23 @@ def main():
         from application import DemoRuntime, WebSocketRequestSender
 
         WebSocketRequestSender().send_when_ue_ready()
-        runtime = DemoRuntime(exploration=True)
+        runtime = DemoRuntime(exploration=True, exploration_config=config)
         runtime.start()
         session = ExplorationSession(runtime, config, session_id=server.session_id)
         server.map_path = str(session.map_path.resolve())
         server.publish_descriptor(session.directory / "session.json")
         server.publish_descriptor(DEFAULT_SESSION_FILE)
         print(f"--- Frontier exploration output: {session.directory} ----")
+        session.annotate(state="准备起飞：雷达建图 / Utility 探索")
+        map_url = session.map_path.resolve().as_uri()
+        try:
+            if not webbrowser.open(map_url, new=2):
+                print(f"--- 浏览器未自动打开，请打开地图：{session.map_path} ----")
+        except Exception as error:
+            print(f"--- 打开地图失败：{error}；可手动打开：{session.map_path} ----")
         session.explore()
         server.set_state("READY")
+        print("--- 探索结果已保存，后台录像、语义日志和回环重建已停止写入；等待目标导航 ----")
         print(f"--- 已返航并确认落地。保持本终端运行。地图：{session.map_path} ----")
         print("--- 另开终端执行：python navigate_target.py ----")
         while True:
@@ -116,13 +155,7 @@ def main():
     except KeyboardInterrupt:
         print("--- Stopping exploration session ----")
     finally:
-        server.set_state("STOPPING")
-        server.close()
-        if runtime is not None:
-            try:
-                runtime.land_if_armed(hover_first=True)
-            finally:
-                runtime.close()
+        shutdown_session(server, runtime, primary_error=sys.exc_info()[1])
 
 
 if __name__ == "__main__":

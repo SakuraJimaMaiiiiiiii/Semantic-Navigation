@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import numpy as np
 
 
@@ -31,3 +32,14 @@ def ned_height_slice_mask(
         (voxel_centers_down >= minimum_down - tolerance)
         & (voxel_centers_down <= maximum_down + tolerance)
     )
+
+
+def height_band_indices(center_down, half_height, resolution, origin_down=0.0):
+    """Voxel layers with positive-volume overlap with the body's height band.
+
+    A voxel merely touching the top/bottom boundary contributes no volume.
+    Tolerance is in voxel units and only absorbs floating-point roundoff.
+    """
+    low = (float(center_down)-float(half_height)-float(origin_down))/resolution
+    high = (float(center_down)+float(half_height)-float(origin_down))/resolution
+    return math.floor(low+1e-8), math.ceil(high-1e-8)-1

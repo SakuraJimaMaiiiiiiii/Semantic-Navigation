@@ -7,10 +7,10 @@ from dataclasses import dataclass
 class PlannerConfig:
     """EGO/二维 A* 局部规划及独立安全停车参数。"""
 
-    # ego_native=C++ 核心（不可用时回退 Python）；ego=纯 Python 三维 B 样条。
+    # ego_native=C++ 核心（不可用则报错）；ego=纯 Python 三维 B 样条。
     navigation_mode: str = "ego_native"
     # 返航航段的局部规划模式：
-    # ego_native/ego=三维B样条；astar=二维栅格；depth_guard=仅深度保护。
+    # ego_native/ego=畅通航段直行、受阻时B样条绕障；astar=二维栅格；depth_guard=仅深度保护。
     return_navigation_mode: str = "ego_native"
     replan_rate: float = 5.0  # 局部路径重规划频率，Hz
     map_timeout: float = 0.6  # 地图连续多久未更新后悬停，s
@@ -22,11 +22,8 @@ class PlannerConfig:
     emergency_stop_distance: float = 0.6  # 前向深度小于此距离立即悬停，m
     map_emergency_stop_distance: float = 0.35  # 保留近距离地图障碍的硬急停保护
     slowdown_distance: float = 1.0  # 障碍进入此距离后限制速度，m
-    cruise_max_speed: float = 0.6  # 兼顾视觉稳定性的安全巡航速度，m/s
-    avoidance_max_speed: float = 0.35  # 避障期间最大前向速度，m/s
-    sensor_clear_fallback_speed: float = 0.4  # A*假阻塞时的低速直行速度
-    fallback_min_clearance: float = 1.5  # 直行兜底所需的前向深度，m
-    fallback_min_map_clearance: float = 0.4  # 保留地图兜底硬间距，避免贴近真实障碍直行
+    cruise_max_speed: float = 0.35  # 视觉采集优先的巡航规划上限，m/s
+    avoidance_max_speed: float = 0.25  # 避障期间最大前向速度，m/s
     vertical_target_step: float = 0.5  # 每次局部目标允许调整的最大高度，m
     no_path_confirmation_count: int = 3  # 连续失败多少次才确认无路
     clear_path_confirmation_count: int = 3  # 绕障后连续直线安全多少帧才恢复直飞
@@ -44,7 +41,7 @@ class PlannerConfig:
     global_return_max_search_nodes: int = 300_000
 
     # C++/Python EGO 风格局部规划共用参数。这里不依赖 ROS；A* 只负责为
-    # 碰撞段提供拓扑种子，最终执行路径由三次均匀 B 样条生成。
+    # 碰撞段提供拓扑种子并优化为B样条；已验证畅通航段直接跟随航点。
     ego_control_point_spacing: float = 0.35
     ego_trajectory_lookahead_time: float = 0.8
     ego_clearance: float = 0.45
@@ -54,7 +51,7 @@ class PlannerConfig:
     ego_optimization_iterations: int = 200
     ego_lbfgs_memory: int = 16
     ego_rebound_max_restarts: int = 6
-    # 仅供未编译 C++ 扩展时的旧 Python 梯度下降回退使用。
+    # 仅供显式选择 ego 模式时的 Python 梯度下降实现使用。
     ego_optimization_step: float = 0.035
     ego_smoothness_weight: float = 1.0
     ego_collision_weight: float = 5.0
@@ -91,11 +88,6 @@ class PlannerConfig:
             "slowdown_distance": self.slowdown_distance,
             "cruise_max_speed": self.cruise_max_speed,
             "avoidance_max_speed": self.avoidance_max_speed,
-            "sensor_clear_fallback_speed": self.sensor_clear_fallback_speed,
-            "fallback_min_clearance": self.fallback_min_clearance,
-            "fallback_min_map_clearance": (
-                self.fallback_min_map_clearance
-            ),
             "vertical_target_step": self.vertical_target_step,
             "avoidance_reuse_min_distance": (
                 self.avoidance_reuse_min_distance
@@ -141,22 +133,9 @@ class PlannerConfig:
             raise ValueError(
                 "slowdown_distance must exceed emergency_stop_distance."
             )
-        if (
-            self.map_emergency_stop_distance
-            >= self.fallback_min_map_clearance
-        ):
-            raise ValueError(
-                "map_emergency_stop_distance must be less than "
-                "fallback_min_map_clearance."
-            )
         if self.avoidance_max_speed > self.cruise_max_speed:
             raise ValueError(
                 "avoidance_max_speed must not exceed cruise_max_speed."
-            )
-        if self.sensor_clear_fallback_speed > self.cruise_max_speed:
-            raise ValueError(
-                "sensor_clear_fallback_speed must not exceed "
-                "cruise_max_speed."
             )
         if int(self.no_path_confirmation_count) < 1:
             raise ValueError(

@@ -117,6 +117,13 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         self._navigation_global_map = None
         self._plane_cache = None
 
+    def discard_trajectory(self):
+        """End avoidance when the caller resumes a certified route segment."""
+        self._trajectory = None
+        self._cached_plan = None
+        self._last_plan_time = -math.inf
+        self._tracking_floor_time = 0.0
+
     def set_navigation_plane(self, altitude, config, global_map=None):
         """Constrain exploration splines to the takeoff plane, before validation."""
         altitude = float(altitude)
@@ -203,15 +210,13 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
 
         forward_clearance = float(snapshot.forward_clearance)
         map_distance = self._nearest_obstacle_distance(snapshot, current, target)
-        self.last_map_obstacle_distance = map_distance
-        self.last_forward_clearance = forward_clearance
         obstacle_distance = min(map_distance, forward_clearance)
         if (
             forward_clearance < float(self.config.emergency_stop_distance)
             or map_distance < float(self.config.map_emergency_stop_distance)
         ):
             self._trajectory = None
-            return self._cache(self._stop_plan("emergency_stop", obstacle_distance))
+            return self._cache(self._stop_plan("emergency_stop"))
 
         (
             self._planning_start_velocity,
@@ -231,7 +236,9 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         start = self.world_to_grid(snapshot, current)
         if not self._inside_3d(blocked, start):
             self._trajectory = None
-            return self._cache(self._stop_plan("outside_map", obstacle_distance))
+            return self._cache(self._stop_plan("outside_map"))
+        start_is_known_free = (snapshot.states[tuple(start)] == 0
+                               and not blocked[tuple(start)])
         blocked[tuple(start)] = False
 
         requested_local_goal = self._local_goal_in_map(
@@ -241,12 +248,12 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         )
         if requested_local_goal is None:
             self._trajectory = None
-            return self._cache(self._stop_plan("map_boundary", obstacle_distance))
+            return self._cache(self._stop_plan("map_boundary"))
         requested_goal = self.world_to_grid(snapshot, requested_local_goal)
         goal = self._nearest_free_3d(blocked, requested_goal)
         if goal is None:
             self._trajectory = None
-            return self._handle_no_path(obstacle_distance)
+            return self._handle_no_path()
         # 目标体素本身可用时保留连续世界坐标，避免每次重规划都跳到
         # 体素中心而使直线路径方向和 yaw 发生周期性摆动。
         local_goal = (
@@ -258,6 +265,20 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             local_goal[2] = self.navigation_altitude
 
         direct_clear = self._line_is_free_3d(snapshot, blocked, current, local_goal)
+        # A clear, observed corridor needs no spline optimization. Preserve the
+        # supplied route segment and never snap a blocked endpoint for this path.
+        if (direct_clear and start_is_known_free
+                and np.array_equal(goal, requested_goal)):
+            known_blocked = blocked | (np.asarray(snapshot.states) == UNKNOWN)
+            if self._line_is_free_3d(snapshot, known_blocked, current, local_goal):
+                self._trajectory = None
+                self._tracking_floor_time = 0.0
+                return self._accept_moving_plan(LocalPlan(
+                    status="clear",
+                    local_target_ned=local_goal.copy(),
+                    path_ned=np.vstack((current, local_goal)),
+                    speed_limit=self._clear_speed_limit(obstacle_distance),
+                ))
         if direct_clear:
             seed_path = self._direct_seed_path(
                 snapshot,
@@ -277,13 +298,13 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             )
             if seed_path is None:
                 self._trajectory = None
-                return self._handle_no_path(obstacle_distance)
+                return self._handle_no_path()
             status = "ego_avoid"
 
         trajectory = self._build_trajectory(snapshot, blocked, seed_path)
         if trajectory is None:
             self._trajectory = None
-            return self._handle_no_path(obstacle_distance)
+            return self._handle_no_path()
 
         self._trajectory = trajectory
         self._trajectory_started_at = now
@@ -310,7 +331,6 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             local_target_ned=local_target,
             path_ned=sampled_path,
             speed_limit=speed_limit,
-            obstacle_distance=obstacle_distance,
         ))
 
     @property

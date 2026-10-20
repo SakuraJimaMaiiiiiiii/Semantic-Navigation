@@ -17,12 +17,16 @@ class GlobalMappingWorker:
         visualizer=None,
         loop_closure=None,
         observation_timeout: float = 1.0,
+        integrate_depth: bool = True,
     ) -> None:
         self.observation_source = observation_source
         self.global_map = global_map
         self.config = config
         self.visualizer = visualizer
         self.loop_closure = loop_closure
+        self.integrate_depth = integrate_depth
+        if not integrate_depth and loop_closure is not None:
+            raise ValueError("Depth loop closure cannot rebuild a LiDAR-only map")
         self.observation_timeout = float(observation_timeout)
         self.update_count = 0
         self.output_path = None
@@ -112,6 +116,13 @@ class GlobalMappingWorker:
                         timeout=self.observation_timeout
                     )
                 except TimeoutError:
+                    continue
+                if not self.integrate_depth:
+                    # LiDAR worker owns geometry and map heartbeat; this worker
+                    # retains the existing display/export lifecycle.
+                    if self.global_map.last_update_timestamp > 0:
+                        self.update_count = max(1, self.update_count)
+                    self._stop.wait(period)
                     continue
                 if self.loop_closure is None:
                     integrated = True

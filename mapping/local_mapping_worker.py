@@ -15,9 +15,11 @@ class LocalMappingWorker:
         grid,
         update_rate: float = 5.0,
         observation_timeout: float = 1.0,
+        integrate_depth: bool = True,
     ) -> None:
         self.observation_source = observation_source
         self.grid = grid
+        self.integrate_depth = integrate_depth
         self.update_rate = float(update_rate)
         self.observation_timeout = float(observation_timeout)
         self.update_count = 0
@@ -61,7 +63,10 @@ class LocalMappingWorker:
                     )
                 except TimeoutError:
                     continue
-                self.grid.update(observation)
+                if self.integrate_depth:
+                    self.grid.update(observation)
+                else:
+                    self.grid.update_depth_observation(observation)
                 self.update_count += 1
 
                 next_update += period
