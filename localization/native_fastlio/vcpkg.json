@@ -1,0 +1,11 @@
+{
+  "name": "semantic-fastlio",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "eigen3",
+    "boost-bind",
+    "boost-math",
+    "boost-preprocessor"
+  ],
+  "builtin-baseline": "0699a19d0c6386247ce50d4dedbb8217d484d536"
+}

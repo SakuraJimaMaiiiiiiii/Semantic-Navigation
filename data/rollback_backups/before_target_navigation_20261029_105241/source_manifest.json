@@ -1,0 +1,1307 @@
+[
+  {
+    "path": ".gitignore",
+    "sha256": "5975c36cb2592ea60d938a12e9befcf0029803e03f46e02521a62fe04fe19c47",
+    "bytes": 754
+  },
+  {
+    "path": ".vscode/settings.json",
+    "sha256": "49cef6642407ced8065e60483495db96a2dea9dcdd771017b3dfd48ef0214bec",
+    "bytes": 256
+  },
+  {
+    "path": "GNN V2.md",
+    "sha256": "d550de8da2e5606642f2e05529685186ff35121b9f9aaf9c3974da150b034828",
+    "bytes": 15668
+  },
+  {
+    "path": "README.md",
+    "sha256": "4d6f1e7e3c4c34564afa87184fd06927a3fe9726e88adda486d5f8f5d1cd5864",
+    "bytes": 904
+  },
+  {
+    "path": "Semantic type.txt",
+    "sha256": "e411838131b267d725bfaaf08570172618f4053575a1ba230458cb951d7eb2fc",
+    "bytes": 446
+  },
+  {
+    "path": "Visual/README.md",
+    "sha256": "1b841940d9f142a2551929360e7fca22c484ee2b93e4fb576dd761d70fbc2e8a",
+    "bytes": 2074
+  },
+  {
+    "path": "Visual/__init__.py",
+    "sha256": "17a85109aa9a29451d084098a958a3d58f9cb59e5974566a9f988901e4cdc855",
+    "bytes": 208
+  },
+  {
+    "path": "Visual/astar_2d_visualizer.py",
+    "sha256": "06b3f989d4e4ae1e7c89680dcab1ff087d2617cff24f4f22d1a1fe8f8e81ea43",
+    "bytes": 24954
+  },
+  {
+    "path": "application/__init__.py",
+    "sha256": "0cc240342459d90f4ae3f0c6b801360a8e9aa740fd74a722f281255fbdf46352",
+    "bytes": 190
+  },
+  {
+    "path": "application/demo_runtime.py",
+    "sha256": "088e8985013c9ea719ced5847053c87782bb476636556e4cc6beadca846f2876",
+    "bytes": 25408
+  },
+  {
+    "path": "application/websocket_request_sender.py",
+    "sha256": "0b743c60a785a9fdc509bc5ad43dd035a04ea6025510a12826628a3a8bdd4801",
+    "bytes": 7076
+  },
+  {
+    "path": "config/__init__.py",
+    "sha256": "81bf2b7785561a8a89c522dce0b4b3d23a6728620485ad81b964da7a623b0aef",
+    "bytes": 746
+  },
+  {
+    "path": "config/camera_config.py",
+    "sha256": "8d7261ff5f61fcbd9a1df26a7864a276914658d2f8e5dc246212aa55df05bc23",
+    "bytes": 2567
+  },
+  {
+    "path": "config/drone_config.py",
+    "sha256": "2d1f8678f74af1848c91b3fb8a1c940fb1c4c6a9c4f2ea40160605085b48b986",
+    "bytes": 2611
+  },
+  {
+    "path": "config/exploration_config.py",
+    "sha256": "828401c138a27cb4369db702e55df6837ffe0988a001eb75af1a3aa6a616c812",
+    "bytes": 4132
+  },
+  {
+    "path": "config/explore.json",
+    "sha256": "07fe5ccef5940d107070c362d7a222bf650ad70428a36b3ac9fd41d6200cda01",
+    "bytes": 3580
+  },
+  {
+    "path": "config/frontier_decision_config.py",
+    "sha256": "d1098e92563951d7b62caecbfbb1e29f1fdd94f7d3b69a477accea10288f6721",
+    "bytes": 1647
+  },
+  {
+    "path": "config/global_map_config.py",
+    "sha256": "893381ae1eae89b2d26c046e2932888e3a017a0e91ca38d9844630524e4d0c87",
+    "bytes": 3685
+  },
+  {
+    "path": "config/lidar_config.py",
+    "sha256": "bfee03825ea6e27ea2930cc572552fefcbcb8ffb0797ec5b69ad8943a4b6a7ed",
+    "bytes": 1386
+  },
+  {
+    "path": "config/mission_config.py",
+    "sha256": "49428c42748d22188f5f45052c87124f560cf62221843dbe7100d9c06c46bf0a",
+    "bytes": 1375
+  },
+  {
+    "path": "config/occupancy_grid_config.py",
+    "sha256": "dc6f455278d28e8b3cd720f262643cd1997cdb7c52bb65aafa2e5d92de6e1597",
+    "bytes": 1673
+  },
+  {
+    "path": "config/planner_config.py",
+    "sha256": "e968bba88bcabc28a3a48c95edc70bb2ce78bcce2256fbba0bb61a88445c6641",
+    "bytes": 5329
+  },
+  {
+    "path": "config/recording_config.py",
+    "sha256": "2ff884d974178003cee5d224b31bb85893116f08284465bfa711420581faad8d",
+    "bytes": 1031
+  },
+  {
+    "path": "config/run_output.py",
+    "sha256": "c691d55b52903e37fc8a74d96404da7d2b4668f8666293905aa750be1ccdea61",
+    "bytes": 647
+  },
+  {
+    "path": "config/semantic_navigation_config.py",
+    "sha256": "bc9defb8b0a4a69bfb77320ff1292646b569c4568bbb9ca55a41273cc4c97c96",
+    "bytes": 1856
+  },
+  {
+    "path": "config/semantic_target.json",
+    "sha256": "a80aa8cb35029ea3a7522d634465db04adb4c1eca47b826822116a50a6948103",
+    "bytes": 21
+  },
+  {
+    "path": "config/sensors/VisionSensors_RGBD_Config_v0.json",
+    "sha256": "a8ca715f1ac48cdd1a29c7c6cfb6666f566b715ce30ed139ad3b793fdb288a6c",
+    "bytes": 1471
+  },
+  {
+    "path": "config/websocket_client_config.py",
+    "sha256": "7d38ababcaf269f435940b0a0c3b694e927ac731e9e71d20790afbfe7bb9d06e",
+    "bytes": 588
+  },
+  {
+    "path": "config/websocket_request.json",
+    "sha256": "fd47d0252167e6cf5122badab44b8ff3e0ea6dd0cc9626b94f2b86be29a29a10",
+    "bytes": 56
+  },
+  {
+    "path": "detections/__init__.py",
+    "sha256": "75371b587e9f76d5e85f55d68c5b2994174cfe5a6420b0e7e6ea8c0ffe9321db",
+    "bytes": 354
+  },
+  {
+    "path": "detections/object_detect.py",
+    "sha256": "1f6cc92e2a57bc85b2c23fa24fbc276507e919df932b874ecdc7ad417565e7c1",
+    "bytes": 42141
+  },
+  {
+    "path": "detections/realtime_detection_worker.py",
+    "sha256": "2b517e71c3ee4edc193c037b03276e533ecc60680d607beb727724d884898e20",
+    "bytes": 25271
+  },
+  {
+    "path": "detections/sam3_client.py",
+    "sha256": "042492f5e2e6a7c2b03fa012c675c5f5a270b80175fbe57afc9c5e1c2d891979",
+    "bytes": 3415
+  },
+  {
+    "path": "detections/sam3_process.py",
+    "sha256": "7d86ff4266379f44266d6f6ef7bb75cf95d1657dc6fbd1828bfb670ae3f781f1",
+    "bytes": 4005
+  },
+  {
+    "path": "detections/vehicle_color.py",
+    "sha256": "59ab5652e5e3fd841d849dec2832a45363165934de2620b4e9b2db408428438e",
+    "bytes": 1954
+  },
+  {
+    "path": "localization/__init__.py",
+    "sha256": "b6d6843bf8d9d6abb4f294739179e33d5d9b95ce5886fbba32f1bf94c32ae788",
+    "bytes": 47
+  },
+  {
+    "path": "localization/fastlio_backend.py",
+    "sha256": "468bc1f5f5cb0a38231a2642fb9edc5bb8809e5b360e89aab9107a6753d66345",
+    "bytes": 1407
+  },
+  {
+    "path": "localization/fastlio_live_map.py",
+    "sha256": "f67d885b4d9fe686cd9fa408dce663b6cf39adc674d4494a0ae6bbfb661ebc5e",
+    "bytes": 16364
+  },
+  {
+    "path": "localization/fastlio_navigation_frames.py",
+    "sha256": "64c61ede82b9c8982afadda2d23103fd482398756b3212c25ee784d16170521d",
+    "bytes": 7022
+  },
+  {
+    "path": "localization/fastlio_recording.py",
+    "sha256": "1b73979d2b53cc0a1346de6ab32fe1131783d8e512e8be7ae4f4951b696f32de",
+    "bytes": 11993
+  },
+  {
+    "path": "localization/fastlio_semantics.py",
+    "sha256": "6fbac860a7c53a193cd44d126a4eca290a602fea7c0801da82d6e16ab6a4bf2d",
+    "bytes": 4004
+  },
+  {
+    "path": "localization/imu_noise.py",
+    "sha256": "f647ca13b7ff59fb5fa8d95232ddee25f9d5ba25d59edee29aa5b7aa7435e5a4",
+    "bytes": 4761
+  },
+  {
+    "path": "localization/native_fastlio/CMakeLists.txt",
+    "sha256": "db4a929b7fe227a6aec3a7428f0f9ffc5698a059920be88b521e88984fcc7c8e",
+    "bytes": 1341
+  },
+  {
+    "path": "localization/native_fastlio/bindings.cpp",
+    "sha256": "52e8ba683d39a890e856e90be12d5a2e1e95517e204e9eeddffcbf1079f79897",
+    "bytes": 9064
+  },
+  {
+    "path": "localization/native_fastlio/build.py",
+    "sha256": "7f2d4f67c3ca1dbd97830c32a6a35afda951197e25a7fb488ed9089c40315d1e",
+    "bytes": 1046
+  },
+  {
+    "path": "localization/native_fastlio/point_types.hpp",
+    "sha256": "54fa1013d5987568a91ba9d3111b1aeee81fe7c669a984713a08c07422caeb50",
+    "bytes": 412
+  },
+  {
+    "path": "localization/native_fastlio/prepare_source.py",
+    "sha256": "920960da088974e01c4d5fea1f51e27615c879c463bf7d660a0897bab0bbaad1",
+    "bytes": 3176
+  },
+  {
+    "path": "localization/native_fastlio/thread_compat.hpp",
+    "sha256": "87a58cbb8ea6f2e4c417893080b84aed6748a1048f9b34fd41d1746c7e15d6d7",
+    "bytes": 959
+  },
+  {
+    "path": "localization/native_fastlio/transport.hpp",
+    "sha256": "74537c9c83fc15e7611513117088dc1fe5a4e4a1bcbde538aa523ada1a57e1ab",
+    "bytes": 1511
+  },
+  {
+    "path": "localization/native_fastlio/vcpkg.json",
+    "sha256": "8bc1efa249d6e2788665901bf894cbfaff3399bb29ed2885e9d6f4370b45c635",
+    "bytes": 228
+  },
+  {
+    "path": "localization/scene_graph_adapter.py",
+    "sha256": "3b97b94c39822099e5037231a67ba53bf2aeecc7d443fa28cb82d42cb856dc59",
+    "bytes": 4428
+  },
+  {
+    "path": "mapping/__init__.py",
+    "sha256": "8998b67648cbcf64a10bc01487b60852dcde5af5508a79ef51802cb5a7414b68",
+    "bytes": 1256
+  },
+  {
+    "path": "mapping/depth_rays.py",
+    "sha256": "7eaacc5692191a9e6d90afc7a2d1bb72148743c93e776734606d4944ad172fe8",
+    "bytes": 471
+  },
+  {
+    "path": "mapping/foxglove_export.py",
+    "sha256": "dfeb1aaa580311ce3445abf645a35c2a7e6c42696790fb329e75547fea565e88",
+    "bytes": 6268
+  },
+  {
+    "path": "mapping/global_mapping_worker.py",
+    "sha256": "cb49371f4621a279d3ceb2dfc16e6fccbe1b2ff895833879e2a9304446e5ecbb",
+    "bytes": 5630
+  },
+  {
+    "path": "mapping/global_sparse_occupancy_map.py",
+    "sha256": "81a26f910719cd3d786df2da48a53599c1822ca3f685e3116f1f99b9fbaddda0",
+    "bytes": 25366
+  },
+  {
+    "path": "mapping/instance_surface.py",
+    "sha256": "800e4eb37c6f2757cb534dfc68c8fdaa6d2e98810ba45ab95b25f46a507427f1",
+    "bytes": 8559
+  },
+  {
+    "path": "mapping/lidar_loop_detector.py",
+    "sha256": "75160571ca6408a0f7add547c6d7aed741f329c6de3b85e2d82e9d45ad55dde6",
+    "bytes": 7664
+  },
+  {
+    "path": "mapping/lidar_loop_map.py",
+    "sha256": "02fa1a3a98e2de7d2e03f0b93ae430b8925abec38a40591f96ae7b97ac8649e5",
+    "bytes": 3067
+  },
+  {
+    "path": "mapping/lidar_mapping_worker.py",
+    "sha256": "8730b60bd6b2e5c83366767643df05709455c4b52be7e532c162203cf3ab32f6",
+    "bytes": 13070
+  },
+  {
+    "path": "mapping/live_loop_mapping.py",
+    "sha256": "c89c48f1b4dd4ede6f647af34b552b8b52a8cb5abe240cabf5cae9184bf8f931",
+    "bytes": 7860
+  },
+  {
+    "path": "mapping/local_mapping_worker.py",
+    "sha256": "b4238f85164c498ab40585862b944e65031991d8563d4ed06ed78117d23ea7c0",
+    "bytes": 2770
+  },
+  {
+    "path": "mapping/local_occupancy_grid.py",
+    "sha256": "aa896c7e0feab1cc612bed7650a8407879630ada6fa9147ce3d826c8afd15608",
+    "bytes": 17402
+  },
+  {
+    "path": "mapping/loop_closure.py",
+    "sha256": "affb2e409343f279ec026cfca76c7c42abd202f3938b99d98e2b844acdd4ee71",
+    "bytes": 20659
+  },
+  {
+    "path": "mapping/loop_semantic_replay.py",
+    "sha256": "0c4184498fb1e1326c59c09b65a80f14827cefac9f459196835e97de5404c251",
+    "bytes": 8737
+  },
+  {
+    "path": "mapping/online_loop_navigation.py",
+    "sha256": "f85696e39a4576553c0bce3b5abd019789949c6cc16c65ed53a79a80703d30f6",
+    "bytes": 3244
+  },
+  {
+    "path": "mapping/open3d_global_map_visualizer.py",
+    "sha256": "401b1a9cf5e27e845f03071dddd630e201c85309a2ddd9b582f25749d837733d",
+    "bytes": 9707
+  },
+  {
+    "path": "mapping/semantic_instance_mapper.py",
+    "sha256": "0bd7a02c2056f86f70e69f5702b8b92a08f7ba546f63b21fea3217cf60e793c9",
+    "bytes": 45893
+  },
+  {
+    "path": "mapping/semantic_numbering.py",
+    "sha256": "477484f1d7dbebec16a26452e986863bc74264f103c003721eacf683e619f632",
+    "bytes": 1575
+  },
+  {
+    "path": "mapping/semantic_voxels.py",
+    "sha256": "7ca940eab2188dc798d8aa49d93c27133fb412c742eb8178f46bc66fcfada74e",
+    "bytes": 5727
+  },
+  {
+    "path": "mapping/vehicle_footprint.py",
+    "sha256": "2c822cc27e2ee1136041150d68c67974b4579db1ba8274bbc2aa586e34ed739a",
+    "bytes": 971
+  },
+  {
+    "path": "mapping/vehicle_instance_tracker.py",
+    "sha256": "837bf0f256287344d2c2ee9c00c4331147841d67da420167f0acf8a60a019b0d",
+    "bytes": 40752
+  },
+  {
+    "path": "mission/__init__.py",
+    "sha256": "256d51b39fa83ff6351d9fdebce38aa1b06d8b883aedd067de877bf4f95ab9c0",
+    "bytes": 133
+  },
+  {
+    "path": "mission/rfly_mission_controller.py",
+    "sha256": "8c8db43df44f05a52bb10e24d16cecf4c1ed10c0fed2e007bbc486361b00a18b",
+    "bytes": 25488
+  },
+  {
+    "path": "navigate_target.py",
+    "sha256": "40af69ec1e6faa2fa2f84fba9452cb841419c8a22e1add47744ed2cb8ef65c45",
+    "bytes": 6759
+  },
+  {
+    "path": "navigation/__init__.py",
+    "sha256": "79d828c34bb970a5c651d2d0b9218cb53e7c3265fcb32218608c3347535e87e5",
+    "bytes": 235
+  },
+  {
+    "path": "navigation/atomic_file.py",
+    "sha256": "f5a1f9712c6daee5812ff8e6afacb722043e9d230ffd5a9084f74ed51b285239",
+    "bytes": 983
+  },
+  {
+    "path": "navigation/coverage_progress.py",
+    "sha256": "18f9238bc973565f6f982e1bd65a28ab3664be334edad99cfcec6ea7cde953a9",
+    "bytes": 3559
+  },
+  {
+    "path": "navigation/evaluation.py",
+    "sha256": "5727f56fa6456481f15522a3070caeb060adcc4c7f8718f7597d9d547b44a986",
+    "bytes": 3594
+  },
+  {
+    "path": "navigation/exploration_failures.py",
+    "sha256": "9b61adab7389e37c7818c069f5dff694d77ed89c03e70a48fa64654ab3bae117",
+    "bytes": 2198
+  },
+  {
+    "path": "navigation/exploration_planner.py",
+    "sha256": "1be30c15baa825b8ff5215ddb5cab029b8a481594df6bb6373e2ad3bf73ccabb",
+    "bytes": 3666
+  },
+  {
+    "path": "navigation/exploration_session.py",
+    "sha256": "295803df6e2d6aab443051dec629bae39e64db9d25194f8ed6d04c30d5df124e",
+    "bytes": 18741
+  },
+  {
+    "path": "navigation/frontier_explorer.py",
+    "sha256": "0c5dd7d6f79a4c3e8c33e6148e49a6cd31d6142b752ebc2a4fb49b13056ed778",
+    "bytes": 69779
+  },
+  {
+    "path": "navigation/frontier_geometry.py",
+    "sha256": "154a3c2c3c293c2a2c42accf34246ac00dc36ceeee083b2ab3ff0637622d648b",
+    "bytes": 982
+  },
+  {
+    "path": "navigation/height_clearance.py",
+    "sha256": "bd331c638aebbc805f7ab4711c1312cc6810e3d19d9ff216e691ecc528ec909d",
+    "bytes": 1772
+  },
+  {
+    "path": "navigation/map_view.py",
+    "sha256": "8efe67cc26b29ec745d7d66b4f2c567b56c93af0873a25469eba71878ffca61a",
+    "bytes": 22712
+  },
+  {
+    "path": "navigation/mission.py",
+    "sha256": "71fcaf7b2c84154d01a49adda1b6c1504299ab6c9409cb0078740410a7d6db38",
+    "bytes": 34526
+  },
+  {
+    "path": "navigation/object_inspection.py",
+    "sha256": "1ffc64075c5e966b0f03ed4617abc4c8138d02c22331c5310bc80ddcb5cd185d",
+    "bytes": 6211
+  },
+  {
+    "path": "navigation/path_smoothing.py",
+    "sha256": "ff61abd18989cfb8333f580742d856bef0f9e6e0ce3d64e5f319deaf5f4f060c",
+    "bytes": 4201
+  },
+  {
+    "path": "navigation/perception.py",
+    "sha256": "79c08d99d025a2cfc7bebfe76073a2e6c3fbb78020eece883915bc84d914f184",
+    "bytes": 1439
+  },
+  {
+    "path": "navigation/planning_diagnostics.py",
+    "sha256": "64f1c7f6b2b52da440e36923636e85af67246b4718b4b9322adaaffffd0415da",
+    "bytes": 7883
+  },
+  {
+    "path": "navigation/route.py",
+    "sha256": "30e1060de6b049858f603709f397fa692db5b742cd93e60b1f3d9a1b27472681",
+    "bytes": 15850
+  },
+  {
+    "path": "navigation/scene_memory.py",
+    "sha256": "f5c5d2206a746354c082253a7d31c4ef5871a68352ed688c8dd2e26caf25aaaa",
+    "bytes": 18604
+  },
+  {
+    "path": "navigation/session_server.py",
+    "sha256": "8e4c017960c467c1b7ced00f2fa49f50ac6526b3ba097a02535d1e3e88a1dbe2",
+    "bytes": 5530
+  },
+  {
+    "path": "navigation/standalone_navigation.py",
+    "sha256": "abe0d786f7a9b3e40c2531fbef7efa9f3d6951851cb8c7aacce509c8dcdb7359",
+    "bytes": 11387
+  },
+  {
+    "path": "navigation/target.py",
+    "sha256": "485ce9052a6d8e328b5659df8142c05d97ffb72726e8c0fcb43bc4d0803daafa",
+    "bytes": 4409
+  },
+  {
+    "path": "navigation/terminal_commands.py",
+    "sha256": "5c40dd35dee0805996ff470cfafc8e1d55884b51b04a00a0bc3c0c4818ddda30",
+    "bytes": 3929
+  },
+  {
+    "path": "navigation/terminal_progress.py",
+    "sha256": "c4759d1394a040c5f3a13a0007946ecd7bb1ab12fa4819db290501f6cc29e213",
+    "bytes": 3029
+  },
+  {
+    "path": "navigation/utility_frontier_manager.py",
+    "sha256": "85eb0d54bdd8daec41d013c9471645e74abeae5476a300b855d7503b34811d4e",
+    "bytes": 11046
+  },
+  {
+    "path": "navigation/waypoint_cursor.py",
+    "sha256": "a07ec9178e258310993d398d71a4fd07841a43b694fe6d3e731c292affd54717",
+    "bytes": 1602
+  },
+  {
+    "path": "package-lock.json",
+    "sha256": "50177f0c65224e2befa9ba153836eb88acb2f317bb92040eded220710d2924f4",
+    "bytes": 889
+  },
+  {
+    "path": "package.json",
+    "sha256": "41409d1a88c9f2ee8834abe06d147288532d532ec6d3eab22017906b53259a09",
+    "bytes": 280
+  },
+  {
+    "path": "planner/__init__.py",
+    "sha256": "e07946657e91f5c1a47dcc58dac6bcc8115fc74bdef2d618d3ef0e60c8041d69",
+    "bytes": 495
+  },
+  {
+    "path": "planner/ego_local_planner.py",
+    "sha256": "53e269a213a5ef7ed9894b269e561343aa9da5fde56b11ca74d35cde735b1cf7",
+    "bytes": 35406
+  },
+  {
+    "path": "planner/global_return_planner.py",
+    "sha256": "7696d02a2306559daaafea3d5f47a2eda542468fe4747d9c0f2d044fdf11a76a",
+    "bytes": 11619
+  },
+  {
+    "path": "planner/local_avoidance_planner.py",
+    "sha256": "089981b13de24c77f863b16e74c07d1c175767efd553318785730a035248af1a",
+    "bytes": 29434
+  },
+  {
+    "path": "planner/native_ego/CMakeLists.txt",
+    "sha256": "3163b02c0e3e3cd6f0f312f67a5056c0394cb220099b43432060dc0b3498814b",
+    "bytes": 1678
+  },
+  {
+    "path": "planner/native_ego/README.md",
+    "sha256": "4822aedb77311fe556fa0ad74aac75af44f54a35b00a7dce0c9ff15148ebb215",
+    "bytes": 2257
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeCache.txt",
+    "sha256": "7b7bbb4cc893c7953ee35df0e514fde1bcc866c974b01806d7e5416303edd3fe",
+    "bytes": 18237
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CMakeCXXCompiler.cmake",
+    "sha256": "69b884602af6b63e711cca46c0f829647392e4b07cbd3a0908aa28c3984bb477",
+    "bytes": 6468
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CMakeRCCompiler.cmake",
+    "sha256": "85223e3627ab66035651f1bc87d7ab01c67bccd4c1132ea0ebcf6fd87de0c7d1",
+    "bytes": 212
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CMakeSystem.cmake",
+    "sha256": "cb655f074177502b26612fa979ee72c606731a0b59f300e936ebba161d8cce09",
+    "bytes": 395
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CompilerIdCXX/CMakeCXXCompilerId.cpp",
+    "sha256": "c260f5f6368fe636da54c24d6abd310ac6fcc3acdc4bdc674d9b7223569a85eb",
+    "bytes": 30605
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/4.4.2/VCTargetsPath.txt",
+    "sha256": "81d741aeae6fc62f7027f0e675a5e62f73dbd8244f8610727ab524521bfc2494",
+    "bytes": 67
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/CMakeConfigureLog.yaml",
+    "sha256": "7e11a5eebd1ef86bc9e330836bc5426f4d1a9a69b85f9dc12d727f9b08906007",
+    "bytes": 608140
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/CTestScript.cmake",
+    "sha256": "516c4774a9f0e364d8f1cbd9efdbf327c19037eea84ed58d33b86fb67a4fbc35",
+    "bytes": 4600
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/InstallScripts.json",
+    "sha256": "69c02f9129fd85d029eb04f35695119dda3ef9855da64c9a69b3c178f2f5e7b2",
+    "bytes": 144
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CMakeFiles/TargetDirectories.txt",
+    "sha256": "c949d1efb566ed3aa5d0ce272422ea1d8622fac8b4c35997684feaca336a8b7a",
+    "bytes": 808
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/CTestTestfile.cmake",
+    "sha256": "3b5a94fbec14250a30ebdfeb4c652e2e33d7fd4ca2a4cc52bcf6fb073facfd66",
+    "bytes": 2135
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/Testing/Temporary/CTestCostData.txt",
+    "sha256": "adab4d6924ee112be3db49a1e14c7ffce357d7122aa99c9f771278a62a40aed2",
+    "bytes": 39
+  },
+  {
+    "path": "planner/native_ego/build-vs2026/cmake_install.cmake",
+    "sha256": "d13ec07288f0996bb355719fbf60f01819147a052dbbf56b30a32e6d3c3c2423",
+    "bytes": 1984
+  },
+  {
+    "path": "planner/native_ego/include/native_ego/ego_planner.hpp",
+    "sha256": "be6a12016070a1129d9205e93a6bcaa017afef6cb3c0019c4eae89637569d12b",
+    "bytes": 4313
+  },
+  {
+    "path": "planner/native_ego/src/bindings.cpp",
+    "sha256": "160427bf321fc1c42a81fd06b697c6997c1fb0e92fa3db164f4331eccfcd8023",
+    "bytes": 6261
+  },
+  {
+    "path": "planner/native_ego/src/ego_planner.cpp",
+    "sha256": "c63043b0460d589ea8044af3620ecc04f5c5f3e94838c248f23be8f6fcb8de1b",
+    "bytes": 41461
+  },
+  {
+    "path": "planner/native_ego/tests/test_core.cpp",
+    "sha256": "6f107b73d71807c022f37fa424bf540c6e7f8794430dc699ecbd19fc92609642",
+    "bytes": 2791
+  },
+  {
+    "path": "planner/native_ego_local_planner.py",
+    "sha256": "7a88fe45e143e56ad95aa81c8d2112ac7ea8aee089cbf1f8aa39f32ae70da246",
+    "bytes": 4654
+  },
+  {
+    "path": "planner/vertical_projection.py",
+    "sha256": "3e6372e0d8e0606bdf9c428bc40bbe7c82ca35b897b51cd39d29ffdcc9329aff",
+    "bytes": 1578
+  },
+  {
+    "path": "planner/waypoint_planning_worker.py",
+    "sha256": "d72479cc4b4dc381461e3f831472a5151c4ecbc4f9a5c212f018bf8db666ac53",
+    "bytes": 6517
+  },
+  {
+    "path": "readme/FAST_LIO三维占据建图.md",
+    "sha256": "76840a79fdfda6f2bc573d3981df3328dea4aed8d8fc503cedc2d0901d3ad545",
+    "bytes": 4955
+  },
+  {
+    "path": "readme/FAST_LIO原生接入与验证.md",
+    "sha256": "3fff1a82309a6d0b29ca65c72643209862901134302fd6c9f6fb009e0846d1d6",
+    "bytes": 11528
+  },
+  {
+    "path": "readme/FAST_LIO接入审查.md",
+    "sha256": "91e821cbe33ff58a9ed6439de3e655a79420ca01f69f355738097904cf82fd9a",
+    "bytes": 2016
+  },
+  {
+    "path": "readme/FAST_LIO短程闭合测试.md",
+    "sha256": "06787b76e72ad9024149126d298bed09cf5e5eaceb91579d496b4b11fc98a71a",
+    "bytes": 5132
+  },
+  {
+    "path": "readme/IMU噪声标定.md",
+    "sha256": "53e1f02dd377e040c918894737d6b7b5259fce4344bd450276651eb827711da9",
+    "bytes": 4329
+  },
+  {
+    "path": "readme/NED卡尔曼语义实例关联说明.md",
+    "sha256": "4a07637fe9d275aafbc8b773002f52380575506ef5bc7f908d0f1aeb457ded32",
+    "bytes": 14872
+  },
+  {
+    "path": "readme/PX4建图与车辆关联改进.md",
+    "sha256": "3c1f74082611235206bd1c8f402122aac4e291e819c1c28ae9340183ed5bfb89",
+    "bytes": 2142
+  },
+  {
+    "path": "readme/RflySim_UE场景语义标注规范_TypeID4.md",
+    "sha256": "ca13e826d2ba71353c2a408b7aaf7f02d193bbb0ca8fba0e561a9e79b8487f33",
+    "bytes": 10378
+  },
+  {
+    "path": "readme/SAM3可选后端与对比.md",
+    "sha256": "65be57d38443a22493758ab28bbc8060d6f117d6e87ef4ab6fc7cee26c61c47c",
+    "bytes": 9628
+  },
+  {
+    "path": "readme/SAM3当前环境兼容性核查_20261021.md",
+    "sha256": "143efc855282c488599716aa16acc5966c66a5cc97ca50cd162fd62430c94d11",
+    "bytes": 3680
+  },
+  {
+    "path": "readme/SPIN场景图代码调研与接入方案.md",
+    "sha256": "33ac69f279f9d6be92a171adb4d7c4b35395bdb9ed14cf2ce3bca5412e65126f",
+    "bytes": 6475
+  },
+  {
+    "path": "readme/comparisons/fastlio_20261023/验证报告.md",
+    "sha256": "f82f7440409d8e46c639ad855b5744cd05e23ce9677f41152adbfba1a36350b9",
+    "bytes": 4922
+  },
+  {
+    "path": "readme/comparisons/fastlio_live_20261024/语义坐标验证.md",
+    "sha256": "943d977e4bd29f975a1e910d646cc597b4b5529f293e17d80d45a619c28c7590",
+    "bytes": 1349
+  },
+  {
+    "path": "readme/comparisons/fastlio_live_20261024/验证报告.md",
+    "sha256": "dd5b1fd593341ed346c5fdd1690c30dfe664fa3d3ef67d46ed819dea83a88074",
+    "bytes": 2814
+  },
+  {
+    "path": "readme/comparisons/fastlio_short_loop_20261023/验证报告.md",
+    "sha256": "7e5cadc35d6053e82c6676b5a897b106264fadfcdaec85d391713cb3a1eff512",
+    "bytes": 3406
+  },
+  {
+    "path": "readme/comparisons/sam2_sam3_20261022/对比报告.md",
+    "sha256": "6b73492be5b7d2155b2fb886bd7578172047db41e92e06a2f59699200d7164d2",
+    "bytes": 4719
+  },
+  {
+    "path": "readme/reviews/W001-W011受阻核查_20261028.md",
+    "sha256": "2b4742fdf3eeae14b782d6930cd56e0d70ad1e68be080408b0a686b89d28b096",
+    "bytes": 2693
+  },
+  {
+    "path": "readme/reviews/W002执行停滞_20261029_103116.md",
+    "sha256": "0efacc44af258a400e5fe499e4928bc6a66086a890f4278a7897cf2766b131a5",
+    "bytes": 2717
+  },
+  {
+    "path": "readme/reviews/W004-W009执行停滞_20261029_103116.md",
+    "sha256": "c5eb0b2986b7b765adec55707ddcce9daff7e09cebdbe757c572af061b8d766f",
+    "bytes": 3219
+  },
+  {
+    "path": "readme/reviews/W019-W021执行停滞_20261027.md",
+    "sha256": "63c5cc1df4ea7a0998414f4c5fe3080ca033c4b144a0e3067101c8689af97779",
+    "bytes": 3257
+  },
+  {
+    "path": "readme/reviews/代码清理_20261027.md",
+    "sha256": "9fda13bf277e793259b1708a085562f6c6eae307a70a38171e0ac17e962cd39e",
+    "bytes": 3511
+  },
+  {
+    "path": "readme/reviews/位置参考与规划解耦_20261028.md",
+    "sha256": "86432b2505762f2d62ac0aa1d3502bf6e3b8f6063b58fa8ae7b4ef350de03bbd",
+    "bytes": 4303
+  },
+  {
+    "path": "readme/reviews/局部执行时序修复_20261028.md",
+    "sha256": "716b228c03042f9a0ed0fc12b7a43b810d9459612f8364fef21a4c29e776bb99",
+    "bytes": 4539
+  },
+  {
+    "path": "readme/reviews/执行器带宽核查_20261028.md",
+    "sha256": "a7ddf89f39ab41683db169403b9c279d7422d7fc496cdd6f7949aae12e92f268",
+    "bytes": 2746
+  },
+  {
+    "path": "readme/reviews/承重柱与探索覆盖核查_20261029.md",
+    "sha256": "b7e3a045a815838480917744bc68ed56453dae344144cca097c390ed92699d35",
+    "bytes": 3282
+  },
+  {
+    "path": "readme/reviews/探索低增长复查与柱子识别_20261028.md",
+    "sha256": "6d03675772b2c240d2a416d185a080dab02352a389deece704380f42fbc250bd",
+    "bytes": 2065
+  },
+  {
+    "path": "readme/reviews/探索失效历史对照_20261029.md",
+    "sha256": "dde400d0debed56c8a1811b8fc15a8c05972876391e8e30c27cc6ce62a0bd05c",
+    "bytes": 4549
+  },
+  {
+    "path": "readme/reviews/本次点头检查_20261028_140435.md",
+    "sha256": "9b2652efe39b635b96980caff496bad4c16acbd41c5dd1fbc11f99e9a8e0a8b8",
+    "bytes": 2346
+  },
+  {
+    "path": "readme/reviews/畅通航段执行延迟修复_20261028.md",
+    "sha256": "2eaa9011a3955d271236026f8e83737280568ca0f398ffd651a77323cca3e4c8",
+    "bytes": 2331
+  },
+  {
+    "path": "readme/reviews/规划失败误报核查_20261028_210418.md",
+    "sha256": "87bde8f5872811558cd0a1d7a64338e4d47271aedce89ec9b2f61ac6efbe40a2",
+    "bytes": 2004
+  },
+  {
+    "path": "readme/reviews/语义实例连续编号_20261028.md",
+    "sha256": "2cddf0e7fd624230bb18cc9f6b908ea5d8a146b4f8d9782e7025c98ff11f9327",
+    "bytes": 1499
+  },
+  {
+    "path": "readme/reviews/车辆多视角定位_20261027.md",
+    "sha256": "e9678d37b8f9345a17276cb482e513b1fe535602c1722b90b822f162f2cc8f4c",
+    "bytes": 2694
+  },
+  {
+    "path": "readme/reviews/长时间等待与已验证路径复用_20261029.md",
+    "sha256": "e6b096d790ab693dc6542732ce2aa4717d6d31e96487d6488f40c147587ede2f",
+    "bytes": 1656
+  },
+  {
+    "path": "readme/代码清理审计.md",
+    "sha256": "e8fb748027535e1443ca7cf825b650cbd05e62228d76b8affef268758a37a9c1",
+    "bytes": 15292
+  },
+  {
+    "path": "readme/位姿协方差传播说明.md",
+    "sha256": "70a98e9318559e6324f93ffb72d255e63bef4997b6aa76b1293c84c1e516800c",
+    "bytes": 12185
+  },
+  {
+    "path": "readme/前沿探索与两终端导航.md",
+    "sha256": "2e48441ba25d89179bee62cace2b2f0d86518d6e391b1868b97c349640a90d4d",
+    "bytes": 16785
+  },
+  {
+    "path": "readme/卡尔曼滤波与协方差公式说明.md",
+    "sha256": "c591db0d450847cc4040e2c184da6849ad9404c3f8aeb08c21b6047976e963d0",
+    "bytes": 24198
+  },
+  {
+    "path": "readme/地图超时与降落状态冲突.md",
+    "sha256": "4509f98cf8340c0916560d52a71a647caa4040794983f13d273e7e200b623b0b",
+    "bytes": 4110
+  },
+  {
+    "path": "readme/安全出口门识别.md",
+    "sha256": "e1d270aaa4268c27fd5a84fda602c93052a3b28506fb26af5403e29a24401b4e",
+    "bytes": 962
+  },
+  {
+    "path": "readme/探索不完整核查_20261021.md",
+    "sha256": "840a2c79bc5a747bbc25256db2b20dd1f22d5eed3b2b1f4353608f143dc1168d",
+    "bytes": 1835
+  },
+  {
+    "path": "readme/探索决策层替换.md",
+    "sha256": "d6ff2b3c2141f912f071e1274dec4f8722f332a1ab498bbb96256ef1db70a78f",
+    "bytes": 7306
+  },
+  {
+    "path": "readme/探索启动配置.md",
+    "sha256": "10abab36f97140c0e7bea2256b6c800b96ac9f27d42265ae02528d8f7b5365b9",
+    "bytes": 1425
+  },
+  {
+    "path": "readme/激光雷达接入.md",
+    "sha256": "88297839107104685c6a93e507eac1f6e0c905ce8293866d3be67f90225e48d6",
+    "bytes": 11628
+  },
+  {
+    "path": "readme/独立保存地图导航.md",
+    "sha256": "9eef96f04ac72f0fcddad3d97f73da479a30e38ce2ff8a6f895ca3787355e34c",
+    "bytes": 5115
+  },
+  {
+    "path": "readme/相机雷达定位核查_20261021.md",
+    "sha256": "cf04573ba972c52beabd349bcabd10447bafb37bc83997873e9411c8cfc1260c",
+    "bytes": 2659
+  },
+  {
+    "path": "readme/碰撞与异常退出诊断.md",
+    "sha256": "40dc04b3e77ddaaf9569ccd0c18e55aef104baf247c97b4e6085892745aaff5e",
+    "bytes": 4865
+  },
+  {
+    "path": "readme/语义占据地图保存.md",
+    "sha256": "df3925db4d33a80f2700ab9626892718b37e181cbcf2f09d3aadd6873ecca881",
+    "bytes": 14772
+  },
+  {
+    "path": "readme/语义导航任务接口与验收.md",
+    "sha256": "73997fbadec024dd88af51e7d122f5cf4b0c5a44afec7e4ed7940fb2fde56248",
+    "bytes": 8206
+  },
+  {
+    "path": "readme/语义导航技术路线.txt",
+    "sha256": "4c6d585dbbcdd1a1bc49167435760eb89d1f9b6a1ef728f2d4eb192e6b1c1554",
+    "bytes": 407
+  },
+  {
+    "path": "readme/车辆主动补充观测.md",
+    "sha256": "3952fe511a1a7cbb7df13519f61242e5bb0558f848caf06ff78897663180f3be",
+    "bytes": 7069
+  },
+  {
+    "path": "readme/运行开关与模式说明.md",
+    "sha256": "204c4f9874eb83de98b396ac96e4fad3ba69aa3ea316d9cb6a5f2ddae126c599",
+    "bytes": 21842
+  },
+  {
+    "path": "readme/降落悬停排查_20261026.md",
+    "sha256": "dc24ac7b0d10c6029b846a1c33820f1339e641f49a2576ba868c265e508d07c9",
+    "bytes": 2356
+  },
+  {
+    "path": "readme/雷达回环检测.md",
+    "sha256": "f36d05d86f2e3fa0ffb6a0e3efaeea588e9eb08fa62075dd8b6587f0bc46e5de",
+    "bytes": 9867
+  },
+  {
+    "path": "recording/__init__.py",
+    "sha256": "86592c04436badf308f5e2345d5fab92bb50a3f2429ef8831d4cbffde561f076",
+    "bytes": 257
+  },
+  {
+    "path": "recording/hdf5_flight_recorder.py",
+    "sha256": "96e4cbded5c03582e89205a9d73e8a50df428d50a2e34fc906baf32d1931caf4",
+    "bytes": 17273
+  },
+  {
+    "path": "rl_episode_reset.py",
+    "sha256": "6d5679b40963c7d6709d61dfccb2dffe2685d23a528e08cad6bf4208bdf1fbec",
+    "bytes": 4805
+  },
+  {
+    "path": "run_demo.py",
+    "sha256": "a1345929e61b15f0e4bac003b4c3f3d5460b0bfb365def8f05ce6d89a2e4a52a",
+    "bytes": 1359
+  },
+  {
+    "path": "run_explore.py",
+    "sha256": "22ae1fa7b9ed038dba2d10565486ab8b241477187fef1112c05b9a86728e72b8",
+    "bytes": 11847
+  },
+  {
+    "path": "run_fastlio_test.py",
+    "sha256": "cf11ac466fabcc450bec7792a96137b9c6e916540598cfc056b046957eb72480",
+    "bytes": 10960
+  },
+  {
+    "path": "sensors/__init__.py",
+    "sha256": "19df16074aef699e82382de02b83cd740569fcd86689b65733b865f4b31ecb29",
+    "bytes": 533
+  },
+  {
+    "path": "sensors/empirical_pose_covariance.py",
+    "sha256": "7aaa6d7caa7af6c7f3804f8d1af3d520c35a2fd97c2561e4417f2e56e57736a1",
+    "bytes": 3780
+  },
+  {
+    "path": "sensors/lidar_camera_alignment.py",
+    "sha256": "7329e7a6473a1949ef933de882a93e7178a6efe22df36197c54d50000fad9d70",
+    "bytes": 4096
+  },
+  {
+    "path": "sensors/observation_hub.py",
+    "sha256": "991cab52cf4519ad20652148f32c76a9537c9799424af22e21e0aa94e8e3fa88",
+    "bytes": 4529
+  },
+  {
+    "path": "sensors/pose_uncertainty.py",
+    "sha256": "4a9b55d6bcc1ac36e647b0ece77d31bddde930e7485fbcecaf7226a807d157ce",
+    "bytes": 2789
+  },
+  {
+    "path": "sensors/rfly_lidar.py",
+    "sha256": "614b236a2720b704145a8752895aaa89f39aeb29ecf114ac62dcafdece97e3e3",
+    "bytes": 2934
+  },
+  {
+    "path": "sensors/rfly_rgbd_camera.py",
+    "sha256": "da07e1b9f28852dc25ce12cfd7750967ad986ef66dde9d402bbc6bc8d5210592",
+    "bytes": 31819
+  },
+  {
+    "path": "sensors/semantic_support.py",
+    "sha256": "32830b104b51c46005e00c2a7b0e26ce3b60c38a3f8a66dc1b5af10e736a706a",
+    "bytes": 2556
+  },
+  {
+    "path": "sensors/synchronized_rgbd.py",
+    "sha256": "511f1461b677b0cc0e1d58d15dd1b5cbc51bcef11a11c8f3afdbd211d0112850",
+    "bytes": 16031
+  },
+  {
+    "path": "server.js",
+    "sha256": "eca0c700f82ee3faf4405f66d6f4db32a99729945ed65b1ce2e84f1665255932",
+    "bytes": 4872
+  },
+  {
+    "path": "test_collision_format.py",
+    "sha256": "bbfb09baac02b5f60bed23abccc03bbb7ec14f12c349eca12e67dd277516cc65",
+    "bytes": 9800
+  },
+  {
+    "path": "tests/test_async_waypoint_reference.py",
+    "sha256": "20c2fbce7c82f80641dd78a71504b5c4e367b04678a0f2d66ed0737468e58c14",
+    "bytes": 10156
+  },
+  {
+    "path": "tests/test_ego_altitude_recovery.py",
+    "sha256": "b2debf533046881301a408ee7f20f5ed1534ed29d06e9a759786a7b047fc9a7e",
+    "bytes": 2794
+  },
+  {
+    "path": "tests/test_exploration_coverage_review.py",
+    "sha256": "efa5defae5b478544768cac8ecfd4a9eb12ff0b26bef2cddb2ffa0a8989e49a9",
+    "bytes": 2672
+  },
+  {
+    "path": "tests/test_exploration_regression.py",
+    "sha256": "f86b967e66e359d52047a3f22a1b7d36d39c2b6a1930062b1361fa59db29174a",
+    "bytes": 2581
+  },
+  {
+    "path": "tests/test_exploration_smoothing.py",
+    "sha256": "0f77dca0f588201277fa9221c3f84b4541c9e8d461c7d7bbbe3b11db441e5969",
+    "bytes": 2615
+  },
+  {
+    "path": "tests/test_explore_startup_config.py",
+    "sha256": "16346c7780819231d086da3f01286b1ca24728da42875229c785332d99387445",
+    "bytes": 3095
+  },
+  {
+    "path": "tests/test_fastlio_inputs.py",
+    "sha256": "66c125d5e8fd81926d37cc56707314f3740963fe7ac3b6728518d65e1976611b",
+    "bytes": 5442
+  },
+  {
+    "path": "tests/test_fastlio_live_map.py",
+    "sha256": "8bc3deb031d8e679c61ad91cf125d13305af52226fbf4432c1ea00e3a51d5235",
+    "bytes": 7808
+  },
+  {
+    "path": "tests/test_fastlio_map_reconstruction.py",
+    "sha256": "4832fa60794f5e0cf08146c9ac3a8c8ee0033cc0b3b36ef38ac28c5af76171ea",
+    "bytes": 1973
+  },
+  {
+    "path": "tests/test_fastlio_navigation_frames.py",
+    "sha256": "debc04ac61f29d32cd26080a2ee507fcc5a4f5db055c61b1587361996c511e17",
+    "bytes": 3282
+  },
+  {
+    "path": "tests/test_fastlio_semantics.py",
+    "sha256": "80ddf4a09f4807ca577919cb6321949e2a1ce7497474be34331b6ca7146f0c8a",
+    "bytes": 2129
+  },
+  {
+    "path": "tests/test_fastlio_short_flight.py",
+    "sha256": "25d8d5437055d307612615289d8b1a7e43d989d3e926207a9234281bb144917a",
+    "bytes": 5084
+  },
+  {
+    "path": "tests/test_fastlio_validation.py",
+    "sha256": "9957ca2d854ea91fe507d1da4a59a0b8d84f768a2dfdbb1af44f689306a1890c",
+    "bytes": 1864
+  },
+  {
+    "path": "tests/test_frontier_observation_watchdog.py",
+    "sha256": "5eb3c785fcca529a5a8d22e95b0dd19295414dbbf7cd1c8c013149b7237068ed",
+    "bytes": 6329
+  },
+  {
+    "path": "tests/test_landing_approach.py",
+    "sha256": "457d512e60ca6b9c18343dbca40b07c2a15197a04d5a7d24d3ac061eaa773dd7",
+    "bytes": 4078
+  },
+  {
+    "path": "tests/test_lio_scene_graph.py",
+    "sha256": "201d7dca8e1e8cf91b6fa4caf766427f9076770123c035ed3897612a65b518ec",
+    "bytes": 2325
+  },
+  {
+    "path": "tests/test_local_execution_timing.py",
+    "sha256": "ee22e3d1e63ac5059ce90d52ff40e2885350e915b77f55eff231ef6565d906de",
+    "bytes": 8476
+  },
+  {
+    "path": "tests/test_local_return_arrival.py",
+    "sha256": "374dd16b5c51d2f886dea117c69851455e5afef3320e249c10bae0b208d978c4",
+    "bytes": 2257
+  },
+  {
+    "path": "tests/test_multiview_map.py",
+    "sha256": "40e71720353703abb0f8b2ecc12892bdf9a48e24f6f390b3991276160406f4b9",
+    "bytes": 1578
+  },
+  {
+    "path": "tests/test_native_ego_errors.py",
+    "sha256": "1e68c1bd8849f11c83e9dad2107b7a03786228f12af525e23bf8458afa622e39",
+    "bytes": 1749
+  },
+  {
+    "path": "tests/test_navigation_health_latency.py",
+    "sha256": "3391b67f7d73880f2754bffa0603b356724a9b516a88ef01d16fb948a76bcf47",
+    "bytes": 4360
+  },
+  {
+    "path": "tests/test_object_inspection.py",
+    "sha256": "16950da4a5335b022e1f9be748de106b08ad1539f5b68d8654611256d7774211",
+    "bytes": 2718
+  },
+  {
+    "path": "tests/test_offboard_session_restart.py",
+    "sha256": "07287de744180d67f02375caa8d0b132a3a638639374d865a56ce87c176111e2",
+    "bytes": 3107
+  },
+  {
+    "path": "tests/test_path_smoothing.py",
+    "sha256": "a1b1c5a3a8d8d4a086aff74b2a8c9d33d5a50d7c4917fc7bb913078c97e1b7ae",
+    "bytes": 2409
+  },
+  {
+    "path": "tests/test_return_hold_reference.py",
+    "sha256": "62ab02b58df0900c6302a2482be6117bc5cc39c27dab57ef76ceace8af3164df",
+    "bytes": 3187
+  },
+  {
+    "path": "tests/test_sam3_backend.py",
+    "sha256": "4e6333c3b254a0f8bfa24203c245efa35bdce6fd45b0bd696abb8870a6874cbc",
+    "bytes": 8080
+  },
+  {
+    "path": "tests/test_sam3_image_compat.py",
+    "sha256": "08858a2305587f2a6f7ddeb6deedba1097dc8e368e118cbff8983b4f46b9a113",
+    "bytes": 1649
+  },
+  {
+    "path": "tests/test_sam3_process.py",
+    "sha256": "e5805732bfab28f89ad35f40b6b96ec01ac6c221054a4e1a1e3174f7702b0e44",
+    "bytes": 3651
+  },
+  {
+    "path": "tests/test_saved_target_retry.py",
+    "sha256": "adca0956584d6c54f031fb966119c769cef2e273af3c59bc5a226bfbc1226110",
+    "bytes": 2402
+  },
+  {
+    "path": "tests/test_semantic_numbering.py",
+    "sha256": "23285cd0798ba95977d2e278a41f797e4d2e4e0d7c962a5ef103d3caa8d9cded",
+    "bytes": 3949
+  },
+  {
+    "path": "tests/test_sequential_targets.py",
+    "sha256": "aea63b224d774a7678ad9eb604f5734c5e0ac75ac111155fb6e6eaf3840e4be9",
+    "bytes": 5540
+  },
+  {
+    "path": "tests/test_stair_height_recovery.py",
+    "sha256": "8829145e7c59f6e01db30ad7c91735ddf958a010df768462d51d90e29d983cbd",
+    "bytes": 3884
+  },
+  {
+    "path": "tests/test_standalone_navigation.py",
+    "sha256": "28253526dda5251c6b4652edbf5514557c78b2480852f8aab4ad43178c8453ff",
+    "bytes": 5508
+  },
+  {
+    "path": "tests/test_target_navigation_smoothness.py",
+    "sha256": "e3320db752366ae978f8f9a8a4a150453cc74247d0c0e0d295ea1e7f36cd29cb",
+    "bytes": 2933
+  },
+  {
+    "path": "tests/test_terminal_commands.py",
+    "sha256": "0ca282b01471e03a2cd99f83eee80f34db1b80a11066a827d479382e4d13f7e3",
+    "bytes": 2509
+  },
+  {
+    "path": "tests/test_terminal_progress.py",
+    "sha256": "1df50bfc7082446e6f0c352379723a2d02587570a3258d0b18d52b32b27cba4f",
+    "bytes": 1549
+  },
+  {
+    "path": "tests/test_vehicle_connection_views.py",
+    "sha256": "e8893f07ad156ce42008fab9101722e220caf91bf7825e58d06853bc911e0e25",
+    "bytes": 5700
+  },
+  {
+    "path": "tests/test_vehicle_inspection.py",
+    "sha256": "497325dac140d624a52d2bd6fb21d425ff552c7b3f6e1d69e746baca83e0b6f0",
+    "bytes": 10343
+  },
+  {
+    "path": "tests/test_vehicle_multiview_geometry.py",
+    "sha256": "04ec942252fed6730e6ebed5b52609b9cd820fe6106e151ae623d238bb59927e",
+    "bytes": 3530
+  },
+  {
+    "path": "tests/test_vehicle_split_evidence.py",
+    "sha256": "43262bd73c68cf01634e2bc37e119cc6baa909bd79614d62619359bd9340ecbc",
+    "bytes": 4729
+  },
+  {
+    "path": "thought.txt",
+    "sha256": "d04614f113a49e8b14653ecf3efe57ccc8605540ad8871a5d3c4e36b5b3335a1",
+    "bytes": 6255
+  },
+  {
+    "path": "tools/audit_camera_lidar_geometry.py",
+    "sha256": "03fadb17d4fe6b648015dc217583943fc20027856a5654105c99424f2f490269",
+    "bytes": 3723
+  },
+  {
+    "path": "tools/audit_depth_geometry.py",
+    "sha256": "91963ae24a411cdc61e03703d040439bffe5912a2ce0edb64a22630d624338bd",
+    "bytes": 1870
+  },
+  {
+    "path": "tools/audit_fastlio_inputs.py",
+    "sha256": "730e0547d98601d9ed7cc1bea2dd3d8d08fa7169cb846bdaa3de0eda12a7387a",
+    "bytes": 3098
+  },
+  {
+    "path": "tools/audit_imu_noise.py",
+    "sha256": "d66d0eef21146c74d46baf88d99acfaf736f0d1a750d62448b2772aa0a9e8fb1",
+    "bytes": 4913
+  },
+  {
+    "path": "tools/build_fastlio_map.py",
+    "sha256": "51515335af345f52e3733384f111c44565ed61299cbe46d89e08ac2b7361135a",
+    "bytes": 3922
+  },
+  {
+    "path": "tools/calibrate_pose_covariance.py",
+    "sha256": "c295eae6c70c32202aced4976c4211ffd9a5faf7f8a23837be1b0b187429e5ef",
+    "bytes": 6741
+  },
+  {
+    "path": "tools/compare_exploration_strategies.py",
+    "sha256": "9da246dfdf09a6fa6352ad7a3c43dc3d77817f64398201b75ba816b5859bec60",
+    "bytes": 2489
+  },
+  {
+    "path": "tools/compare_fastlio_replay.py",
+    "sha256": "7afdfb79b8354c5d26993eca5454bcc6d1e1972eb245485d22df5d94660fea3c",
+    "bytes": 8346
+  },
+  {
+    "path": "tools/compare_perception.py",
+    "sha256": "7ba2dd2bdda744f70043c507f6d735d83b49c967c18fc00d7260d629d6edf3a5",
+    "bytes": 5085
+  },
+  {
+    "path": "tools/evaluate_semantic_navigation.py",
+    "sha256": "7bea87b1cdd7a4007ea71f22d3b55f56a65ca21cc296a346de4f2d1443ad93e4",
+    "bytes": 2705
+  },
+  {
+    "path": "tools/export_foxglove_voxel_map.py",
+    "sha256": "4106284e19eff2a84c73a96931f1b6467ca00fbd3a8f66dfe3b6278d2b862346",
+    "bytes": 8311
+  },
+  {
+    "path": "tools/prepare_fastlio_validation.py",
+    "sha256": "b2c33f013efd82bac123044637d9a9109122f989c73e3f828425f3c4f325ec51",
+    "bytes": 2239
+  },
+  {
+    "path": "tools/probe_px4_covariance.py",
+    "sha256": "d19d6b1973f88c75974dd4556f62ceeb0617e8bb9eabd01b8345acb251a74fbc",
+    "bytes": 4471
+  },
+  {
+    "path": "tools/rebuild_lidar_loop_map.py",
+    "sha256": "28b4b26bc9f28b1d068ffda845a0227ed2e34c38eaaea68e23653133270a7179",
+    "bytes": 5230
+  },
+  {
+    "path": "tools/record_stationary_imu.py",
+    "sha256": "a37ee4ca149569d1812d5f37efb45cc3d9414aedc2f0c3b36896a95f78deecac",
+    "bytes": 6862
+  },
+  {
+    "path": "tools/replay_fastlio.py",
+    "sha256": "a92bb9817d5c709b28e0bfdbd30e8c08e45ea0d62754ab0273c664e2e511728a",
+    "bytes": 5487
+  },
+  {
+    "path": "tools/sam3_service.py",
+    "sha256": "4f428e5aaff7c83d15b738a07e27b212c89ce119378f2a31e10ddcc6f0a31f31",
+    "bytes": 10003
+  },
+  {
+    "path": "tools/setup_sam3_image.py",
+    "sha256": "9ce876481e3ac2f66e31975f7055d997c40f6115a379d564ec66ed4d2d8d43fb",
+    "bytes": 6784
+  },
+  {
+    "path": "tools/test_fastlio_native.py",
+    "sha256": "38d7e24e545bef085d85dab1dfda87ffd8026db6bc20e2621fb6cc0e9041ad08",
+    "bytes": 3433
+  },
+  {
+    "path": "tools/validate_fastlio_semantics.py",
+    "sha256": "6f1c565337e92619f3e7e21f0956445e2b393442d69e71701ae856049aeefaf3",
+    "bytes": 2871
+  },
+  {
+    "path": "vehicle/__init__.py",
+    "sha256": "d642842f27b814299e99e4c7deb8c4f8e77d45d4d0e6073ee1c6387c037e8ac5",
+    "bytes": 245
+  },
+  {
+    "path": "vehicle/rfly_multirotor.py",
+    "sha256": "4a19d457b90d3758b913428600bd94ff1ac14f74482ce3b46f4208c152cb333f",
+    "bytes": 64053
+  }
+]

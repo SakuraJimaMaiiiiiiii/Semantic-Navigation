@@ -1,0 +1,106 @@
+[
+  {
+    "path": "application/demo_runtime.py",
+    "sha256": "088e8985013c9ea719ced5847053c87782bb476636556e4cc6beadca846f2876"
+  },
+  {
+    "path": "config/explore.json",
+    "sha256": "07fe5ccef5940d107070c362d7a222bf650ad70428a36b3ac9fd41d6200cda01"
+  },
+  {
+    "path": "detections/object_detect.py",
+    "sha256": "1f6cc92e2a57bc85b2c23fa24fbc276507e919df932b874ecdc7ad417565e7c1"
+  },
+  {
+    "path": "localization/fastlio_live_map.py",
+    "sha256": "f67d885b4d9fe686cd9fa408dce663b6cf39adc674d4494a0ae6bbfb661ebc5e"
+  },
+  {
+    "path": "localization/fastlio_navigation_frames.py",
+    "sha256": "64c61ede82b9c8982afadda2d23103fd482398756b3212c25ee784d16170521d"
+  },
+  {
+    "path": "localization/fastlio_recording.py",
+    "sha256": "1b73979d2b53cc0a1346de6ab32fe1131783d8e512e8be7ae4f4951b696f32de"
+  },
+  {
+    "path": "mapping/semantic_instance_mapper.py",
+    "sha256": "0bd7a02c2056f86f70e69f5702b8b92a08f7ba546f63b21fea3217cf60e793c9"
+  },
+  {
+    "path": "navigation/frontier_explorer.py",
+    "sha256": "0c5dd7d6f79a4c3e8c33e6148e49a6cd31d6142b752ebc2a4fb49b13056ed778"
+  },
+  {
+    "path": "navigation/mission.py",
+    "sha256": "71fcaf7b2c84154d01a49adda1b6c1504299ab6c9409cb0078740410a7d6db38"
+  },
+  {
+    "path": "planner/waypoint_planning_worker.py",
+    "sha256": "d72479cc4b4dc381461e3f831472a5151c4ecbc4f9a5c212f018bf8db666ac53"
+  },
+  {
+    "path": "readme/FAST_LIO三维占据建图.md",
+    "sha256": "76840a79fdfda6f2bc573d3981df3328dea4aed8d8fc503cedc2d0901d3ad545"
+  },
+  {
+    "path": "readme/FAST_LIO原生接入与验证.md",
+    "sha256": "3fff1a82309a6d0b29ca65c72643209862901134302fd6c9f6fb009e0846d1d6"
+  },
+  {
+    "path": "readme/reviews/W002执行停滞_20261029_103116.md",
+    "sha256": "0efacc44af258a400e5fe499e4928bc6a66086a890f4278a7897cf2766b131a5"
+  },
+  {
+    "path": "readme/reviews/W004-W009执行停滞_20261029_103116.md",
+    "sha256": "c5eb0b2986b7b765adec55707ddcce9daff7e09cebdbe757c572af061b8d766f"
+  },
+  {
+    "path": "readme/reviews/承重柱与探索覆盖核查_20261029.md",
+    "sha256": "b7e3a045a815838480917744bc68ed56453dae344144cca097c390ed92699d35"
+  },
+  {
+    "path": "readme/reviews/探索失效历史对照_20261029.md",
+    "sha256": "dde400d0debed56c8a1811b8fc15a8c05972876391e8e30c27cc6ce62a0bd05c"
+  },
+  {
+    "path": "readme/reviews/本周变更与目标导航回退核查_20261029.md",
+    "sha256": "b3da25ef6aa5a2d4e3b703dfa09c59f215d14561ffb68b8a711251ed56c39a48"
+  },
+  {
+    "path": "readme/reviews/长时间等待与已验证路径复用_20261029.md",
+    "sha256": "e6b096d790ab693dc6542732ce2aa4717d6d31e96487d6488f40c147587ede2f"
+  },
+  {
+    "path": "run_explore.py",
+    "sha256": "22ae1fa7b9ed038dba2d10565486ab8b241477187fef1112c05b9a86728e72b8"
+  },
+  {
+    "path": "tests/test_async_waypoint_reference.py",
+    "sha256": "20c2fbce7c82f80641dd78a71504b5c4e367b04678a0f2d66ed0737468e58c14"
+  },
+  {
+    "path": "tests/test_explore_startup_config.py",
+    "sha256": "16346c7780819231d086da3f01286b1ca24728da42875229c785332d99387445"
+  },
+  {
+    "path": "tests/test_fastlio_live_map.py",
+    "sha256": "8bc3deb031d8e679c61ad91cf125d13305af52226fbf4432c1ea00e3a51d5235"
+  },
+  {
+    "path": "tests/test_fastlio_map_reconstruction.py",
+    "sha256": "4832fa60794f5e0cf08146c9ac3a8c8ee0033cc0b3b36ef38ac28c5af76171ea"
+  },
+  {
+    "path": "tests/test_fastlio_navigation_frames.py",
+    "sha256": "debc04ac61f29d32cd26080a2ee507fcc5a4f5db055c61b1587361996c511e17"
+  },
+  {
+    "path": "tests/test_frontier_observation_watchdog.py",
+    "sha256": "5eb3c785fcca529a5a8d22e95b0dd19295414dbbf7cd1c8c013149b7237068ed"
+  },
+  {
+    "path": "tools/build_fastlio_map.py",
+    "sha256": "51515335af345f52e3733384f111c44565ed61299cbe46d89e08ac2b7361135a"
+  }
+]

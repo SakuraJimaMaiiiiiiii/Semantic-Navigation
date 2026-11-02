@@ -1,6 +1,7 @@
 """RflySim/PX4 多旋翼统一控制接口。"""
 
 import math
+import threading
 import time
 from dataclasses import dataclass
 from typing import Sequence
@@ -18,6 +19,8 @@ ROUTE_SOURCE_LABELS = {
     "route_clear": "A* 路线航点跟随（当前航段畅通，EGO待命）",
     "ego_clear": "EGO B样条生成的直达轨迹",
     "ego_avoid": "EGO A*种子优化后的三维绕障轨迹",
+    "height_recovery": "恢复巡航高度（三维净空已确认）",
+    "height_recovery_blocked": "停止：高度恢复通路未确认空闲",
     "depth_guard_clear": "深度估计生成的直线路径",
     "avoid": "A* 生成的绕障路径",
     "clear": "A* 地图验证后的直线路径",
@@ -95,6 +98,7 @@ class RflyMultirotorInterface:
         self._landing_requested_at = None
         self._shutdown_disarmed = False
         self.landing_confirmation = None
+        self._waypoint_planning_worker = None
 
     def setup_ue(self):
         """初始化 RflySim3D 显示接口。"""
@@ -189,6 +193,7 @@ class RflyMultirotorInterface:
             yaw = float(self.get_euler()[2])
             if not np.all(np.isfinite(position)) or not math.isfinite(yaw):
                 raise ValueError("Offboard initial position and yaw must be finite")
+            self._prepare_offboard_sender()
             print("--- 进入 Offboard 模式…… ----")
             # 在启动 SDK 的指令发送循环前准备保持当前位置/航向的设定值。
             self.mav.SendPosNED(*position, yaw)
@@ -203,6 +208,20 @@ class RflyMultirotorInterface:
 
         if arm and not self.armed:
             self.arm()
+
+    def _prepare_offboard_sender(self):
+        """SDK initOffboard starts t2 but does not replace a completed thread."""
+        sender = self.mav.t2
+        if sender.is_alive():
+            raise RuntimeError("Offboard sender is still running; refusing a second sender")
+        if sender.ident is not None:
+            # AUTO.LAND joins the old sender while retaining the MAVLink receiver.
+            # Never reinitialize the whole SDK or steal its receive connection.
+            self.mav.isInOffboard = False
+            self.mav.t2 = threading.Thread(
+                target=self.mav.OffboardSendMode,
+                name=sender.name, daemon=sender.daemon,
+            )
 
     def arm(self):
         """解锁无人机。"""
@@ -340,10 +359,12 @@ class RflyMultirotorInterface:
         yaw = float(yaw)
         if not math.isfinite(yaw):
             raise ValueError("Waypoint yaw must be finite")
+        command_yaw = float(self.get_euler()[2])
         started = time.monotonic()
         stable_since = None
         last_status = None
         hold_target = getattr(self, "_waypoint_hold_target", None)
+        hold_reason = getattr(self, "_waypoint_hold_reason", None)
         clear_since = getattr(self, "_waypoint_clear_since", None)
         braking = bool(getattr(self, "_waypoint_braking", False))
         # Preserve the command ramp across rolling horizons; measured speed
@@ -351,8 +372,19 @@ class RflyMultirotorInterface:
         lead_speed = float(getattr(self, "_waypoint_lead_speed", 0.0))
         lead_acceleration = float(getattr(self, "_waypoint_lead_acceleration", 0.0))
         lead_jerk = float(self.config.guided_position_lead_jerk)
+        from navigation.terminal_progress import shared_progress
+        progress = getattr(self, '_motion_progress_display', None)
+        if progress is None:
+            progress = self._motion_progress_display = shared_progress()
         if not math.isfinite(lead_jerk) or lead_jerk <= 0:
             raise ValueError("guided_position_lead_jerk must be positive and finite")
+        from planner.waypoint_planning_worker import WaypointPlanningWorker
+        worker = getattr(self, '_waypoint_planning_worker', None)
+        if local_planner is not None and (worker is None or worker.planner is not local_planner):
+            if worker is not None:
+                self.hover()
+                worker.close()
+            worker = self._waypoint_planning_worker = WaypointPlanningWorker(local_planner)
         try:
             while True:
                 self.raise_if_collision(include_ground=True)
@@ -365,25 +397,47 @@ class RflyMultirotorInterface:
                 delta = target-current
                 reached = (np.linalg.norm(delta[:2]) <= tolerance
                            and abs(delta[2]) <= self.config.guided_z_tolerance)
+                if not pass_through and reached and np.linalg.norm(self.get_velocity()) <= .05:
+                    # Arrival is measured, not conditional on a new moving plan.
+                    # Hold where we are rather than chasing the last centimetres
+                    # into a close obstacle merely to finish the reference.
+                    stable_since = now if stable_since is None else stable_since
+                    self.send_position(current, command_yaw)
+                    if now-stable_since >= self.config.guided_stable_time:
+                        self._waypoint_lead_speed = self._waypoint_lead_acceleration = 0.
+                        self._waypoint_position_reference = current.copy()
+                        self._waypoint_hold_target = self._waypoint_hold_reason = None
+                        self._waypoint_clear_since = None
+                        self._waypoint_braking = False
+                        progress.finish()
+                        return now-started
+                    time.sleep(period)
+                    continue
+                stable_since = None
                 command = target
                 status = "position_waypoint"
                 can_move = True
                 speed_limit = float(self.config.guided_max_forward_speed)
+                planner_seconds = revalidation_seconds = 0.
                 if local_planner is not None:
-                    updater = getattr(local_planner, "set_motion_state", None)
-                    if callable(updater):
-                        updater(self.get_velocity())
-                    plan = local_planner.plan(current, target)
-                    # Planning may block while the UAV continues flying.
-                    # Never issue its result after an intervening collision.
-                    self.raise_if_collision(include_ground=True)
-                    revalidate = getattr(local_planner, "revalidate_plan", None)
-                    if callable(revalidate):
-                        current = self.get_position()
-                        plan = revalidate(plan, current)
-                        delta = target-current
-                        reached = (np.linalg.norm(delta[:2]) <= tolerance
-                                   and abs(delta[2]) <= self.config.guided_z_tolerance)
+                    health = getattr(local_planner, 'check_execution_health', None)
+                    if callable(health):
+                        health()
+                    update = worker.poll(current, target, self.get_velocity())
+                    if update is None:
+                        from planner.local_avoidance_planner import LocalPlan
+                        plan = LocalPlan('waiting_for_plan', None, np.empty((0,3)), 0.)
+                    else:
+                        plan = worker.tracking_plan(update, current)
+                        planner_seconds = update.duration
+                        revalidate = getattr(local_planner, 'revalidate_plan', None)
+                        if callable(revalidate):
+                            validation_started = time.monotonic()
+                            plan = revalidate(plan, current, certificate=update.certificate)
+                            revalidation_seconds = time.monotonic()-validation_started
+                    notify = getattr(local_planner, 'notify_execution', None)
+                    if callable(notify):
+                        notify(plan, certificate=None if update is None else update.certificate)
                     status = plan.status
                     speed_limit = min(speed_limit, float(plan.speed_limit))
                     can_move = plan.can_move and math.isfinite(speed_limit) and speed_limit > 0
@@ -396,25 +450,38 @@ class RflyMultirotorInterface:
                 control_dt = min(1.0, max(period, command_time - (
                     started-period if last_command_time is None else last_command_time)))
                 self._waypoint_command_time = command_time
-                # Rolling-horizon calls retain the same waypoint; only report
-                # a changed status or changed displayed target across calls.
-                log_key = (status, *target.round(3).tolist())
-                if log_key != getattr(self, "_waypoint_log_key", None):
+                # Bound heading changes when a new A* segment or avoidance
+                # target is selected. Position safety checks remain unchanged.
+                yaw_delta = math.atan2(math.sin(yaw-command_yaw), math.cos(yaw-command_yaw))
+                command_yaw += float(np.clip(yaw_delta,
+                    -self.config.guided_max_yaw_rate*control_dt,
+                    self.config.guided_max_yaw_rate*control_dt))
+                if (not can_move and status != 'waiting_for_plan'
+                        and status != getattr(self, '_waypoint_warning_status', None)):
+                    progress.finish()
                     print(f"--- 位置航点控制：{ROUTE_SOURCE_LABELS.get(status, status)}；目标NED={target.round(3).tolist()} ----")
-                    self._waypoint_log_key = log_key
+                self._waypoint_warning_status = None if can_move else status
                 last_status = status
                 if not can_move:
                     if hold_target is None:
                         hold_target = current.copy()
+                        hold_reason = status
                         braking = status == "braking_corridor_blocked"
+                    elif status != 'waiting_for_plan':
+                        hold_reason = status
                     clear_since = None
                 elif hold_target is not None:
                     # Do not release braking on a single clear frame, including
                     # across rolling control-horizon calls.
-                    if not braking and np.linalg.norm(self.get_velocity()) <= self.config.landed_speed_tolerance:
-                        clear_since = now if clear_since is None else clear_since
-                        if now-clear_since >= self.config.guided_stable_time:
+                    if not braking and hold_reason == 'waiting_for_plan':
+                        hold_target = None
+                        hold_reason = None
+                        clear_since = None
+                    elif not braking and np.linalg.norm(self.get_velocity()) <= self.config.landed_speed_tolerance:
+                        clear_since = command_time if clear_since is None else clear_since
+                        if command_time-clear_since >= self.config.guided_stable_time:
                             hold_target = None
+                            hold_reason = None
                             clear_since = None
                     else:
                         clear_since = None
@@ -427,6 +494,7 @@ class RflyMultirotorInterface:
                         braking = False
                 self._waypoint_braking = braking
                 self.waypoint_control_state = {
+                    "plan_status": status,
                     "status": ("braking_without_pullback" if braking else
                                "holding_for_stable_clearance" if hold_target is not None else status),
                     "target_ned": target.tolist(),
@@ -435,17 +503,23 @@ class RflyMultirotorInterface:
                     "speed_limit": speed_limit,
                     "control_dt_seconds": control_dt,
                     "planning_seconds": command_time-now,
+                    "local_planning_seconds": planner_seconds,
+                    "post_planning_validation_seconds": revalidation_seconds,
+                    "clearance_stable_seconds": 0. if clear_since is None else command_time-clear_since,
                     "flight_status": self._flight_status(),
                 }
                 self._waypoint_hold_target = hold_target
+                self._waypoint_hold_reason = hold_reason
                 self._waypoint_clear_since = clear_since
+                progress.update(self.waypoint_control_state['status'],
+                                moving=can_move and hold_target is None)
                 if hold_target is not None:
                     lead_speed = 0.0
                     lead_acceleration = 0.0
                     stable_since = None
                     self._waypoint_position_reference = hold_target.copy()
                     self.waypoint_control_state["command_ned"] = hold_target.tolist()
-                    self.send_position(hold_target, yaw)
+                    self.send_position(hold_target, command_yaw)
                 else:
                     if reached and pass_through:
                         # Continue through straight subgoals without snapping
@@ -532,13 +606,14 @@ class RflyMultirotorInterface:
                         command_ned=reference.tolist(),
                         lead_speed=lead_speed, lead_acceleration=lead_acceleration,
                     )
-                    self.send_position(reference, yaw)
+                    self.send_position(reference, command_yaw)
                     if (not pass_through and reached and reference_finished
                             and np.linalg.norm(self.get_velocity()) <= .05):
                         stable_since = now if stable_since is None else stable_since
                         if now-stable_since >= self.config.guided_stable_time:
                             self._waypoint_lead_speed = 0.0
                             self._waypoint_lead_acceleration = 0.0
+                            progress.finish()
                             return now-started
                     else:
                         stable_since = None
@@ -546,6 +621,7 @@ class RflyMultirotorInterface:
                 self._waypoint_lead_acceleration = lead_acceleration
                 time.sleep(max(0., period-(time.monotonic()-now)))
         except BaseException:
+            progress.finish()
             try:
                 self.hover()
             except Exception as hold_error:
@@ -583,6 +659,7 @@ class RflyMultirotorInterface:
         deadline = started_at + timeout
         period = 1.0 / update_rate
         next_update = started_at
+        previous_command_at = started_at
         stable_since = None
         current_yaw = self._wrap_angle(float(self.get_euler()[2]))
         yaw_error = self._wrap_angle(target_yaw - current_yaw)
@@ -615,12 +692,14 @@ class RflyMultirotorInterface:
             else:
                 stable_since = None
 
-            yaw_rate = float(
-                np.clip(yaw_kp * self._wrap_angle(target_yaw-command_yaw), -max_yaw_rate, max_yaw_rate)
-            )
+            command_error = self._wrap_angle(target_yaw-command_yaw)
+            yaw_rate = float(np.clip(yaw_kp*command_error, -max_yaw_rate, max_yaw_rate))
             # Ramp the heading setpoint while keeping XYZ fixed. Actual yaw
             # feedback still determines arrival and timeout.
-            command_yaw = self._wrap_angle(command_yaw + yaw_rate * period)
+            command_dt = max(period, now-previous_command_at)
+            yaw_step = float(np.clip(yaw_rate*command_dt, -abs(command_error), abs(command_error)))
+            command_yaw = self._wrap_angle(command_yaw + yaw_step)
+            previous_command_at = now
             self.send_position(hold_position, command_yaw)
 
             next_update += period
@@ -739,6 +818,12 @@ class RflyMultirotorInterface:
     def hover(self):
         """保持调用时的当前位置。"""
         self._require_offboard()
+        worker = getattr(self, '_waypoint_planning_worker', None)
+        if worker is not None:
+            worker.invalidate()
+        progress = getattr(self, '_motion_progress_display', None)
+        if progress is not None:
+            progress.finish()
 
         position = self.get_position()
         yaw = float(self.get_euler()[2])
@@ -762,9 +847,12 @@ class RflyMultirotorInterface:
             return None
         now = time.monotonic()
         previous = getattr(self, '_ue_landing_sample', None)
-        changed = previous is None or stamp != previous[0]
+        # Some simulator builds keep runnedTime constant. CopyData replaces
+        # PosE on each received packet, even while the vehicle is stationary.
+        packet_token = getattr(packet, 'PosE', None)
+        changed = previous is None or packet_token is not previous[0]
         if changed:
-            self._ue_landing_sample = (stamp, now)
+            self._ue_landing_sample = (packet_token, now)
         age = 0.0 if changed else now-previous[1]
         def vector(name):
             value = np.asarray(getattr(packet, name, []), dtype=float)
@@ -818,6 +906,9 @@ class RflyMultirotorInterface:
     def land(self):
         """Use SDK land command; retire position streaming after AUTO.LAND acknowledgement."""
         self._require_connection()
+        worker = getattr(self, '_waypoint_planning_worker', None)
+        if worker is not None:
+            worker.invalidate()
         if self._landing_commanded:
             self._wait_for_landing_handoff()
             return
@@ -1012,16 +1103,13 @@ class RflyMultirotorInterface:
         self._require_connection()
         return self._copy_vector(self.mav.uavAngEular)
 
-    def get_quaternion(self):
-        """与当前 ATTITUDE 一致的 FRD→NED 四元数，避免复用旧四元数消息。"""
-        return self._euler_to_quaternion(self.get_euler())
 
     def get_angular_velocity(self):
         """获取机体系 FRD 角速度 [roll_rate, pitch_rate, yaw_rate]。"""
         self._require_connection()
         return self._copy_vector(self.mav.uavAngRate)
 
-    def get_drone_state(self, timestamp=None):
+    def get_drone_state(self, timestamp=None, *, pose_messages=None):
         """对当前 PX4 状态做一次完整快照。
 
         MAVLink 模式按完整消息读取，使用 ATTITUDE 接收时间，避免轮询
@@ -1033,6 +1121,8 @@ class RflyMultirotorInterface:
 
         before = time.time()
         messages = getattr(getattr(self.mav, "the_connection", None), "messages", {})
+        if pose_messages is not None:
+            messages = pose_messages
         attitude, local_position = messages.get("ATTITUDE"), messages.get("LOCAL_POSITION_NED")
         pose_sync_error = 0.0
         if attitude is not None and local_position is not None:
@@ -1090,9 +1180,16 @@ class RflyMultirotorInterface:
             dtype=float,
         )
 
+    def stop_waypoint_planning(self):
+        worker = getattr(self, '_waypoint_planning_worker', None)
+        if worker is not None:
+            worker.close()
+            self._waypoint_planning_worker = None
+
     def finish_flight_session(self):
         """Confirm touchdown and reset Offboard state while retaining SDK connections."""
         self._require_connection()
+        self.stop_waypoint_planning()
         if not self.wait_until_landed():
             raise TimeoutError("Landing not confirmed; another flight cannot be started; "
                                f"evidence={getattr(self, 'landing_confirmation', None)}")
@@ -1112,6 +1209,7 @@ class RflyMultirotorInterface:
         Args:
             disarm: 是否同时强制上锁。无人机未落地时不要设为 True。
         """
+        self.stop_waypoint_planning()
         if self.mav is None:
             if self.ue is not None and not self.ue.stopFlagUE4:
                 self.ue.endUE4MsgRec()

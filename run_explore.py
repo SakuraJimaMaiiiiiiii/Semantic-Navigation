@@ -15,13 +15,15 @@ DEFAULT_SESSION_FILE = (
 )
 
 
-def shutdown_session(server, runtime, primary_error=None):
+def shutdown_session(server, runtime, primary_error=None, sam3_service=None):
     """Attempt every cleanup step without hiding the fault that ended flight."""
     steps = [("session state", lambda: server.set_state("STOPPING")),
              ("session server", server.close)]
     if runtime is not None:
         steps.extend([("landing request", lambda: runtime.land_if_armed(hover_first=True)),
                       ("runtime shutdown", runtime.close)])
+    if sam3_service is not None:
+        steps.append(("SAM3 service", sam3_service.close))
     errors = []
     for name, stop in steps:
         try:
@@ -33,7 +35,7 @@ def shutdown_session(server, runtime, primary_error=None):
         raise errors[0]
 
 
-def parse_config(argv=None):
+def parse_config(argv=None, *, include_perception=False):
     parser = argparse.ArgumentParser(description=__doc__)
     defaults = FrontierExplorationConfig()
     parser.add_argument("--port", type=int, default=defaults.server_port)
@@ -71,8 +73,16 @@ def parse_config(argv=None):
         type=float,
         default=defaults.return_time_reserve,
     )
+    perception = parser.add_mutually_exclusive_group()
+    perception.add_argument("--sam3", dest="perception_backend", action="store_const",
+                            const="sam3", help="SAM3 detection and segmentation (default)")
+    perception.add_argument("--sam2", dest="perception_backend", action="store_const",
+                            const="yolo_sam2", help="YOLO-World detection and SAM2 segmentation")
+    parser.set_defaults(perception_backend="sam3")
+    parser.add_argument("--fastlio", action="store_true",
+                        help="Experimental FAST-LIO point/semantic map alongside PX4 navigation (assumed snapshot scans)")
     args = parser.parse_args(argv)
-    return replace(
+    config = replace(
         defaults,
         server_port=args.port,
         timeout=args.timeout,
@@ -86,21 +96,35 @@ def parse_config(argv=None):
         coverage_plateau_seconds=args.coverage_plateau_seconds,
         return_time_reserve=args.return_reserve,
     )
+    return (config, args) if include_perception else config
 
 
 def main():
-    config = parse_config()
+    config, args = parse_config(include_perception=True)
+    backend = args.perception_backend
     from navigation.session_server import SessionServer
     from navigation.exploration_session import ExplorationSession, TargetUnavailableError
 
     # Acquire the single local control endpoint BEFORE sending any scene command.
     server = SessionServer(uuid.uuid4().hex, config.server_port)
-    runtime = None
+    runtime = sam3_service = None
     try:
         from application import DemoRuntime, WebSocketRequestSender
+        from detections import DetectorConfig
+
+        detector = replace(DetectorConfig(), backend=backend)
+        if backend == "sam3":
+            from detections.sam3_process import SAM3ServiceProcess
+            detector = replace(detector, window_name="SAM3 Detection / Semantic Segmentation")
+            sam3_service = SAM3ServiceProcess(detector.sam3_url)
+            sam3_service.start()
 
         WebSocketRequestSender().send_when_ue_ready()
-        runtime = DemoRuntime(exploration=True, exploration_config=config)
+        if args.fastlio:
+            print("--- FAST-LIO 实验建图：假定雷达单帧瞬时采集；探索及控制仍使用 PX4 地图 ----")
+        runtime = DemoRuntime(exploration=True, exploration_config=config, detector_config=detector,
+                              fastlio_mode='live' if args.fastlio else None,
+                              lidar_scan_model='snapshot_assumed' if args.fastlio else 'unverified')
         runtime.start()
         session = ExplorationSession(runtime, config, session_id=server.session_id)
         server.map_path = str(session.map_path.resolve())
@@ -131,9 +155,12 @@ def main():
                         print(f"--- Session continuity lost: {error} ----")
                 continue
             if command == "shutdown":
+                if session.airborne_navigation:
+                    session.return_home()
                 break
             try:
-                result = session.navigate(request, identity)
+                result = (session.return_home() if command == "return_home"
+                          else session.navigate(request, identity))
                 server.finish(identity, result)
             except TargetUnavailableError as error:
                 server.finish(
@@ -155,7 +182,7 @@ def main():
     except KeyboardInterrupt:
         print("--- Stopping exploration session ----")
     finally:
-        shutdown_session(server, runtime, primary_error=sys.exc_info()[1])
+        shutdown_session(server, runtime, primary_error=sys.exc_info()[1], sam3_service=sam3_service)
 
 
 if __name__ == "__main__":

@@ -11,18 +11,21 @@ from sensors.lidar_camera_alignment import project_lidar
 class LidarMappingWorker:
     def __init__(self, camera, state_stream, local_map, global_map, config, loop_detector=None):
         self.loop_detector = loop_detector
+        self.fastlio_recorder = None
         self.reader = RflyLidarReader(camera, config)
         self.stream, self.local_map, self.global_map, self.config = state_stream, local_map, global_map, config
         self._stop = threading.Event()
         self._ready = threading.Event()
         self._thread = None
         self._acquisition_thread = None
+        self._global_thread = None
         self._error = None
         self.last_update = 0.
         self.update_count = 0
         self._cloud_condition = threading.Condition(threading.Lock())
         self._cloud_history = deque(maxlen=30)
-        self._pending_cloud = None
+        self._pending_cloud = {"local": None, "global": None}
+        self._integrated_maps = set()
         self._acquisition_done = False
         self.alignment_statistics = {
             "matched_frames": 0, "unmatched_frames": 0, "rejected_frames": 0,
@@ -51,7 +54,7 @@ class LidarMappingWorker:
         with self._cloud_condition:
             self._cloud_condition.notify_all()
         deadline = time.monotonic()+self.config.stale_timeout+2.
-        for thread in (self._thread, self._acquisition_thread):
+        for thread in (self._thread, self._acquisition_thread, self._global_thread):
             if thread is None:
                 continue
             thread.join(timeout=max(0., deadline-time.monotonic()))
@@ -158,6 +161,8 @@ class LidarMappingWorker:
                     self.alignment_statistics["pose_rejected_frames"] += 1
                     continue
                 origin = np.asarray(state.position_xyz, dtype=float)
+                if self.fastlio_recorder is not None:
+                    self.fastlio_recorder.submit_scan(frame, state, error)
                 rotation = _quaternion_to_rotation(state.quaternion)
                 if not np.isfinite(origin).all() or not np.isfinite(rotation).all():
                     raise ValueError("Non-finite synchronized LiDAR pose")
@@ -167,7 +172,9 @@ class LidarMappingWorker:
                     self._cloud_history.append((frame.timestamp, points))
                     # Map fusion consumes only the latest complete sample. A
                     # slow integration must neither stall history nor queue work.
-                    self._pending_cloud = (origin, points, frame.timestamp)
+                    cloud = (origin, points, frame.timestamp)
+                    self._pending_cloud["local"] = cloud
+                    self._pending_cloud["global"] = cloud
                     self._cloud_condition.notify_all()
         except Exception as error:
             self._fail(error)
@@ -176,49 +183,67 @@ class LidarMappingWorker:
                 self._acquisition_done = True
                 self._cloud_condition.notify_all()
 
+    def _integrate_map(self, name, target):
+        """Each map consumes its newest scan; global fusion cannot delay local fusion."""
+        try:
+            next_update = 0.
+            while not self._stop.is_set():
+                with self._cloud_condition:
+                    while self._pending_cloud[name] is None and not self._acquisition_done and not self._stop.is_set():
+                        self._cloud_condition.wait()
+                    if self._stop.is_set() or self._pending_cloud[name] is None:
+                        break
+                    delay = next_update-time.monotonic()
+                    if delay > 0:
+                        self._cloud_condition.wait(delay)
+                        continue
+                    origin, points, timestamp = self._pending_cloud[name]
+                    self._pending_cloud[name] = None
+                started = time.monotonic()
+                self.alignment_statistics[name+'_integration_stage'] = 'integrating'
+                if target is not None:
+                    target.integrate_lidar_points(origin, points, timestamp, origin)
+                completed = time.monotonic()
+                duration = completed-started
+                self.alignment_statistics[name+'_integration_last_seconds'] = duration
+                key = name+'_integration_max_seconds'
+                self.alignment_statistics[key] = max(duration, self.alignment_statistics.get(key, 0.))
+                self.alignment_statistics[name+'_completed_at'] = completed
+                self.alignment_statistics[name+'_source_timestamp'] = float(timestamp)
+                self.alignment_statistics[name+'_integration_stage'] = 'waiting_for_cloud'
+                if name == 'local':
+                    self.last_update = completed
+                    self.update_count += 1
+                    self.alignment_statistics['last_integrated_lidar_timestamp'] = float(timestamp)
+                elif self.loop_detector is not None:
+                    self.loop_detector.submit(origin, points, timestamp)
+                with self._cloud_condition:
+                    self._integrated_maps.add(name)
+                    if len(self._integrated_maps) == 2:
+                        self._ready.set()
+                # Schedule from start, not completion plus another full period.
+                next_update = started+1./self.config.update_rate
+        except Exception as error:
+            self._fail(error)
+
     def _run(self):
         self._acquisition_thread = threading.Thread(
             target=self._acquire, name='LidarAcquisition', daemon=True)
+        self._global_thread = threading.Thread(
+            target=self._integrate_map, args=('global', self.global_map),
+            name='LidarGlobalMapping', daemon=True)
         self._acquisition_thread.start()
+        self._global_thread.start()
         try:
-            next_update = 0.
-            while True:
-                with self._cloud_condition:
-                    while self._pending_cloud is None and not self._acquisition_done:
-                        self._cloud_condition.wait()
-                    if self._error is not None or self._pending_cloud is None:
-                        break
-                    delay = next_update-time.monotonic()
-                    if delay > 0 and not self._stop.is_set():
-                        self._cloud_condition.wait(delay)
-                        continue
-                    origin, points, timestamp = self._pending_cloud
-                    self._pending_cloud = None
-                for name, target in (('local', self.local_map), ('global', self.global_map)):
-                    if target is not None:
-                        started = time.monotonic()
-                        self.alignment_statistics['integration_stage'] = name
-                        target.integrate_lidar_points(origin, points, timestamp, origin)
-                        duration = time.monotonic()-started
-                        self.alignment_statistics[name+'_integration_last_seconds'] = duration
-                        key = name+'_integration_max_seconds'
-                        self.alignment_statistics[key] = max(duration, self.alignment_statistics.get(key, 0.))
-                self.alignment_statistics['integration_stage'] = 'waiting_for_cloud'
-                self.alignment_statistics['last_integrated_lidar_timestamp'] = float(timestamp)
-                self.last_update = time.monotonic()
-                if self.loop_detector is not None:
-                    self.loop_detector.submit(origin, points, timestamp)
-                self.update_count += 1
-                self._ready.set()
-                if self._stop.is_set():
-                    break
-                next_update = self.last_update+1./self.config.update_rate
-        except Exception as error:
-            self._fail(error)
+            self._integrate_map('local', self.local_map)
         finally:
             self._stop.set()
-            self._acquisition_thread.join(timeout=self.config.stale_timeout+2.)
-            if self._acquisition_thread.is_alive():
-                self._fail(RuntimeError('LiDAR acquisition worker did not stop'))
             with self._cloud_condition:
-                self._pending_cloud = None
+                self._cloud_condition.notify_all()
+            deadline = time.monotonic()+self.config.stale_timeout+2.
+            for thread in (self._acquisition_thread, self._global_thread):
+                thread.join(timeout=max(0., deadline-time.monotonic()))
+                if thread.is_alive():
+                    self._fail(RuntimeError(f'{thread.name} did not stop'))
+            with self._cloud_condition:
+                self._pending_cloud = {"local": None, "global": None}

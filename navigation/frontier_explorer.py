@@ -37,6 +37,7 @@ class FrontierExplorer(SemanticNavigator):
         )
         self.memory = memory
         self.motion_backend = "ego_avoidance_only"
+        self.phase = "exploring"
         self.checkpoint = checkpoint
         self.current_place = None
         self.recovery_yaws = {}
@@ -57,6 +58,7 @@ class FrontierExplorer(SemanticNavigator):
         self.active_viewpoint = None
         self.exploration_waypoints = []
         self.active_route = None
+        self._inspected_vehicle_ids = set()
         self._selection_reason = "initial"
         self._decision_trace = []
         self._selection_trace = []
@@ -73,7 +75,9 @@ class FrontierExplorer(SemanticNavigator):
             # Hold once, keep all freshness thresholds, and bound the recovery.
             self.vehicle.hover()
             self._event('MAP_UPDATE_WAIT', reason=str(error))
-            end = min(self.deadline, self.clock()+self.config.map_timeout)
+            end = self.clock() + self.config.map_timeout
+            if getattr(self, 'phase', 'exploring') == 'exploring':
+                end = min(self.deadline, end)
             while self.clock() < end:
                 self.vehicle.wait(min(.2, end-self.clock()))
                 self._last_health_map_check = -float('inf')
@@ -84,7 +88,8 @@ class FrontierExplorer(SemanticNavigator):
                         raise
                     continue
                 self._event('MAP_UPDATE_RESUMED')
-                self._motion_progress = self.vehicle.get_position().copy(), self.clock()
+                if self._motion_progress is not None:
+                    self._motion_progress = self.vehicle.get_position().copy(), self.clock()
                 return
             raise error
 
@@ -94,16 +99,57 @@ class FrontierExplorer(SemanticNavigator):
         return float('inf')
 
     def _check_health(self):
-        super()._check_health()
+        # Semantic recognition may take seconds; transit safety comes from
+        # the independently refreshed LiDAR/depth maps and local planner.
+        super()._check_health(require_semantics=False)
+        frame = self.perception.semantic_snapshot()
+        if frame is not None and self.clock() - frame.completed_at <= self.config.perception_timeout:
+            self._frame()
+            if getattr(self, '_semantic_deferred', False):
+                self._semantic_deferred = False
+                self._event('SEMANTIC_RESUMED')
+        elif not getattr(self, '_semantic_deferred', False):
+            self._semantic_deferred = True
+            self._event('SEMANTIC_DEFERRED', reason='recognition_not_fresh')
         if self._motion_progress is not None:
             position, changed = self._motion_progress
             current = self.vehicle.get_position()
-            if (
-                np.linalg.norm(current[:2] - position[:2])
-                >= self.exploration_config.progress_distance
-            ):
+            displacement = np.linalg.norm(current[:2] - position[:2])
+            control = getattr(self.vehicle, 'waypoint_control_state', None)
+            now = self.clock()
+            if getattr(self, '_progress_pause_anchor', None) != changed:
+                self._progress_pause_anchor = changed
+                self._progress_pause_credit = 0.
+                self._progress_last_check = changed
+            if isinstance(control, dict):
+                waiting = (control.get('plan_status', control.get('status')) == 'waiting_for_plan'
+                           or (control.get('status') == 'holding_for_stable_clearance'
+                               and control.get('speed_limit', 0.) > 0.))
+                if waiting:
+                    self._progress_pause_credit = min(self.exploration_config.progress_timeout,
+                        self._progress_pause_credit + max(0., now-self._progress_last_check))
+            self._progress_last_check = now
+            advancing = False
+            if isinstance(control, dict) and control.get('status') in ('route_clear', 'ego_avoid', 'ego_clear'):
+                target = np.asarray(control.get('target_ned'), dtype=float)
+                if target.shape == (3,) and np.isfinite(target).all():
+                    direction = target[:2] - current[:2]
+                    distance = np.linalg.norm(direction)
+                    displacement_vector = current[:2] - position[:2]
+                    # Measured progress toward a clear local goal counts even
+                    # if a noisy velocity sample happens to be near zero.
+                    advancing = (displacement >= self.exploration_config.progress_distance / 3
+                                 and distance > 1e-6
+                                 and np.dot(displacement_vector, direction / distance)
+                                 >= self.exploration_config.progress_distance / 3)
+                    if distance <= min(.1, self.config.arrival_tolerance):
+                        waypoint = tuple(target)
+                        if waypoint != getattr(self, '_progress_completed_waypoint', None):
+                            self._progress_completed_waypoint = waypoint
+                            advancing = True
+            if displacement >= self.exploration_config.progress_distance or advancing:
                 self._motion_progress = current.copy(), self.clock()
-            elif self.clock() - changed >= self.exploration_config.progress_timeout:
+            elif self.clock() - changed - self._progress_pause_credit >= self.exploration_config.progress_timeout:
                 self.vehicle.hover()
                 raise TimeoutError("exploration_no_motion_progress")
 
@@ -214,11 +260,17 @@ class FrontierExplorer(SemanticNavigator):
             return False
         excluded.add(index)
         print(f"--- 前沿恢复观察：预计未知格={gain}，仅转向一次 ----")
-        self._align(yaw)
-        self._wait(self.exploration_config.recovery_observation_wait)
-        self._frame()
-        self._record_coverage(self._grid())
-        self._checkpoint()
+        previous_progress = self._motion_progress
+        self._motion_progress = None
+        try:
+            self._align(yaw)
+            self._wait(self.exploration_config.recovery_observation_wait)
+            self._frame()
+            self._record_coverage(self._grid())
+            self._checkpoint()
+        finally:
+            self._motion_progress = ((self.vehicle.get_position().copy(), self.clock())
+                                     if previous_progress is not None else None)
         return True
 
     def _record_coverage(self, grid):
@@ -243,12 +295,9 @@ class FrontierExplorer(SemanticNavigator):
         changed = old_stage != progress["stage"]
         if changed:
             self._event("COVERAGE_STATE", **progress)
-        if changed or self.clock()-getattr(self, "_last_coverage_log", -float("inf")) >= 10.:
-            self._last_coverage_log = self.clock()
-            print(f"--- 探索结束判断：阶段={progress['stage']}，"
-                  f"窗口新增={progress['normalized_window_gain_m2']:.2f}m²，"
-                  f"门槛={progress['low_gain_threshold_m2']:.2f}m²，"
-                  f"复查剩余秒数={progress['review_remaining_seconds']} ----")
+        from .terminal_progress import shared_progress
+        display = getattr(self.vehicle, '_motion_progress_display', None) or shared_progress()
+        display.update_coverage(progress)
         return plateau
 
     def _coverage_review(self, grid, current, origin):
@@ -264,6 +313,13 @@ class FrontierExplorer(SemanticNavigator):
             self._check_health()
             novel = [(key, goal) for key, goal in choices
                      if all(np.linalg.norm(np.asarray(goal)[:2]-p[:2]) > spacing for p in arrived)]
+            if novel:
+                # Review spends its finite attempts on actual unseen area,
+                # not tiny one-cell gaps preferred by heading continuity.
+                gains = {key: len(decision.candidates[key].visible_unknown) for key, _ in novel}
+                best_gain = max(gains.values())
+                novel = [(key, goal) for key, goal in novel
+                         if gains[key] >= max(1, .5 * best_gain)]
             if novel:
                 attempts = getattr(self, "_coverage_review_attempts", 0)
                 if attempts < self.exploration_config.coverage_review_attempts:
@@ -400,6 +456,85 @@ class FrontierExplorer(SemanticNavigator):
         self._frame()
         self._record_coverage(self._grid())
         self._checkpoint()
+        self._inspect_nearby_vehicle()
+
+    def _inspect_nearby_vehicle(self):
+        from .vehicle_inspection import needs_inspection, observation_route
+        frame = self._frame()
+        current = self.vehicle.get_position()
+        records = [r for r in frame.object_inspection_candidates
+                   if r['runtime_instance_id'] not in self._inspected_vehicle_ids
+                   and not self._inspected_vehicle_ids.intersection(r.get('merged_from', []))
+                   and frame.timestamp-r['last_seen'] <= self.config.perception_timeout
+                   and needs_inspection(r, self.config.clearance_radius)
+                   and np.linalg.norm(np.asarray(r['position_world'])[:2]-current[:2])
+                   <= self.exploration_config.information_radius + self.exploration_config.candidate_radius_max]
+        if not records:
+            return
+        record = min(records, key=lambda r: np.linalg.norm(np.asarray(r['position_world'])-current))
+        identity = record['runtime_instance_id']
+        self._inspected_vehicle_ids.add(identity)
+        original_deadline, previous_progress = self.deadline, self._motion_progress
+        self.deadline = min(original_deadline, self.clock()+self.exploration_config.vehicle_inspection_timeout)
+        self._motion_progress = None
+        used_yaws = []
+        waypoint = None
+        try:
+            for _ in range(self.exploration_config.vehicle_inspection_views):
+                self._check_health()
+                current = self.vehicle.get_position()
+                route = observation_route(self._grid(), current, record, self.altitude,
+                                          self.config.standoff_distance, used_yaws)
+                if route is None:
+                    break
+                _, goal, path, angle = route
+                if np.linalg.norm(goal[:2]-self.exploration_origin[:2]) > self.exploration_config.max_radius:
+                    break
+                used_yaws.append(angle)
+                waypoint = dict(number=len(self.exploration_waypoints)+1, frontier=None,
+                                position=goal.tolist(), yaw=angle+math.pi, score=0.,
+                                source='vehicle_inspection', target_id=identity, status='active')
+                self.exploration_waypoints.append(waypoint)
+                self.active_route = path
+                self._waypoint_cursor = WaypointCursor()
+                self._checkpoint()
+                while not self._goal_reached(goal):
+                    self._check_health()
+                    path = self._grid().path(self.vehicle.get_position(), goal)
+                    if path is None:
+                        waypoint['status'] = 'blocked'
+                        return
+                    self._move(path)
+                waypoint['status'] = 'arrived'
+                place = f"place_{len(self.memory.places):04d}"
+                self.memory.add_place(place, self.vehicle.get_position(), self.current_place)
+                self.current_place = place
+                self._align(math.atan2(record['position_world'][1]-goal[1], record['position_world'][0]-goal[0]))
+                baseline = self._frame().timestamp
+                observation_end = min(self.deadline, self.clock()+self.config.perception_timeout)
+                while self.clock() < observation_end:
+                    self._wait(.2)
+                    frame = self._frame()
+                    if frame.timestamp > baseline:
+                        break
+                updated = next((r for r in frame.object_inspection_candidates
+                                if r['runtime_instance_id'] == identity or identity in r.get('merged_from', [])), None)
+                if updated is not None:
+                    record = updated
+                    self._inspected_vehicle_ids.add(record['runtime_instance_id'])
+                    if record['last_seen'] > baseline and not needs_inspection(record, self.config.clearance_radius):
+                        break
+                self._checkpoint()
+        except TimeoutError:
+            if waypoint is not None and waypoint['status'] == 'active':
+                waypoint['status'] = 'inspection_timeout'
+        finally:
+            self.deadline = original_deadline
+            self._motion_progress = previous_progress
+            self.active_route = None
+            self._waypoint_cursor = WaypointCursor()
+            self.vehicle.hover()
+            self._checkpoint()
 
     def _grid(self):
         self._check_maps()
@@ -539,6 +674,7 @@ class FrontierExplorer(SemanticNavigator):
         map_revision = getattr(self.global_map, "revision", 0)
         self.current_place = None
         self._motion_progress = self.vehicle.get_position().copy(), self.clock()
+        self._progress_completed_waypoint = None
         path = None
         try:
             while not self._goal_reached(goal):
@@ -569,8 +705,8 @@ class FrontierExplorer(SemanticNavigator):
                 # Keep a valid route across rolling horizons instead of letting
                 # equal-cost A* alternatives alternate left/right every cycle.
                 if path is not None:
-                    while (len(path)>2 and np.linalg.norm(current[:2]-path[1][:2]) <= min(0.1,self.config.arrival_tolerance)
-                           and np.linalg.norm(self.vehicle.get_velocity()) <= .05
+                    while (len(path)>2 and np.linalg.norm(current[:2]-path[1][:2]) <= self.config.arrival_tolerance
+                           and abs(current[2]-path[1][2]) <= self.config.arrival_tolerance
                            and grid.segment_free(current,path[2])):
                         path = [current,*path[2:]]
                     path = [current,*path[1:]]
@@ -636,7 +772,8 @@ class FrontierExplorer(SemanticNavigator):
                             self.local_map.snapshot(), self.global_map.snapshot(), current, goal)
                         self._guard.capture_failure("frontier_path_blocked", self._last_travel_failure)
                     return False
-                self._move(path)
+                continuous = len(path) > 2 and grid.segment_free(current, path[2])
+                self._move(path, continuous=continuous)
 
         except TimeoutError as error:
             if self.clock() >= self.deadline:
@@ -679,7 +816,7 @@ class FrontierExplorer(SemanticNavigator):
                                      if previous is not None else None)
         return self.vehicle.get_position()
 
-    def _move(self, path, *, recovery=False):
+    def _move(self, path, *, recovery=False, continuous=False):
         self._check_health()
         current = self.vehicle.get_position()
         # Follow the first A* segment, never a chord spanning several corners.
@@ -699,7 +836,7 @@ class FrontierExplorer(SemanticNavigator):
         held_yaw = getattr(self,"_travel_heading",None)
         if held_yaw is None:
             held_yaw = current_yaw
-        if _angle_difference(travel_yaw,held_yaw)>math.radians(15):
+        if recovery and _angle_difference(travel_yaw,held_yaw)>math.radians(15):
             self._hold_for_planning()
             # Rotation is allowed only at a currently certified body footprint.
             local = NavigationGrid.from_local(self.local_map.snapshot(),self.altitude,self.config,
@@ -716,15 +853,22 @@ class FrontierExplorer(SemanticNavigator):
                     if previous_progress is not None else None
                 )
             held_yaw = travel_yaw
+        if not recovery:
+            held_yaw = travel_yaw
         self._travel_heading = held_yaw
+        pass_through = not recovery and (self._waypoint_cursor.intermediate or continuous)
         self.vehicle.move_waypoint_guided(
             goal, yaw=held_yaw, face_direction=False, local_planner=self._guard,
             # Slow into bends instead of cruising through a corner and trying
             # to brake only after changing the next waypoint's direction.
-            pass_through=self._waypoint_cursor.intermediate and not recovery,
+            pass_through=pass_through,
             xy_tolerance=(self.config.arrival_tolerance
-                          if self._waypoint_cursor.intermediate and not recovery else tolerance),
-            control_horizon=self.exploration_config.rolling_replan_period,
+                          if pass_through else tolerance),
+            # A short local segment is continuously revalidated by the
+            # controller; avoid rebuilding the global grid every 1.5 s while
+            # that segment is still being executed.
+            control_horizon=max(self.exploration_config.rolling_replan_period,
+                                self.config.leg_timeout / 3),
             timeout=max(0.01,min(self.config.leg_timeout,self.deadline-self.clock())),
         )
         self._sample_position()
@@ -832,10 +976,10 @@ class FrontierExplorer(SemanticNavigator):
                 # Coverage stopping also applies while residual/repeated candidates exist.
                 visits = sum(w["status"] == "arrived" for w in self.exploration_waypoints)
                 plateau = self._update_coverage(grid)
-                # A completed low-growth review is a deadline, not permission
-                # to start another candidate batch or flight. In-flight travel
-                # finishes its committed waypoint before returning to this loop.
-                if self.coverage_progress.metrics["stop_due"]:
+                # Low growth requests a frontier review. Waiting or traversing
+                # already-known space must not bypass remaining review attempts.
+                if (self.coverage_progress.metrics["stop_due"] and not choices
+                        and not self.frontiers.batch_pending):
                     reason = "map_expansion_stalled"
                     break
                 if choices:
@@ -855,9 +999,9 @@ class FrontierExplorer(SemanticNavigator):
                     if exhausted:
                         bin_key = tuple(np.floor((current[:2]-origin[:2]) /
                                                  self.exploration_config.viewpoint_spacing).astype(int))
-                        if len(self.recovery_yaws.get(bin_key, set())) < self.exploration_config.recovery_observations:
-                            if self._recovery_observation(grid, bin_key):
-                                continue
+                        if (len(self.recovery_yaws.get(bin_key, set())) < self.exploration_config.recovery_observations
+                                and self._recovery_observation(grid, bin_key)):
+                            continue
                         self._last_frontier_area = self._remaining_frontier_area(grid)
                         # Unfinished or blocked boundaries are never called complete.
                         completed = (self._coverage_review_attempts < self.exploration_config.coverage_review_attempts
@@ -879,9 +1023,9 @@ class FrontierExplorer(SemanticNavigator):
                         ).astype(int)
                     )
                     used_yaws = self.recovery_yaws.get(bin_key, set())
-                    if len(used_yaws) < self.exploration_config.recovery_observations:
-                        if self._recovery_observation(grid, bin_key):
-                            continue
+                    if (len(used_yaws) < self.exploration_config.recovery_observations
+                            and self._recovery_observation(grid, bin_key)):
+                        continue
                     pending = [
                         until
                         for count, until in self.failed_frontiers.values()
@@ -968,6 +1112,11 @@ class FrontierExplorer(SemanticNavigator):
                 self.active_route = None
                 if not outcome:
                     waypoint["failure"] = getattr(self, "_last_travel_failure", None)
+                    if ((waypoint['failure'] or {}).get('reason') == 'exploration_no_motion_progress'
+                            and self.coverage_progress.metrics.get('stage') in ('review', 'review_due')):
+                        # No observation was completed: this is an execution
+                        # failure, not evidence that another region has no gain.
+                        self._coverage_review_attempts = max(0, self._coverage_review_attempts - 1)
                     self._guard._diagnostic_context = (
                         self.local_map.snapshot(), self.global_map.snapshot(),
                         self.vehicle.get_position(), np.asarray(goal))

@@ -89,6 +89,27 @@ class GlobalSparseOccupancyMap:
         self._lock = threading.RLock()
         self._validate_config()
 
+    def seed_saved_map(self, saved) -> None:
+        """Fill unobserved history after frame validation; live evidence wins.
+
+        Loading history must not refresh the live sensor timestamp.
+        """
+        if not np.isclose(saved['resolution'], self.resolution):
+            raise ValueError('Saved map resolution differs from active mapping config')
+        for name in ('occupied_threshold', 'free_threshold'):
+            if not np.isclose(saved[name], getattr(self.config, name)):
+                raise ValueError(f'Saved map {name} differs from active mapping config')
+        indices, values = np.asarray(saved['indices']), np.asarray(saved['log_odds'])
+        if indices.shape != (len(values), 3) or not np.all(np.isfinite(values)):
+            raise ValueError('Invalid saved occupancy arrays')
+        with self._lock:
+            history = {tuple(map(int, key)): float(value) for key, value in zip(indices, values)}
+            history.update(self._log_odds)
+            if len(history) > self.config.max_voxels:
+                raise ValueError('Saved map exceeds active voxel capacity')
+            self._log_odds = history
+            self._snapshot_cache = None
+
     def update(self, observation) -> None:
         """把一帧同步深度及对应位姿融合进固定世界地图。"""
         frame = observation.sensor_frame
@@ -224,8 +245,7 @@ class GlobalSparseOccupancyMap:
 
     @property
     def last_observation_completed_at(self):
-        with self._lock:
-            return self._last_observation_completed_at
+        return self._last_observation_completed_at
 
     def snapshot(self) -> GlobalSparseMapSnapshot:
         """返回不会被后续地图更新修改的稀疏地图快照。"""
@@ -550,13 +570,9 @@ class GlobalSparseOccupancyMap:
                     self._dropped_new_voxels += 1
                     continue
                 previous = 0.0
-            self._log_odds[key] = float(
-                np.clip(
-                    previous + delta,
-                    minimum,
-                    maximum,
-                )
-            )
+            # Scalar saturation: avoid allocating a NumPy array per voxel.
+            value = previous + delta
+            self._log_odds[key] = minimum if value < minimum else maximum if value > maximum else value
 
     def _make_snapshot_unlocked(self) -> GlobalSparseMapSnapshot:
         if self._log_odds:

@@ -74,6 +74,8 @@ class LocalOccupancyGrid:
         self._inflation_offsets = self._make_inflation_offsets()
         self._lock = threading.RLock()
         self._latest_observation = None
+        self._geometry_cache = None
+        self._execution_snapshot = None
 
     def update_depth_observation(self, observation):
         """Retain RGB-D for perception/forward stop without inserting depth geometry."""
@@ -110,6 +112,7 @@ class LocalOccupancyGrid:
                 self._update_sensor_pose(drone_position, frame.timestamp)
                 self._mark_vehicle_footprint(drone_position)
                 self._forward_clearance = forward_clearance
+                self._execution_snapshot = self.snapshot()
                 self._last_observation_completed_at = time.monotonic()
             return
         points_camera, hit = clip_depth_rays(
@@ -124,6 +127,7 @@ class LocalOccupancyGrid:
             self._integrate_rays(camera_origin, points_world, hit)
             self._mark_vehicle_footprint(drone_position)
             self._forward_clearance = forward_clearance
+            self._execution_snapshot = self.snapshot()
             self._last_observation_completed_at = time.monotonic()
 
     def integrate_lidar_points(self, origin, endpoints, timestamp, drone_position):
@@ -133,6 +137,7 @@ class LocalOccupancyGrid:
             self._update_sensor_pose(drone_position, timestamp)
             self._integrate_rays(np.asarray(origin), vectors+origin, hit)
             self._mark_vehicle_footprint(drone_position)
+            self._execution_snapshot = self.snapshot()
             self._last_observation_completed_at = time.monotonic()
             # Preserve the independent depth-image emergency clearance and observation.
 
@@ -146,6 +151,7 @@ class LocalOccupancyGrid:
             self._timestamp = float(timestamp)
 
     def _mark_vehicle_footprint(self, position):
+        self._geometry_cache = None
         indices = vehicle_footprint_indices(
             position,
             self._origin_ned,
@@ -167,15 +173,30 @@ class LocalOccupancyGrid:
 
     @property
     def last_observation_completed_at(self):
-        """Monotonic heartbeat updated after every processed depth frame."""
-        with self._lock:
-            return self._last_observation_completed_at
+        """Published completion time; reading it must not wait for the next fusion."""
+        return self._last_observation_completed_at
+
+    @property
+    def execution_snapshot(self):
+        """Last completed immutable geometry; control readers never wait on fusion."""
+        return self._execution_snapshot
+
+    @property
+    def forward_clearance(self):
+        """Latest camera clearance, independent of occupancy snapshot construction."""
+        return self._forward_clearance
 
     def snapshot(self) -> OccupancyGridSnapshot:
         """复制当前地图，供规划器等读取方无锁使用。"""
         with self._lock:
-            states = self._states_unlocked()
-            inflated = self._inflate_unlocked(states == OCCUPIED)
+            if self._geometry_cache is None:
+                states = self._states_unlocked()
+                inflated = self._inflate_unlocked(states == OCCUPIED)
+                observed = self._observed.copy()
+                for array in (states, inflated, observed):
+                    array.setflags(write=False)
+                self._geometry_cache = states, inflated, observed
+            states, inflated, observed = self._geometry_cache
             origin = (
                 np.zeros(3, dtype=np.float64)
                 if self._origin_ned is None
@@ -189,7 +210,7 @@ class LocalOccupancyGrid:
                 inflated_occupied=inflated,
                 drone_position_ned=self._drone_position_ned.copy(),
                 forward_clearance=float(self._forward_clearance),
-                observed=self._observed.copy(),
+                observed=observed,
                 observation=self._latest_observation,
             )
 
@@ -294,6 +315,7 @@ class LocalOccupancyGrid:
         endpoints_world: np.ndarray,
         hit: np.ndarray,
     ) -> None:
+        self._geometry_cache = None
         endpoints_indices, valid_endpoints = self._world_to_indices(endpoints_world)
         valid_endpoints &= hit
         valid_endpoint_indices = endpoints_indices[valid_endpoints]

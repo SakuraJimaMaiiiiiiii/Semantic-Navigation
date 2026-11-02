@@ -1,0 +1,782 @@
+{
+  "run": "data\\runs\\run_20261029_103116_758936",
+  "coordinate_frame": "recorded PX4 world; identical input, no loop correction",
+  "note": "ID counts and position differences are not ground-truth localization accuracy.",
+  "backends": {
+    "v3": {
+      "vehicle_measurements": 114,
+      "published_vehicles": 6,
+      "pending_fragments": 0,
+      "redirects": {},
+      "vehicles": [
+        {
+          "instance_id": "vehicle_01",
+          "runtime_instance_id": "vehicle_01",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "unknown",
+          "color_confidence": 0.0,
+          "aliases": [],
+          "position_world": [
+            -9.2153901977528,
+            13.384576288935502,
+            -0.514944019735501
+          ],
+          "position_covariance": [
+            [
+              0.09094985425343355,
+              -0.020159799526105273,
+              -0.0014390652526250188
+            ],
+            [
+              -0.020159799526105273,
+              0.14688702058364897,
+              -0.0013539585882271516
+            ],
+            [
+              -0.0014390652526250188,
+              -0.0013539585882271516,
+              0.05689228262536383
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              -11.169601810940463,
+              12.512516284433708,
+              -0.9715775522008369
+            ],
+            "max": [
+              -7.261178584565135,
+              14.256636293437296,
+              -0.058310487270165114
+            ]
+          },
+          "confidence": 0.9454823369565217,
+          "observation_count": 23,
+          "last_seen": 1793242430.0567677,
+          "is_static": true,
+          "is_obstacle": true,
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            -9.465187649812911,
+            12.798506689882396,
+            -0.4573244765501244
+          ],
+          "supported_surface_voxels": 508,
+          "input_source_id_counts": {
+            "1": 21
+          }
+        },
+        {
+          "instance_id": "vehicle_02",
+          "runtime_instance_id": "vehicle_02",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "blue",
+          "color_confidence": 0.7810007100708649,
+          "aliases": [],
+          "position_world": [
+            8.825511943827605,
+            19.798812828473892,
+            -0.4602141774024591
+          ],
+          "position_covariance": [
+            [
+              0.08601526187690249,
+              0.029490004507352,
+              0.003778296892960363
+            ],
+            [
+              0.029490004507352,
+              0.10980264375001454,
+              0.004386700540424724
+            ],
+            [
+              0.003778296892960363,
+              0.004386700540424724,
+              0.05073955345599406
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              6.826794845768814,
+              19.667958066955364,
+              -0.9509364957932958
+            ],
+            "max": [
+              10.824229041886396,
+              19.92966758999242,
+              0.030508140988377536
+            ]
+          },
+          "confidence": 0.8748046875,
+          "observation_count": 10,
+          "last_seen": 1793241892.8737676,
+          "is_static": true,
+          "is_obstacle": true,
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            9.016161105765965,
+            20.238819730557566,
+            -0.43343067609858804
+          ],
+          "supported_surface_voxels": 364,
+          "input_source_id_counts": {
+            "2": 8
+          }
+        },
+        {
+          "instance_id": "vehicle_03",
+          "runtime_instance_id": "vehicle_03",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "unknown",
+          "color_confidence": 0.0,
+          "aliases": [],
+          "position_world": [
+            5.971414634647328,
+            30.21489230118594,
+            -0.4302081555210717
+          ],
+          "position_covariance": [
+            [
+              0.23741056295833501,
+              0.20370193016099902,
+              0.034750568714889615
+            ],
+            [
+              0.20370193016099902,
+              0.3594178958181298,
+              0.04680867744882178
+            ],
+            [
+              0.034750568714889615,
+              0.04680867744882178,
+              0.08798272214832578
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              5.830338688139941,
+              29.838396565390248,
+              -0.6829035686879245
+            ],
+            "max": [
+              6.112490581154715,
+              30.59138803698163,
+              -0.17751274235421904
+            ]
+          },
+          "confidence": 0.9309895833333334,
+          "observation_count": 3,
+          "last_seen": 1793241389.7817676,
+          "is_static": true,
+          "is_obstacle": true,
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            5.900778995274962,
+            29.97943713720546,
+            -0.41156563184690703
+          ],
+          "supported_surface_voxels": 29,
+          "input_source_id_counts": {
+            "None": 1
+          }
+        },
+        {
+          "instance_id": "vehicle_04",
+          "runtime_instance_id": "vehicle_04",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "blue",
+          "color_confidence": 0.7203815450637431,
+          "aliases": [],
+          "position_world": [
+            -9.034570837652463,
+            6.278935646026435,
+            -0.7469473644225867
+          ],
+          "position_covariance": [
+            [
+              0.07032729224079434,
+              0.045568842406404686,
+              -0.0030314770182415284
+            ],
+            [
+              0.045568842406404686,
+              0.20944142650039765,
+              -0.010162237180221384
+            ],
+            [
+              -0.0030314770182415284,
+              -0.010162237180221384,
+              0.05119433492131574
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              -11.023224082037135,
+              6.134173760080351,
+              -1.4396697757852792
+            ],
+            "max": [
+              -7.045917593267792,
+              6.423697531972518,
+              -0.054224953059894235
+            ]
+          },
+          "confidence": 0.9578993055555556,
+          "observation_count": 9,
+          "last_seen": 1793242028.3817677,
+          "is_static": true,
+          "is_obstacle": true,
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            -8.558928082648016,
+            6.409234643048498,
+            -0.5486404206610437
+          ],
+          "supported_surface_voxels": 290,
+          "input_source_id_counts": {
+            "3": 7
+          }
+        },
+        {
+          "instance_id": "vehicle_05",
+          "runtime_instance_id": "vehicle_05",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "red",
+          "color_confidence": 0.6816765225376525,
+          "aliases": [],
+          "position_world": [
+            -8.656464235961273,
+            38.94469904955511,
+            -0.6059514291010814
+          ],
+          "position_covariance": [
+            [
+              0.058716990647617276,
+              -0.02355133429341972,
+              -0.003093281849719024
+            ],
+            [
+              -0.02355133429341972,
+              0.10684597869649795,
+              0.007643386674463593
+            ],
+            [
+              -0.003093281849719024,
+              0.007643386674463593,
+              0.04784203797385869
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              -10.84735133117678,
+              38.16510897814917,
+              -1.1855440029555082
+            ],
+            "max": [
+              -6.4655771407457685,
+              39.724289120961046,
+              -0.026358855246654517
+            ]
+          },
+          "confidence": 0.9640151515151515,
+          "observation_count": 33,
+          "last_seen": 1793241884.3717678,
+          "is_static": true,
+          "is_obstacle": true,
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            -8.607385365030357,
+            38.20918494306121,
+            -0.4955645101672261
+          ],
+          "supported_surface_voxels": 874,
+          "input_source_id_counts": {
+            "4": 31
+          }
+        },
+        {
+          "instance_id": "vehicle_06",
+          "runtime_instance_id": "vehicle_06",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "blue",
+          "color_confidence": 0.7923649494443663,
+          "aliases": [],
+          "position_world": [
+            7.235068769114552,
+            2.273385191208286,
+            -0.5447479583405017
+          ],
+          "position_covariance": [
+            [
+              0.2828579384615994,
+              0.04256909578276237,
+              0.02819830814386754
+            ],
+            [
+              0.04256909578276237,
+              0.06914740341221659,
+              0.005425330357856145
+            ],
+            [
+              0.02819830814386754,
+              0.005425330357856145,
+              0.06089946155727768
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              6.336335881170959,
+              1.507051241550029,
+              -0.9517633645255574
+            ],
+            "max": [
+              8.133801657058145,
+              3.0397191408665427,
+              -0.137732552155446
+            ]
+          },
+          "confidence": 0.94375,
+          "observation_count": 5,
+          "last_seen": 1793242209.0817678,
+          "is_static": true,
+          "is_obstacle": true,
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            6.639397027952987,
+            1.998535566066609,
+            -0.5587031720185555
+          ],
+          "supported_surface_voxels": 180,
+          "input_source_id_counts": {
+            "5": 3
+          }
+        }
+      ],
+      "merge_diagnostics": {
+        "vehicle_01|vehicle_02": {
+          "coobserved_distinct": {
+            "count": 18,
+            "last_timestamp": 1793242430.0567677
+          }
+        }
+      }
+    },
+    "current": {
+      "vehicle_measurements": 114,
+      "published_vehicles": 5,
+      "pending_fragments": 0,
+      "redirects": {},
+      "vehicles": [
+        {
+          "instance_id": "vehicle_01",
+          "runtime_instance_id": "vehicle_01",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "unknown",
+          "color_confidence": 0.0,
+          "aliases": [],
+          "position_world": [
+            -9.215390197752798,
+            13.384576288935502,
+            -0.514944019735501
+          ],
+          "position_covariance": [
+            [
+              0.09094985425343355,
+              -0.020159799526105273,
+              -0.0014390652526250188
+            ],
+            [
+              -0.020159799526105273,
+              0.14688702058364897,
+              -0.0013539585882271516
+            ],
+            [
+              -0.0014390652526250188,
+              -0.0013539585882271516,
+              0.05689228262536383
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              -11.169601810940463,
+              12.512516284433708,
+              -0.9715775522008369
+            ],
+            "max": [
+              -7.261178584565135,
+              14.256636293437296,
+              -0.058310487270165114
+            ]
+          },
+          "confidence": 0.9454823369565217,
+          "observation_count": 23,
+          "last_seen": 1793242430.0567677,
+          "is_static": true,
+          "is_obstacle": true,
+          "position_status": "multi_surface_estimate",
+          "supported_box_faces": [
+            "length_min",
+            "width_min",
+            "width_max"
+          ],
+          "geometry_fit": "measured_face_rectangle",
+          "observed_oriented_box": {
+            "center": [
+              -9.215390197752798,
+              13.384576288935502,
+              -0.514944019735501
+            ],
+            "size": [
+              3.908423226375328,
+              1.744120009003589,
+              0.9132670649306718
+            ],
+            "yaw": 0.0
+          },
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            -9.465187649812911,
+            12.798506689882396,
+            -0.4573244765501244
+          ],
+          "supported_surface_voxels": 508,
+          "connected_fragment_count": 0,
+          "input_source_id_counts": {
+            "1": 21
+          }
+        },
+        {
+          "instance_id": "vehicle_02",
+          "runtime_instance_id": "vehicle_02",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "blue",
+          "color_confidence": 0.7810007100708649,
+          "aliases": [],
+          "position_world": [
+            8.825511943827605,
+            19.798812828473892,
+            -0.4602141774024591
+          ],
+          "position_covariance": [
+            [
+              0.08601526187690249,
+              0.029490004507352,
+              0.003778296892960363
+            ],
+            [
+              0.029490004507352,
+              0.10980264375001454,
+              0.004386700540424724
+            ],
+            [
+              0.003778296892960363,
+              0.004386700540424724,
+              0.05073955345599406
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              6.826794845768814,
+              19.667958066955364,
+              -0.9509364957932958
+            ],
+            "max": [
+              10.824229041886396,
+              19.92966758999242,
+              0.030508140988377536
+            ]
+          },
+          "confidence": 0.8748046875,
+          "observation_count": 10,
+          "last_seen": 1793241892.8737676,
+          "is_static": true,
+          "is_obstacle": true,
+          "position_status": "partial_surface",
+          "supported_box_faces": [
+            "length_min",
+            "width_min",
+            "width_max"
+          ],
+          "geometry_fit": "measured_face_rectangle",
+          "observed_oriented_box": {
+            "center": [
+              8.825511943827605,
+              19.798812828473892,
+              -0.4602141774024591
+            ],
+            "size": [
+              3.997434196117582,
+              0.2617095230370564,
+              0.9814446367816733
+            ],
+            "yaw": 0.0
+          },
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            9.016161105765965,
+            20.238819730557566,
+            -0.43343067609858804
+          ],
+          "supported_surface_voxels": 364,
+          "connected_fragment_count": 0,
+          "input_source_id_counts": {
+            "2": 8
+          }
+        },
+        {
+          "instance_id": "vehicle_03",
+          "runtime_instance_id": "vehicle_03",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "blue",
+          "color_confidence": 0.7203815450637431,
+          "aliases": [],
+          "position_world": [
+            -9.034570837652463,
+            6.278935646026435,
+            -0.7469473644225867
+          ],
+          "position_covariance": [
+            [
+              0.07032729224079434,
+              0.045568842406404686,
+              -0.0030314770182415284
+            ],
+            [
+              0.045568842406404686,
+              0.20944142650039765,
+              -0.010162237180221384
+            ],
+            [
+              -0.0030314770182415284,
+              -0.010162237180221384,
+              0.05119433492131574
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              -11.023224082037135,
+              6.134173760080351,
+              -1.4396697757852792
+            ],
+            "max": [
+              -7.045917593267792,
+              6.423697531972518,
+              -0.054224953059894235
+            ]
+          },
+          "confidence": 0.9578993055555556,
+          "observation_count": 9,
+          "last_seen": 1793242028.3817677,
+          "is_static": true,
+          "is_obstacle": true,
+          "position_status": "partial_surface",
+          "supported_box_faces": [
+            "width_min",
+            "width_max"
+          ],
+          "geometry_fit": "measured_face_rectangle",
+          "observed_oriented_box": {
+            "center": [
+              -9.034570837652463,
+              6.278935646026435,
+              -0.7469473644225867
+            ],
+            "size": [
+              3.9773064887693423,
+              0.2895237718921665,
+              1.385444822725385
+            ],
+            "yaw": 0.0
+          },
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            -8.558928082648016,
+            6.409234643048498,
+            -0.5486404206610437
+          ],
+          "supported_surface_voxels": 290,
+          "connected_fragment_count": 0,
+          "input_source_id_counts": {
+            "3": 7
+          }
+        },
+        {
+          "instance_id": "vehicle_04",
+          "runtime_instance_id": "vehicle_04",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "red",
+          "color_confidence": 0.6816765225376525,
+          "aliases": [],
+          "position_world": [
+            -8.656464235961273,
+            38.94469904955511,
+            -0.6059514291010814
+          ],
+          "position_covariance": [
+            [
+              0.058716990647617276,
+              -0.02355133429341972,
+              -0.003093281849719024
+            ],
+            [
+              -0.02355133429341972,
+              0.10684597869649795,
+              0.007643386674463593
+            ],
+            [
+              -0.003093281849719024,
+              0.007643386674463593,
+              0.04784203797385869
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              -10.84735133117678,
+              38.16510897814917,
+              -1.1855440029555082
+            ],
+            "max": [
+              -6.4655771407457685,
+              39.724289120961046,
+              -0.026358855246654517
+            ]
+          },
+          "confidence": 0.9640151515151515,
+          "observation_count": 33,
+          "last_seen": 1793241884.3717678,
+          "is_static": true,
+          "is_obstacle": true,
+          "position_status": "partial_surface",
+          "supported_box_faces": [
+            "width_min"
+          ],
+          "geometry_fit": "measured_face_rectangle",
+          "observed_oriented_box": {
+            "center": [
+              -8.656464235961273,
+              38.944699049555105,
+              -0.6059514291010814
+            ],
+            "size": [
+              4.3817741904310115,
+              1.559180142811877,
+              1.1591851477088537
+            ],
+            "yaw": 0.0
+          },
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            -8.607385365030357,
+            38.20918494306121,
+            -0.4955645101672261
+          ],
+          "supported_surface_voxels": 874,
+          "connected_fragment_count": 0,
+          "input_source_id_counts": {
+            "4": 31
+          }
+        },
+        {
+          "instance_id": "vehicle_05",
+          "runtime_instance_id": "vehicle_05",
+          "video_instance_id": null,
+          "class_name": "car",
+          "merged_from": [],
+          "color": "blue",
+          "color_confidence": 0.7923649494443663,
+          "aliases": [],
+          "position_world": [
+            7.235068769114552,
+            2.273385191208286,
+            -0.5447479583405017
+          ],
+          "position_covariance": [
+            [
+              0.2828579384615994,
+              0.04256909578276237,
+              0.02819830814386754
+            ],
+            [
+              0.04256909578276237,
+              0.06914740341221659,
+              0.005425330357856145
+            ],
+            [
+              0.02819830814386754,
+              0.005425330357856145,
+              0.06089946155727768
+            ]
+          ],
+          "bbox_3d": {
+            "min": [
+              6.336335881170959,
+              1.507051241550029,
+              -0.9517633645255574
+            ],
+            "max": [
+              8.133801657058145,
+              3.0397191408665427,
+              -0.137732552155446
+            ]
+          },
+          "confidence": 0.94375,
+          "observation_count": 5,
+          "last_seen": 1793242209.0817678,
+          "is_static": true,
+          "is_obstacle": true,
+          "position_status": "partial_surface",
+          "supported_box_faces": [
+            "width_min",
+            "width_max"
+          ],
+          "geometry_fit": "measured_face_rectangle",
+          "observed_oriented_box": {
+            "center": [
+              7.211317409637541,
+              2.2695689534734513,
+              -0.5447479583405017
+            ],
+            "size": [
+              1.737137221428323,
+              1.4590294135292976,
+              0.8140308123701114
+            ],
+            "yaw": 0.10471975511965978
+          },
+          "geometry_representation": "observed_surface_union",
+          "anchor_position_world": [
+            6.639397027952987,
+            1.998535566066609,
+            -0.5587031720185555
+          ],
+          "supported_surface_voxels": 180,
+          "connected_fragment_count": 0,
+          "input_source_id_counts": {
+            "5": 3
+          }
+        }
+      ],
+      "merge_diagnostics": {}
+    }
+  }
+}

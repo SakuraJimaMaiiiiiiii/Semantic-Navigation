@@ -44,8 +44,8 @@ def transform_measurement(data, transform):
         color_scores=data.get('color_scores'), surface_points_world=points)
 
 
-def replay(path, timestamps, corrections, resolution, max_voxels, *, live=False, check_cancelled=None):
-    mapper = SemanticInstanceMapper(sign_min_observations=10)
+def replay(path, timestamps, corrections, resolution, max_voxels, *, live=False, check_cancelled=None, mapper_type=SemanticInstanceMapper):
+    mapper = mapper_type(sign_min_observations=10)
     mapper.semantic_voxels = SemanticVoxelEvidence(resolution, max_voxels)
     last_stamp = -float('inf')
     last_packet = None
@@ -88,6 +88,14 @@ def replay(path, timestamps, corrections, resolution, max_voxels, *, live=False,
                 if identity is not None and source_id is not None:
                     category = instance_class_name(sample['class_name'])
                     source_links[f'{category}_{int(identity):02d}'][f'{category}_{int(source_id):02d}'] += 1
+            # Keep source identity evidence in the shared vehicle association
+            # implementation; final IDs and voxel labels still follow its merges.
+            votes = defaultdict(Counter)
+            for replay_id, links in source_links.items():
+                if replay_id.startswith('vehicle_'):
+                    identity = mapper._vehicles.canonical_id(int(replay_id.split('_')[-1]))
+                    votes[identity].update(links)
+            mapper._vehicles.replay_source_votes = dict(votes)
             count += len(samples)
     records = mapper.navigation_records(3)
     for record in records:
@@ -101,29 +109,7 @@ def replay(path, timestamps, corrections, resolution, max_voxels, *, live=False,
     return records, mapper.semantic_voxels.snapshot(records), count
 
 
-def number_exported_vehicles(records, evidence):
-    """Compact IDs once per published revision, preserving source provenance."""
-    from copy import deepcopy
-    from dataclasses import replace
-    records = deepcopy(records)
-    vehicles = sorted((r for r in records if r['runtime_instance_id'].startswith('vehicle_')),
-                      key=lambda r:int(r['runtime_instance_id'].split('_')[-1]))
-    mapping = {r['runtime_instance_id']:f'vehicle_{i:02d}' for i,r in enumerate(vehicles,1)}
-    for record in vehicles:
-        old = record['runtime_instance_id']
-        record['source_replay_instance_id'] = old
-        record['source_merged_from'] = record.get('merged_from', [])
-        # Old IDs belong to another namespace; keeping them as aliases could
-        # redirect a new vehicle_03 to the former vehicle_03 incorrectly.
-        record['merged_from'] = []
-        record['instance_id'] = record['runtime_instance_id'] = mapping[old]
-        record['video_instance_id'] = None
-    evidence = replace(evidence, instance_ids=np.asarray(
-        [mapping.get(str(identity), str(identity)) for identity in evidence.instance_ids], dtype=str))
-    return records, evidence, mapping
-
-
-def export_bundle(run, output, snapshot, timestamps, corrections, *, source=None, live=False, on_publish=None, check_cancelled=None):
+def export_bundle(run, output, snapshot, timestamps, corrections, *, source=None, live=False, number_ids=False, on_publish=None, check_cancelled=None, mapper_type=SemanticInstanceMapper):
     """Publish one complete geometry/semantics/HTML revision by directory rename."""
     from pathlib import Path
     import uuid
@@ -133,14 +119,18 @@ def export_bundle(run, output, snapshot, timestamps, corrections, *, source=None
     if source is None:
         source = json.loads((Path(run)/'exploration/semantic_map.json').read_text())
     records, evidence, count = replay(Path(run)/'maps/semantic_observations.jsonl',
-        timestamps, corrections, snapshot.resolution, max(1, len(snapshot.indices)*2), live=live, check_cancelled=check_cancelled)
+        timestamps, corrections, snapshot.resolution, max(1, len(snapshot.indices)*2), live=live, check_cancelled=check_cancelled, mapper_type=mapper_type)
     if check_cancelled is not None:
         check_cancelled()
-    if live:
+    if live and not number_ids:
         # Do not compact IDs repeatedly while the map is growing.
-        vehicle_ids = {r["runtime_instance_id"]:r["runtime_instance_id"] for r in records}
+        instance_ids = {r["runtime_instance_id"]:r["runtime_instance_id"] for r in records}
     else:
-        records, evidence, vehicle_ids = number_exported_vehicles(records, evidence)
+        from .semantic_numbering import number_exported_instances
+        records, evidence, instance_ids = number_exported_instances(records, evidence)
+        for record in records:
+            if 'source_runtime_instance_id' in record:
+                record['source_replay_instance_id'] = record.pop('source_runtime_instance_id')
     revision = 'revision_' + uuid.uuid4().hex[:12]
     root = Path(output)
     stage = root / ('.'+revision+'.tmp')
@@ -155,9 +145,9 @@ def export_bundle(run, output, snapshot, timestamps, corrections, *, source=None
     if check_cancelled is not None:
         check_cancelled()
     scene.save_bundle(stage, snapshot)
-    write_json(stage/'vehicle_id_mapping.json', {
+    write_json(stage/'instance_id_mapping.json', {
         'source_namespace':'semantic_replay_before_numbering',
-        'target_namespace':revision, 'old_to_new':vehicle_ids})
+        'target_namespace':revision, 'old_to_new':instance_ids})
     write_json(stage/'source_identity_mapping.json', {
         'source_namespace': 'live_detection', 'target_namespace': revision,
         'replay_to_source': {r['runtime_instance_id']:r['source_identity_observations'] for r in records},

@@ -15,6 +15,7 @@ class SemanticFrame:
     records: tuple[dict, ...]
     semantic_voxels: SemanticVoxelSnapshot | None = None
     vehicle_observation_pending: bool = False
+    object_inspection_candidates: tuple[dict, ...] = ()
 
 
 class SemanticFrameStore:
@@ -23,7 +24,7 @@ class SemanticFrameStore:
         self._frame = None
         self._clock = clock
 
-    def publish(self, timestamp, records, inference_seconds, semantic_voxels=None, *, vehicle_observation_pending=False):
+    def publish(self, timestamp, records, inference_seconds, semantic_voxels=None, *, vehicle_observation_pending=False, object_inspection_candidates=()):
         with self._lock:
             if self._frame is not None and timestamp <= self._frame.timestamp:
                 return
@@ -34,6 +35,7 @@ class SemanticFrameStore:
                 tuple(deepcopy(records)),
                 deepcopy(semantic_voxels),
                 bool(vehicle_observation_pending),
+                tuple(deepcopy(object_inspection_candidates)),
             )
 
     def snapshot(self):

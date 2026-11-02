@@ -9,12 +9,15 @@ from pathlib import Path
 from navigation.atomic_file import atomic_write_text
 from navigation.scene_memory import write_json
 from .lidar_loop_map import optimize_frames, rebuild
-from .loop_semantic_replay import export_bundle, correction_at
+from .loop_semantic_replay import export_bundle, correction_at, SemanticInstanceMapper
 
 
 class LiveLoopMapping:
-    def __init__(self, detector, run, home, yaw, interval=10., navigation_map=None):
+    def __init__(self, detector, run, home, yaw, interval=10., navigation_map=None,
+                 mapper_type=SemanticInstanceMapper, rebuild_map=rebuild):
         self.detector = detector
+        self.mapper_type = mapper_type
+        self.rebuild_map = rebuild_map
         self.navigation_map = navigation_map
         self.run = Path(run)
         self.output = self.run / 'maps/live_loop_corrected'
@@ -29,6 +32,8 @@ class LiveLoopMapping:
         self._display = dict(state='exploring', vehicle=None, route=None, approach=None, waypoints=[])
         self._waypoint_stamps = {}
         self._scene = None
+        self._geometry = None
+        self._finalized = False
 
     def start(self):
         atomic_write_text(self.map_path,
@@ -38,19 +43,30 @@ class LiveLoopMapping:
         self._thread.start()
         print(f'--- 实时回环校正地图：{self.map_path} ----')
 
-    def update(self):
+    def update(self, *, final=False):
         # Only the latest immutable snapshot is consumed: no growing job queue.
         frames, constraints = self.detector.mapping_snapshot
         history = self.run / 'maps/semantic_observations.jsonl'
         if not frames:
             return
-        version = (len(frames), len(constraints), history.stat().st_size if history.exists() else 0)
+        version = (len(frames), len(constraints), history.stat().st_size if history.exists() else 0, final)
         if version == self._published:
             return
         started = time.monotonic()
-        optimized, corrections = optimize_frames(frames, constraints, self.detector.config, check_cancelled=self._check_cancelled)
-        navigation_applied = False
         geometry_version = (len(frames), len(constraints))
+        timings = {}
+        if self._geometry is None or self._geometry[0] != geometry_version:
+            optimized, corrections = optimize_frames(frames, constraints, self.detector.config, check_cancelled=self._check_cancelled)
+            timings['pose_graph'] = time.monotonic()-started
+            phase_started = time.monotonic()
+            snapshot = self.rebuild_map(optimized, self.detector.config, check_cancelled=self._check_cancelled)
+            timings['occupancy'] = time.monotonic()-phase_started
+            self._geometry = (geometry_version, optimized, corrections, snapshot)
+        else:
+            _, optimized, corrections, snapshot = self._geometry
+            timings.update(pose_graph=0., occupancy=0.)
+        phase_started = time.monotonic()
+        navigation_applied = False
         if constraints and self.navigation_map is not None:
             if geometry_version != self._navigation_version:
                 navigation_applied = self.navigation_map.publish(optimized, corrections, check_cancelled=self._check_cancelled)
@@ -58,31 +74,38 @@ class LiveLoopMapping:
                     self._navigation_version = geometry_version
             else:
                 navigation_applied = True
+        timings['navigation_publish'] = time.monotonic()-phase_started
         if not history.exists():
             write_json(self.output/'status.json', dict(state='waiting_for_semantics',
                 online_navigation_applied=navigation_applied,
                 navigation_revision=getattr(self.navigation_map, 'revision', 0)))
             return
-        snapshot = rebuild(optimized, self.detector.config, check_cancelled=self._check_cancelled)
+        phase_started = time.monotonic()
         destination, count = export_bundle(self.run, self.output, snapshot,
-            [f[2] for f in frames], corrections, source=self.source, live=True, check_cancelled=self._check_cancelled,
+            [f[2] for f in frames], corrections, source=self.source, live=True, number_ids=final, check_cancelled=self._check_cancelled,
+            mapper_type=self.mapper_type,
             on_publish=lambda snapshot, scene: self._publish_display(snapshot, scene, corrections, [f[2] for f in frames]))
+        timings['semantic_export_and_html'] = time.monotonic()-phase_started
         write_json(self.output/'status.json', dict(state='ready', revision=destination.name,
             keyframes=len(frames), loops=len(constraints), measurements=count,
             through_timestamp=frames[-1][2], duration_seconds=time.monotonic()-started,
+            phase_seconds=timings, final=final,
+            latest_available_keyframes=len(self.detector.mapping_snapshot[0]),
             coordinate_frame='loop_corrected_ned', navigation_frame='px4_ned',
             online_navigation_applied=navigation_applied,
             navigation_revision=getattr(self.navigation_map, 'revision', 0)))
         self._published = version
 
-    def update_display(self, *, state, vehicle=None, route=None, approach=None, waypoints=None, timestamp=None):
+    def update_display(self, *, state, vehicle=None, route=None, approach=None, waypoints=None, timestamp=None,
+                       show_place_links=True):
         with self._display_lock:
             points = deepcopy(list(waypoints or []))
             for point in points:
                 key = (point['number'], tuple(point['position']))
                 self._waypoint_stamps.setdefault(key, timestamp)
                 point['_display_timestamp'] = self._waypoint_stamps[key]
-            self._display = deepcopy(dict(state=state, vehicle=vehicle, route=route, approach=approach, waypoints=points))
+            self._display = deepcopy(dict(state=state, vehicle=vehicle, route=route, approach=approach,
+                                          waypoints=points, show_place_links=show_place_links))
             self._render_display()
 
     def _publish_display(self, snapshot, scene, corrections, timestamps):
@@ -110,6 +133,7 @@ class LiveLoopMapping:
             point['position'] = (np.asarray(point['position']) @ transform_at_selection[:3,:3].T
                                  + transform_at_selection[:3,3]).tolist()
         render_map(self.map_path, snapshot, scene,
+            show_place_links=self._display.get('show_place_links', True),
             exploration_waypoints=waypoints,
             state='回环校正地图 · ' + self._display['state'],
             vehicle=transform(self._display['vehicle']),
@@ -149,9 +173,12 @@ class LiveLoopMapping:
         Canceling the background job alone can leave late identity merges out
         of the HTML even though the raw semantic map already contains them.
         """
+        if self._finalized:
+            return
         self.close()
         self._stop.clear()
         try:
-            self.update()
+            self.update(final=True)
+            self._finalized = True
         finally:
             self._stop.set()

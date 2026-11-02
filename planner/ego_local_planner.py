@@ -56,33 +56,7 @@ class UniformCubicBSpline:
         ])
         return basis @ self.control_points[segment:segment + 4]
 
-    def evaluate_velocity(self, trajectory_time: float) -> np.ndarray:
-        """Evaluate the analytic first derivative in world NED."""
-        interval = float(self.knot_interval)
-        scaled = float(np.clip(trajectory_time, 0.0, self.duration)) / interval
-        segment = min(int(math.floor(scaled)), len(self.control_points) - 4)
-        u = 1.0 if trajectory_time >= self.duration else scaled - segment
-        basis = np.asarray([
-            -0.5 * (1.0 - u) ** 2,
-            -2.0 * u + 1.5 * u * u,
-            0.5 + u - 1.5 * u * u,
-            0.5 * u * u,
-        ]) / interval
-        return basis @ self.control_points[segment:segment + 4]
 
-    def evaluate_acceleration(self, trajectory_time: float) -> np.ndarray:
-        """Evaluate the analytic second derivative in world NED."""
-        interval = float(self.knot_interval)
-        scaled = float(np.clip(trajectory_time, 0.0, self.duration)) / interval
-        segment = min(int(math.floor(scaled)), len(self.control_points) - 4)
-        u = 1.0 if trajectory_time >= self.duration else scaled - segment
-        basis = np.asarray([
-            1.0 - u,
-            -2.0 + 3.0 * u,
-            1.0 - 3.0 * u,
-            u,
-        ]) / (interval * interval)
-        return basis @ self.control_points[segment:segment + 4]
 
     def sample(self, step: float) -> np.ndarray:
         if step <= 0.0:
@@ -107,7 +81,8 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         super().__init__(*args, **kwargs)
         self._trajectory: UniformCubicBSpline | None = None
         self._trajectory_started_at = 0.0
-        self._tracking_floor_time = 0.0
+        self._trajectory_goal = None
+        self.last_plan_timings = {}
         self._measured_velocity = np.zeros(3, dtype=np.float64)
         self._measured_acceleration = np.zeros(3, dtype=np.float64)
         self._planning_start_velocity = np.zeros(3, dtype=np.float64)
@@ -120,9 +95,9 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
     def discard_trajectory(self):
         """End avoidance when the caller resumes a certified route segment."""
         self._trajectory = None
+        self._trajectory_goal = None
         self._cached_plan = None
         self._last_plan_time = -math.inf
-        self._tracking_floor_time = 0.0
 
     def set_navigation_plane(self, altitude, config, global_map=None):
         """Constrain exploration splines to the takeoff plane, before validation."""
@@ -151,6 +126,22 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         if 0 <= z < states.shape[2]:
             for x, y in grid.free:
                 states[x, y, z] = 0
+            # A small tracking error can cross a voxel boundary. Blocking every
+            # other layer traps the real aircraft outside its requested plane.
+            # Certify adjacent layers from measured free space, including the
+            # body's full height at ANY position within that voxel. This is not
+            # an unconditional free tube or a change to the requested altitude.
+            recovery_config = replace(
+                self._navigation_config,
+                vertical_half_extent=self._navigation_config.vertical_half_extent + snapshot.resolution*.5,
+            )
+            for adjacent in (z-1, z+1):
+                if not 0 <= adjacent < states.shape[2]:
+                    continue
+                center = snapshot.origin_ned[2] + (adjacent+.5)*snapshot.resolution
+                recovery = NavigationGrid.from_local(snapshot, center, recovery_config, global_snapshot)
+                for x, y in recovery.free:
+                    states[x, y, adjacent] = 0
         result = replace(snapshot, states=states, inflated_occupied=states != 0)
         self._plane_cache = key, result
         return result
@@ -170,24 +161,17 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         self._measured_velocity = velocity.copy()
         self._measured_acceleration = acceleration.copy()
 
-    def _start_derivatives(self, now):
-        trajectory = self._trajectory
-        if trajectory is not None:
-            elapsed = max(0.0, float(now) - self._trajectory_started_at)
-            if elapsed < trajectory.duration:
-                return (
-                    trajectory.evaluate_velocity(elapsed),
-                    trajectory.evaluate_acceleration(elapsed),
-                )
-        return self._measured_velocity.copy(), self._measured_acceleration.copy()
-
     def _make_plan(self, current_position_ned, global_target_ned, now=None):
         now = time.monotonic() if now is None else float(now)
+        planning_started = time.monotonic()
+        self.last_plan_timings = {}
         period = 1.0 / float(self.config.replan_rate)
         if self._cached_plan is not None and now - self._last_plan_time < period:
             return self._cached_plan
 
+        stage_started = time.monotonic()
         snapshot = self.grid.snapshot()
+        self.last_plan_timings['snapshot_seconds'] = time.monotonic()-stage_started
         self._last_plan_time = now
         timestamp = float(snapshot.timestamp)
         if timestamp <= 0.0:
@@ -208,7 +192,8 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         if current.shape != (3,) or target.shape != (3,):
             raise ValueError("Positions must be three-element NED vectors.")
 
-        forward_clearance = float(snapshot.forward_clearance)
+        from .directional_clearance import motion_forward_clearance
+        forward_clearance = motion_forward_clearance(snapshot, current, target, self._measured_velocity)
         map_distance = self._nearest_obstacle_distance(snapshot, current, target)
         obstacle_distance = min(map_distance, forward_clearance)
         if (
@@ -218,12 +203,14 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             self._trajectory = None
             return self._cache(self._stop_plan("emergency_stop"))
 
-        (
-            self._planning_start_velocity,
-            self._planning_start_acceleration,
-        ) = self._start_derivatives(now)
+        # A paused UAV has not followed the old spline's virtual clock.
+        # New solves start from measured motion, including after a hold.
+        self._planning_start_velocity = self._measured_velocity.copy()
+        self._planning_start_acceleration = self._measured_acceleration.copy()
 
+        stage_started = time.monotonic()
         snapshot = self._plane_snapshot(snapshot)
+        self.last_plan_timings['plane_projection_seconds'] = time.monotonic()-stage_started
         if self.navigation_altitude is not None:
             target = target.copy()
             target[2] = self.navigation_altitude
@@ -272,13 +259,37 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             known_blocked = blocked | (np.asarray(snapshot.states) == UNKNOWN)
             if self._line_is_free_3d(snapshot, known_blocked, current, local_goal):
                 self._trajectory = None
-                self._tracking_floor_time = 0.0
                 return self._accept_moving_plan(LocalPlan(
                     status="clear",
                     local_target_ned=local_goal.copy(),
                     path_ned=np.vstack((current, local_goal)),
                     speed_limit=self._clear_speed_limit(obstacle_distance),
                 ))
+        # Reuse the remaining curve only for the same requested waypoint,
+        # validating its connector and every remaining segment on this map.
+        stage_started = time.monotonic()
+        trajectory = self._trajectory
+        if (trajectory is not None and self._trajectory_goal is not None
+                and np.linalg.norm(target-self._trajectory_goal) <= 1e-6):
+            samples = trajectory.sample(float(self.config.ego_collision_check_step))
+            closest = int(np.argmin(np.linalg.norm(samples-current, axis=1)))
+            remaining = np.vstack((current, samples[closest+1:]))
+            if len(remaining) > 1:
+                advancing = np.flatnonzero(np.linalg.norm(remaining-current, axis=1) >= .25)
+                if (len(advancing) and all(self._line_is_free_3d(snapshot, blocked, a, b)
+                        for a, b in zip(remaining[:-1], remaining[1:]))):
+                    index = int(advancing[0])
+                    closest_time = trajectory.duration*closest/max(1, len(samples)-1)
+                    self._trajectory_started_at = now+time.monotonic()-planning_started-closest_time
+                    self.last_plan_timings['reuse_validation_seconds'] = time.monotonic()-stage_started
+                    self.last_plan_timings['trajectory_reused'] = True
+                    return self._accept_moving_plan(LocalPlan(
+                        status='ego_avoid', local_target_ned=remaining[index],
+                        path_ned=remaining, speed_limit=self._clear_speed_limit(obstacle_distance)))
+        self.last_plan_timings['reuse_validation_seconds'] = time.monotonic()-stage_started
+        self.last_plan_timings['trajectory_reused'] = False
+        if self._trajectory_goal is not None and np.linalg.norm(target-self._trajectory_goal) > 1e-6:
+            self._trajectory = None
         if direct_clear:
             seed_path = self._direct_seed_path(
                 snapshot,
@@ -301,13 +312,17 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
                 return self._handle_no_path()
             status = "ego_avoid"
 
+        solve_started = time.monotonic()
         trajectory = self._build_trajectory(snapshot, blocked, seed_path)
+        solve_seconds = time.monotonic()-solve_started
+        self.last_plan_timings['trajectory_build_seconds'] = solve_seconds
         if trajectory is None:
             self._trajectory = None
             return self._handle_no_path()
 
         self._trajectory = trajectory
-        self._trajectory_started_at = now
+        self._trajectory_started_at = now+time.monotonic()-planning_started
+        self._trajectory_goal = target.copy()
         check_step = float(self.config.ego_collision_check_step)
         sampled_path = trajectory.sample(check_step)
         target_time = min(
@@ -322,9 +337,7 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
         if np.linalg.norm(local_target - current) < minimum:
             advancing = np.flatnonzero(np.linalg.norm(sampled_path - current, axis=1) >= minimum)
             index = int(advancing[0]) if len(advancing) else len(sampled_path) - 1
-            target_time = trajectory.duration * index / max(1, len(sampled_path) - 1)
             local_target = sampled_path[index]
-        self._tracking_floor_time = target_time
         speed_limit = self._clear_speed_limit(obstacle_distance)
         return self._accept_moving_plan(LocalPlan(
             status=status,
@@ -333,23 +346,7 @@ class EgoLocalPlanner(LocalAvoidancePlanner):
             speed_limit=speed_limit,
         ))
 
-    @property
-    def active_trajectory(self) -> UniformCubicBSpline | None:
-        """返回最近一次安全轨迹，供调试、记录或后续控制器升级使用。"""
-        return self._trajectory
 
-    def tracking_target(self, now=None) -> np.ndarray | None:
-        """返回随轨迹时间向前推进的跟踪点，而不是固定在一次规划结果上。"""
-        trajectory = self._trajectory
-        if trajectory is None:
-            return None
-        now = time.monotonic() if now is None else float(now)
-        elapsed = max(0.0, now - self._trajectory_started_at)
-        target_time = min(
-            elapsed + self._tracking_floor_time,
-            trajectory.duration,
-        )
-        return trajectory.evaluate(target_time)
 
     def _remaining_trajectory_seed(
         self,

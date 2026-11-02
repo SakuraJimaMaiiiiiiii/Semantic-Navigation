@@ -1,0 +1,87 @@
+.--- 飞行状态：等待通路稳定 (holding_for_stable_clearance) ----
+--- 飞行状态：A*跟随 (route_clear) ----
+................................usage: python.exe -m unittest [-h] [--config CONFIG] [--port PORT]
+                              [--timeout TIMEOUT] [--max-radius MAX_RADIUS]
+                              [--height-step HEIGHT_STEP]
+                              [--max-height-gain MAX_HEIGHT_GAIN]
+                              [--max-viewpoints MAX_VIEWPOINTS]
+                              [--viewpoint-spacing VIEWPOINT_SPACING]
+                              [--information-radius INFORMATION_RADIUS]
+                              [--frontier-empty-seconds FRONTIER_EMPTY_SECONDS]
+                              [--completion-frontier-area COMPLETION_FRONTIER_AREA]
+                              [--coverage-plateau-seconds COVERAGE_PLATEAU_SECONDS]
+                              [--minimum-map-gain-area MINIMUM_MAP_GAIN_AREA]
+                              [--return-reserve RETURN_RESERVE]
+                              [--sam2 | --sam3] [--sam3-url SAM3_URL]
+                              [--fastlio {off,record,shadow,live}]
+                              [--lidar-scan-model {unverified,snapshot,snapshot_assumed}]
+                              [--object-prompts OBJECT_PROMPTS [OBJECT_PROMPTS ...]]
+python.exe -m unittest: error: FAST-LIO requires --lidar-scan-model snapshot (verified) or snapshot_assumed (experimental)
+....................{
+  "source": "C:\\Users\\QiangYD\\AppData\\Local\\Temp\\tmpjv0hxose\\inputs.h5",
+  "source_sha256": "87d6d8d929643984fcc4afb90079c500c65b3e7947afc262b04d872e461d32fa",
+  "copy_sha256": "fdacd13f208286a0202d50980437c4c50d5636f6b0fff7f6e33ab463d1473422",
+  "removed_trailing_zero_imu_rows": 2,
+  "retained_imu_rows": 3,
+  "original_capture_complete": false,
+  "scope": "usable recorded prefix only; no claim of lossless capture"
+}
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 近地下降准备达到时限，交给 PX4 AUTO.LAND 继续降落；当前相对起飞地面高度=0.98 m，近地目标高度=0.35 m ----
+.........--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 位置航点控制：transient_no_path；目标NED=[2.0, 0.0, 0.0] ----
+--- 飞行状态：等待通路稳定 (holding_for_stable_clearance) ----
+--- 飞行状态：A*跟随 (route_clear) ----
+......................................--- 无全局路径，局部安全规划器直返：飞行中逐步转向，目标 yaw=0.0° ----
+返回本次起飞点 North=-0.05 m, East=0.03 m……
+--- 无全局路径，局部安全规划器直返：飞行中逐步转向，目标 yaw=0.0° ----
+返回本次起飞点 North=-0.05 m, East=0.03 m……
+--- 已到达起飞点附近，进入悬停、恢复航向与降落流程 ----
+--- 进入 Offboard 模式…… ----
+--- 进入 Offboard 模式…… ----
+--- 进入 Offboard 模式…… ----
+--- 返航起点暂不可通行：悬停等待地图更新并复查 ----
+--- 未找到 SAM3 权重，正在下载 facebook/sam3 到 detections/Yolomode ----
+.--- 未找到 SAM3 权重，正在下载 facebook/sam3 到 detections/Yolomode ----
+.--- 复用已启动的 SAM3 服务 ----
+.--- SAM3 使用本地权重：<MagicMock name='ensure_checkpoint()' id='2376536944080'> ----
+--- 正在自动启动 SAM3，等待模型加载和预热 ----
+.--- SAM3 使用本地权重：models\sam3.pt ----
+--- 正在自动启动 SAM3，等待模型加载和预热 ----
+...........................--- Semantic navigation: QUERY {'request': {'class_name': None, 'instance_id': 'vehicle_03', 'color': None, 'near_instance_id': None, 'near_distance': 3.0, 'min_confidence': 0.25, 'min_observations': 3, 'max_age': 120.0}} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: SUCCEEDED {'target_id': 'vehicle_03', 'target_position_ned': [3.0, 2.0, -0.5]} ----
+--- Semantic navigation: QUERY {'request': {'class_name': None, 'instance_id': 'vehicle_03', 'color': None, 'near_instance_id': None, 'near_distance': 3.0, 'min_confidence': 0.25, 'min_observations': 3, 'max_age': 120.0}} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: FAILED {'reason': 'verification_attempts_exhausted'} ----
+--- 本次任务返航原点：NED=[1.0, 2.0, 0.0]，起飞前航向=22.9° ----
+--- 跳过不可用地图 run_20261026_110000：checksum mismatch ----
+--- 跳过不可用地图 run_20261026_110000：unfinished ----
+--- 跳过不可用地图 run_20261026_100000：unfinished ----
+--- 导航地图：E:\files\Semantic Navigation\saved ----
+--- 导航地图：E:\files\Semantic Navigation\saved ----
+--- 飞行状态：航点跟随 (position_waypoint) ----
+..............................--- A* 探索路线已生成：1 个航点，含净空验证的平滑过渡；EGO负责局部避障 ----
+--- A* 探索路线已生成：1 个航点，含净空验证的平滑过渡；EGO负责局部避障 ----
+--- 物体补充观测：vehicle_01；安全可达的多方向航点，完成后继续探索 ----
+--- 物体补充观测：vehicle_01；安全可达的多方向航点，完成后继续探索 ----
+--- 物体补充观测：vehicle_01；安全可达的多方向航点，完成后继续探索 ----
+--- 物体补充观测：vehicle_01；安全可达的多方向航点，完成后继续探索 ----
+.
+----------------------------------------------------------------------
+Ran 162 tests in 15.003s
+
+OK

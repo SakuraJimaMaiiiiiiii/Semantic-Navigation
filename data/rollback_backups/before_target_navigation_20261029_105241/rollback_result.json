@@ -1,0 +1,37 @@
+{
+  "target": "state before the identified 2026-10-29 changes; preserve 2026-10-28 features",
+  "restored": [
+    "application/demo_runtime.py",
+    "config/explore.json",
+    "detections/object_detect.py",
+    "localization/fastlio_live_map.py",
+    "localization/fastlio_recording.py",
+    "mapping/semantic_instance_mapper.py",
+    "navigation/frontier_explorer.py",
+    "navigation/mission.py",
+    "planner/waypoint_planning_worker.py",
+    "readme/FAST_LIO原生接入与验证.md",
+    "run_explore.py",
+    "tests/test_async_waypoint_reference.py",
+    "tests/test_explore_startup_config.py",
+    "tests/test_fastlio_live_map.py",
+    "tests/test_frontier_observation_watchdog.py"
+  ],
+  "removed_today_files": [
+    "localization/fastlio_navigation_frames.py",
+    "readme/FAST_LIO三维占据建图.md",
+    "tests/test_fastlio_map_reconstruction.py",
+    "tests/test_fastlio_navigation_frames.py",
+    "tools/build_fastlio_map.py"
+  ],
+  "archived_reviews": [
+    "readme/reviews/W002执行停滞_20261029_103116.md",
+    "readme/reviews/W004-W009执行停滞_20261029_103116.md",
+    "readme/reviews/承重柱与探索覆盖核查_20261029.md",
+    "readme/reviews/探索失效历史对照_20261029.md",
+    "readme/reviews/本周变更与目标导航回退核查_20261029.md",
+    "readme/reviews/长时间等待与已验证路径复用_20261029.md"
+  ],
+  "tests_before_apply": "161 passed in staged source",
+  "data_models_dependencies": "unchanged"
+}

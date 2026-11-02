@@ -1,0 +1,16 @@
+[
+  {
+    "altitude": -1.439095139503479,
+    "start_free": false,
+    "home_free": false,
+    "path_found": false,
+    "path_points": 0
+  },
+  {
+    "altitude": -1.4623817205429077,
+    "start_free": true,
+    "home_free": true,
+    "path_found": true,
+    "path_points": 2
+  }
+]

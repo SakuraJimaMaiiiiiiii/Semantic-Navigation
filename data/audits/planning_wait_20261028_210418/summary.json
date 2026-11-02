@@ -1,0 +1,351 @@
+{
+  "run": "data/runs/run_20261028_210418_281761",
+  "scope": "16 retained ordinary failure snapshots; run may still be active; quota prevents judging later failures",
+  "status_counts": {
+    "waiting_for_plan": 16
+  },
+  "local_corridors_all_free": true,
+  "background_duration_s": {
+    "min": 0.5620000000344589,
+    "median": 0.890999999945052,
+    "max": 1.5309999999590218
+  },
+  "rows": [
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_001.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.05470837652683258,
+        0.5085585713386536,
+        -1.497355580329895
+      ],
+      "target": [
+        0.06887810360982165,
+        2.4725829341352883,
+        -1.498750169980432
+      ],
+      "corridor_counts": {
+        "free": 213
+      },
+      "snapshots_s": 0.43799999996554106,
+      "projection_s": 0.34299999999348074,
+      "background_s": 0.5620000000344589,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_002.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.06211592257022858,
+        1.126532793045044,
+        -1.4866260290145874
+      ],
+      "target": [
+        0.06887810360982165,
+        2.4725829341352883,
+        -1.498750169980432
+      ],
+      "corridor_counts": {
+        "free": 168
+      },
+      "snapshots_s": 0.25,
+      "projection_s": 0.32900000002700835,
+      "background_s": 0.6089999999385327,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_003.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.0649617612361908,
+        1.4208054542541504,
+        -1.4771933555603027
+      ],
+      "target": [
+        0.06887810360982165,
+        2.4725829341352883,
+        -1.498750169980432
+      ],
+      "corridor_counts": {
+        "free": 138
+      },
+      "snapshots_s": 0.43700000003445894,
+      "projection_s": 0.3279999999795109,
+      "background_s": 0.765999999945052,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_004.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.05972903594374657,
+        1.994062066078186,
+        -1.4985755681991577
+      ],
+      "target": [
+        0.06887810360982165,
+        2.4725829341352883,
+        -1.498750169980432
+      ],
+      "corridor_counts": {
+        "free": 108
+      },
+      "snapshots_s": 0.8120000000344589,
+      "projection_s": 0.14099999994505197,
+      "background_s": 0.9220000000204891,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_005.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.03235291689634323,
+        2.392522096633911,
+        -1.4881764650344849
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 228
+      },
+      "snapshots_s": 0.7029999999795109,
+      "projection_s": 0.10899999993853271,
+      "background_s": 0.859000000054948,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_006.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.04859974607825279,
+        2.457099437713623,
+        -1.4794903993606567
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 213
+      },
+      "snapshots_s": 0.5469999999040738,
+      "projection_s": 0.2970000000204891,
+      "background_s": 1.125,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_007.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.03737308457493782,
+        2.5188612937927246,
+        -1.4916064739227295
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 213
+      },
+      "snapshots_s": 0.0779999999795109,
+      "projection_s": 0.21899999992456287,
+      "background_s": 0.7820000000065193,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_008.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.04011950269341469,
+        2.818392753601074,
+        -1.5012249946594238
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 183
+      },
+      "snapshots_s": 0.7970000000204891,
+      "projection_s": 0.1720000000204891,
+      "background_s": 1.0309999999590218,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_009.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.06960783898830414,
+        3.138148546218872,
+        -1.4839400053024292
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 168
+      },
+      "snapshots_s": 0.6869999999180436,
+      "projection_s": 0.25,
+      "background_s": 0.75,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_010.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.09152351319789886,
+        3.145310401916504,
+        -1.4701695442199707
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 168
+      },
+      "snapshots_s": 0.875,
+      "projection_s": 0.35900000005494803,
+      "background_s": 1.5309999999590218,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_011.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.07423713803291321,
+        3.4806950092315674,
+        -1.4795832633972168
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 138
+      },
+      "snapshots_s": 0.7029999999795109,
+      "projection_s": 0.07800000009592623,
+      "background_s": 0.9529999999795109,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_012.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.09502913802862167,
+        3.9366254806518555,
+        -1.4817460775375366
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 108
+      },
+      "snapshots_s": 0.6869999999180436,
+      "projection_s": 0.1410000000614673,
+      "background_s": 0.7820000000065193,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_013.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.06441780179738998,
+        4.185132026672363,
+        -1.4766279458999634
+      ],
+      "target": [
+        0.0841563320264586,
+        4.541382892271255,
+        -1.48519336656625
+      ],
+      "corridor_counts": {
+        "free": 93
+      },
+      "snapshots_s": 0.5929999999934807,
+      "projection_s": 0.3910000000614673,
+      "background_s": 0.890999999945052,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_014.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.12255263328552246,
+        5.302260398864746,
+        -1.4887304306030273
+      ],
+      "target": [
+        0.10903278199007392,
+        6.5847014923370395,
+        -1.485339030341396
+      ],
+      "corridor_counts": {
+        "free": 153
+      },
+      "snapshots_s": 0.7809999999590218,
+      "projection_s": 0.0940000000409782,
+      "background_s": 0.890999999945052,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_015.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.12867669761180878,
+        5.272684097290039,
+        -1.498763918876648
+      ],
+      "target": [
+        0.10903278199007392,
+        6.5847014923370395,
+        -1.485339030341396
+      ],
+      "corridor_counts": {
+        "free": 153
+      },
+      "snapshots_s": 1.202999999979511,
+      "projection_s": 0.125,
+      "background_s": 1.4060000000754371,
+      "previous_controller_status": "route_clear"
+    },
+    {
+      "file": "data/runs/run_20261028_210418_281761/exploration/private/diagnostics/exploring_87ca3f8cbeb1/failure_016.npz",
+      "status": "waiting_for_plan",
+      "current": [
+        0.10996188223361969,
+        5.6721391677856445,
+        -1.4839080572128296
+      ],
+      "target": [
+        0.10903278199007392,
+        6.5847014923370395,
+        -1.485339030341396
+      ],
+      "corridor_counts": {
+        "free": 123
+      },
+      "snapshots_s": 0.9070000000065193,
+      "projection_s": 0.17099999997299165,
+      "background_s": 1.0,
+      "previous_controller_status": "route_clear"
+    }
+  ]
+}

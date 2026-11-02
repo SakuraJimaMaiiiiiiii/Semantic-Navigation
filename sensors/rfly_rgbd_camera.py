@@ -18,13 +18,6 @@ import numpy as np
 from config.camera_config import CameraConfig
 
 
-@dataclass(frozen=True)
-class RGBFrame:
-    """Copied RGB exposure, independent of depth/pose synchronization."""
-
-    rgb_bgr: np.ndarray
-    rgb_timestamp: float
-    received_at: float
 
 
 @dataclass(frozen=True)
@@ -162,26 +155,6 @@ class RflyRGBDCamera:
             time.sleep(float(self.config.poll_interval))
         raise TimeoutError("Sensor clock calibration needs advancing synchronized RGB-D frames")
 
-    def get_rgb_frame(self, timeout=1., after_timestamp=None) -> RGBFrame:
-        """Read the existing RGB receiver using its lock and calibrated clock.
-
-        VIO needs RGB + IMU, so missing depth must not discard a valid exposure.
-        This does not start another sensor or modify RGB-D/map acquisition.
-        """
-        if not self._started or self._capture is None:
-            raise RuntimeError("RGB-D camera is not started.")
-        if self._timestamp_offset is None:
-            raise RuntimeError("RGB-D sensor clock is not calibrated.")
-        deadline = time.monotonic()+float(timeout)
-        while time.monotonic() < deadline:
-            if self._index_has_data(self._rgb_capture_index):
-                rgb, stamp = self._copy_sensor(self._rgb_capture_index)
-                if self._valid_array(rgb) and math.isfinite(stamp) and stamp > 0:
-                    stamp += self._timestamp_offset
-                    if after_timestamp is None or stamp > after_timestamp+1e-9:
-                        return RGBFrame(rgb, stamp, time.time())
-            time.sleep(float(self.config.poll_interval))
-        raise TimeoutError(f"No new RGB exposure within {timeout:.1f} s.")
 
     def get_frame(
         self,

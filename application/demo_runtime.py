@@ -44,7 +44,10 @@ class DemoRuntime:
         semantic_target: SemanticTargetRequest | None = None,
         *,
         exploration=False,
+        detector_config: DetectorConfig | None = None,
         exploration_config: FrontierExplorationConfig | None = None,
+        fastlio_mode: str | None = None,
+        lidar_scan_model: str = "unverified",
     ) -> None:
         if semantic_target is not None and not isinstance(
             semantic_target, SemanticTargetRequest
@@ -56,6 +59,10 @@ class DemoRuntime:
             if self.exploration_mode
             else None
         )
+        self._requested_detector_config = detector_config
+        self.fastlio_mode = fastlio_mode
+        self.lidar_scan_model = lidar_scan_model
+        self.fastlio_recorder = None
         self.semantic_target = semantic_target
         self.semantic_navigation_config = SemanticNavigationConfig()
         self._create_run_output_directory()
@@ -112,7 +119,7 @@ class DemoRuntime:
             output_root=self.run_output_dir,
         )
         self.detector_config = replace(
-            DetectorConfig(),
+            self._requested_detector_config or DetectorConfig(),
             video_output_dir=self.run_output_dir / "detections",
             semantic_map_path=(
                 self.run_output_dir / "maps" / "semantic_instances.json"
@@ -179,6 +186,20 @@ class DemoRuntime:
         )
 
     def _create_processing(self) -> None:
+        from mapping.online_loop_navigation import OnlineLoopNavigationMap
+        local_map_type = LocalOccupancyGrid
+        global_map_type = GlobalSparseOccupancyMap
+        lidar_worker_type = LidarMappingWorker
+        navigation_map_type = OnlineLoopNavigationMap
+        detector_options = {}
+        if self.exploration_mode:
+            from mapping.explore_v3 import adapters as v3
+            local_map_type = v3.LocalOccupancyGrid
+            global_map_type = v3.GlobalSparseOccupancyMap
+            lidar_worker_type = v3.LidarMappingWorker
+            navigation_map_type = v3.OnlineLoopNavigationMap
+            detector_options["mapper_type"] = v3.SemanticInstanceMapper
+            print("--- 探索建图：v3 / PX4 + LiDAR；车辆使用跨视角关联；识别后端沿用启动配置 ----")
         self.recorder = (
             FlightDataRecorder(
                 self.recorder_source,
@@ -188,7 +209,7 @@ class DemoRuntime:
             else None
         )
         self.occupancy_grid = (
-            LocalOccupancyGrid(self.mapping_config)
+            local_map_type(self.mapping_config)
             if self.mapping_config.enabled
             else None
         )
@@ -219,12 +240,11 @@ class DemoRuntime:
             else None
         )
         self.global_sparse_map = (
-            GlobalSparseOccupancyMap(self.global_map_config)
+            global_map_type(self.global_map_config)
             if self.global_map_config.enabled
             else None
         )
-        from mapping.online_loop_navigation import OnlineLoopNavigationMap
-        self.navigation_map = (OnlineLoopNavigationMap(self.global_sparse_map)
+        self.navigation_map = (navigation_map_type(self.global_sparse_map)
                                if self.global_sparse_map is not None else None)
         self.global_return_planner = (
             GlobalReturnPlanner(
@@ -295,13 +315,14 @@ class DemoRuntime:
                 semantic_voxels=SemanticVoxelEvidence(
                     self.global_map_config.resolution, self.global_map_config.max_voxels
                 ) if self.global_map_config.enabled else None,
+                **detector_options,
             )
             if self.detector_config.enabled
             else None
         )
 
         from mapping.lidar_loop_detector import LidarLoopDetector
-        self.lidar_worker = LidarMappingWorker(
+        self.lidar_worker = lidar_worker_type(
             self.camera, self.data_stream, self.occupancy_grid,
             self.navigation_map, self.lidar_config,
             loop_detector=LidarLoopDetector(self.global_map_config,
@@ -366,6 +387,15 @@ class DemoRuntime:
         # CopterSim/PX4 就绪后再请求绑定到该载具的视觉传感器。
         self.camera.start()
         self.data_stream.start()
+        if self.fastlio_mode is not None:
+            from localization.fastlio_recording import FastLioRecorder
+            self.fastlio_recorder = FastLioRecorder(
+                self.run_output_dir / 'fastlio', scan_model=self.lidar_scan_model,
+                shadow=self.fastlio_mode == 'shadow', live_map=self.fastlio_mode == 'live')
+            self.fastlio_recorder.start(self.vehicle.mav)
+            self.lidar_worker.fastlio_recorder = self.fastlio_recorder
+            if self.fastlio_recorder.live_map is not None and self.detection_worker is not None:
+                self.detection_worker.fastlio_semantic_sink = self.fastlio_recorder.live_map.semantics.submit
         # PX4 状态采样线程刚启动时，需要等待一帧时间戳晚于首个状态
         # 样本的 RGB-D 数据。沿用相机首帧超时，避免用硬编码 2 秒把
         # 正常的 UE/PX4 启动延迟误判为任务失败。
@@ -393,6 +423,11 @@ class DemoRuntime:
             self.global_mapping_worker.start()
             self.global_mapping_started = True
         self.lidar_worker.start(timeout=self.camera.config.first_frame_timeout)
+        if self.fastlio_mode in {'shadow', 'live'}:
+            print("--- FAST-LIO 静止初始化中，初始化完成后才开始任务 ----", flush=True)
+            self.fastlio_recorder.wait_ready()
+            if self.fastlio_mode == 'live':
+                print(f"--- FAST-LIO 实时实验地图：{self.run_output_dir / 'fastlio' / 'map.html'}；导航仍使用 PX4 ----", flush=True)
         print("--- LiDAR enabled: Type20 / 360° / body FRD / LiDAR-only occupancy / camera semantic association ----")
         if self.detection_worker is not None:
             self.detection_worker.start()
@@ -419,6 +454,8 @@ class DemoRuntime:
         """Finalize exploration files while keeping live navigation sensors running."""
         if getattr(self, "_exploration_recording_finished", False):
             return
+        if self.fastlio_recorder is not None:
+            self.fastlio_recorder.close()
         if getattr(self, "live_loop_mapping", None) is not None:
             self.live_loop_mapping.close()
         if self.recorder_started:
@@ -442,6 +479,7 @@ class DemoRuntime:
 
     def _save_alignment_report(self) -> None:
         report = dict(self.lidar_worker.alignment_statistics)
+        report['pose_sampling'] = dict(self.lidar_worker.stream.pose_statistics)
         report["semantic_fused_objects"] = getattr(
             self.detection_worker.segmenter, "lidar_fused_objects", 0) if self.detection_worker else 0
         report["semantic_lidar_points"] = getattr(
@@ -456,17 +494,24 @@ class DemoRuntime:
         def stop(name, action):
             try:
                 action()
+                return True
             except Exception as error:
                 errors.append(error)
                 print(f"--- 组件关闭失败 [{name}]：{type(error).__name__}: {error} ----")
+                return False
 
+        stop("waypoint planning", self.vehicle.stop_waypoint_planning)
         if getattr(self, "live_loop_mapping", None) is not None:
             stop("live loop mapping", self.live_loop_mapping.close)
+        lidar_closed = True
+        detection_closed = True
         if getattr(self, "lidar_worker", None) is not None:
-            stop("lidar", self.lidar_worker.close)
+            lidar_closed = stop("lidar", self.lidar_worker.close)
             print(f"--- LiDAR mapping frames: {self.lidar_worker.update_count} ----")
+        if self.fastlio_recorder is not None:
+            stop("FAST-LIO recording", self.fastlio_recorder.close)
         if self.detection_started:
-            stop("detection", self.detection_worker.close)
+            detection_closed = stop("detection", self.detection_worker.close)
         if (getattr(self, "lidar_worker", None) is not None
                 and not getattr(self, "_exploration_recording_finished", False)):
             stop("lidar report", self._save_alignment_report)
@@ -484,6 +529,12 @@ class DemoRuntime:
         # Vehicle.close retains its no-disarm/no-disconnect protection.
         stop("vehicle", lambda: self.vehicle.close(disarm=True))
         stop("planner visualizer", self.astar_visualizer.close)
+        # Finalize closed logs even when the flight/landing failed. Do this
+        # after vehicle shutdown so offline reconstruction cannot delay landing.
+        if (getattr(self, "live_loop_mapping", None) is not None
+                and lidar_closed and detection_closed
+                and not getattr(self, "_exploration_recording_finished", False)):
+            stop("final loop map", self.live_loop_mapping.finalize)
         stop("results", self._report_results)
         if errors:
             raise errors[0]
@@ -524,10 +575,10 @@ class DemoRuntime:
             try:
                 self.detection_worker.raise_if_failed()
             except RuntimeError as error:
-                print("--- WARNING: real-time YOLO-World/SAM2 failed: " f"{error} ----")
+                print("--- WARNING: real-time perception backend failed: " f"{error} ----")
             else:
                 print(
-                    "--- YOLO-World/SAM2 perception summary: "
+                    "--- Perception summary: "
                     f"{self.detection_worker.processed_frames} frames processed ----"
                 )
                 for path in self.detection_worker.video_output_paths:

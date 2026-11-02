@@ -1,0 +1,193 @@
+{
+  "occupied_centers_ned": [
+    [
+      4.5,
+      16.1,
+      -1.7000000000000002
+    ],
+    [
+      4.5,
+      16.1,
+      -1.5000000000000004
+    ],
+    [
+      4.5,
+      16.1,
+      -1.3000000000000003
+    ],
+    [
+      4.5,
+      16.1,
+      -1.1000000000000005
+    ]
+  ],
+  "scans_checked": 41,
+  "scans_with_returns": 41,
+  "scan_hits": [
+    {
+      "timestamp": 1793101525.6537745,
+      "nearby_returns": 114
+    },
+    {
+      "timestamp": 1793101526.0537746,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101526.3537745,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101526.4587746,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101526.5587745,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101526.7347746,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101527.0637746,
+      "nearby_returns": 110
+    },
+    {
+      "timestamp": 1793101527.1587744,
+      "nearby_returns": 110
+    },
+    {
+      "timestamp": 1793101527.2617745,
+      "nearby_returns": 111
+    },
+    {
+      "timestamp": 1793101527.4637744,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101527.5627744,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101527.7617745,
+      "nearby_returns": 110
+    },
+    {
+      "timestamp": 1793101528.1627746,
+      "nearby_returns": 110
+    },
+    {
+      "timestamp": 1793101529.4627745,
+      "nearby_returns": 121
+    },
+    {
+      "timestamp": 1793101529.6627746,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101529.7627745,
+      "nearby_returns": 116
+    },
+    {
+      "timestamp": 1793101529.8627744,
+      "nearby_returns": 117
+    },
+    {
+      "timestamp": 1793101530.0627744,
+      "nearby_returns": 116
+    },
+    {
+      "timestamp": 1793101530.8487744,
+      "nearby_returns": 115
+    },
+    {
+      "timestamp": 1793101531.2487745,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101531.3487744,
+      "nearby_returns": 117
+    },
+    {
+      "timestamp": 1793101531.4487746,
+      "nearby_returns": 114
+    },
+    {
+      "timestamp": 1793101531.8487744,
+      "nearby_returns": 111
+    },
+    {
+      "timestamp": 1793101532.4497745,
+      "nearby_returns": 116
+    },
+    {
+      "timestamp": 1793101532.7497745,
+      "nearby_returns": 108
+    },
+    {
+      "timestamp": 1793101532.8487744,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101533.3487744,
+      "nearby_returns": 109
+    },
+    {
+      "timestamp": 1793101533.4487746,
+      "nearby_returns": 111
+    },
+    {
+      "timestamp": 1793101533.5487745,
+      "nearby_returns": 110
+    },
+    {
+      "timestamp": 1793101534.0447745,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101534.2427745,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101535.4427745,
+      "nearby_returns": 111
+    },
+    {
+      "timestamp": 1793101536.7447746,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101537.1437745,
+      "nearby_returns": 110
+    },
+    {
+      "timestamp": 1793101537.7447746,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101537.9427745,
+      "nearby_returns": 114
+    },
+    {
+      "timestamp": 1793101538.3437746,
+      "nearby_returns": 116
+    },
+    {
+      "timestamp": 1793101539.2387745,
+      "nearby_returns": 112
+    },
+    {
+      "timestamp": 1793101539.5387745,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101539.8447745,
+      "nearby_returns": 113
+    },
+    {
+      "timestamp": 1793101540.8437746,
+      "nearby_returns": 113
+    }
+  ],
+  "note": "PX4-frame raw LiDAR evidence; repeated returns support a measured surface, not object identity or absolute calibration."
+}

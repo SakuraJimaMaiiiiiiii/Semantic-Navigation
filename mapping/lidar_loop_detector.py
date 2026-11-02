@@ -160,7 +160,6 @@ class LidarLoopDetector:
                 continue
             self.constraints.append({'source': current, 'target': i, 'timestamp': timestamp,
                 'source_to_target_world_transform': transform.tolist(), 'symmetric_fitness': fitness, 'rmse_m': rmse})
-            print(f'--- LiDAR loop verified: K{current} -> K{i}, RMSE={rmse:.3f}m; constraint accepted ----')
             break
         self.frames.append((position.copy(), cloud, timestamp))
         self.mapping_snapshot = (tuple(self.frames), tuple(self.constraints))

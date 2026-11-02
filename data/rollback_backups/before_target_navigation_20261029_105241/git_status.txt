@@ -1,0 +1,322 @@
+ M .gitignore
+ M .vscode/settings.json
+ M "Semantic type.txt"
+ M Visual/README.md
+ M Visual/__init__.py
+ M Visual/astar_2d_visualizer.py
+ M __pycache__/navigate_target.cpython-310.pyc
+ M __pycache__/run_explore.cpython-310.pyc
+ M application/__init__.py
+ M application/__pycache__/demo_runtime.cpython-310.pyc
+ M application/demo_runtime.py
+ M application/websocket_request_sender.py
+ M config/__init__.py
+ M config/__pycache__/exploration_config.cpython-310.pyc
+ M config/__pycache__/planner_config.cpython-310.pyc
+ M config/__pycache__/semantic_navigation_config.cpython-310.pyc
+ M config/exploration_config.py
+ M config/mission_config.py
+ M config/planner_config.py
+ M config/recording_config.py
+ M config/run_output.py
+ M config/semantic_navigation_config.py
+ M config/sensors/VisionSensors_RGBD_Config_v0.json
+ M config/websocket_client_config.py
+ M config/websocket_request.json
+ M data/exploration_session.json
+ M detections/__init__.py
+ M detections/__pycache__/object_detect.cpython-310.pyc
+ M detections/__pycache__/realtime_detection_worker.cpython-310.pyc
+ M detections/object_detect.py
+ M detections/realtime_detection_worker.py
+ M detections/vehicle_color.py
+ M localization/__pycache__/__init__.cpython-310.pyc
+ M mapping/__init__.py
+ M mapping/__pycache__/global_sparse_occupancy_map.cpython-310.pyc
+ M mapping/__pycache__/instance_surface.cpython-310.pyc
+ M mapping/__pycache__/lidar_mapping_worker.cpython-310.pyc
+ M mapping/__pycache__/live_loop_mapping.cpython-310.pyc
+ M mapping/__pycache__/local_occupancy_grid.cpython-310.pyc
+ M mapping/__pycache__/loop_semantic_replay.cpython-310.pyc
+ M mapping/__pycache__/online_loop_navigation.cpython-310.pyc
+ M mapping/__pycache__/semantic_instance_mapper.cpython-310.pyc
+ M mapping/__pycache__/vehicle_instance_tracker.cpython-310.pyc
+ M mapping/foxglove_export.py
+ M mapping/global_sparse_occupancy_map.py
+ M mapping/instance_surface.py
+ M mapping/lidar_mapping_worker.py
+ M mapping/live_loop_mapping.py
+ M mapping/local_occupancy_grid.py
+ M mapping/loop_semantic_replay.py
+ M mapping/online_loop_navigation.py
+ M mapping/open3d_global_map_visualizer.py
+ M mapping/semantic_instance_mapper.py
+ M mapping/vehicle_instance_tracker.py
+ M mission/__init__.py
+ M mission/__pycache__/rfly_mission_controller.cpython-310.pyc
+ M mission/rfly_mission_controller.py
+ M navigate_target.py
+ M navigation/__pycache__/coverage_progress.cpython-310.pyc
+ M navigation/__pycache__/exploration_session.cpython-310.pyc
+ M navigation/__pycache__/frontier_explorer.cpython-310.pyc
+ M navigation/__pycache__/height_clearance.cpython-310.pyc
+ M navigation/__pycache__/map_view.cpython-310.pyc
+ M navigation/__pycache__/mission.cpython-310.pyc
+ M navigation/__pycache__/perception.cpython-310.pyc
+ M navigation/__pycache__/route.cpython-310.pyc
+ M navigation/__pycache__/scene_memory.cpython-310.pyc
+ M navigation/__pycache__/session_server.cpython-310.pyc
+ M navigation/coverage_progress.py
+ M navigation/exploration_session.py
+ M navigation/frontier_explorer.py
+ M navigation/height_clearance.py
+ M navigation/map_view.py
+ M navigation/mission.py
+ M navigation/perception.py
+ M navigation/route.py
+ M navigation/scene_memory.py
+ M navigation/session_server.py
+ M node_modules/.package-lock.json
+ M node_modules/ws/LICENSE
+ M node_modules/ws/README.md
+ M node_modules/ws/browser.js
+ M node_modules/ws/index.js
+ M node_modules/ws/lib/buffer-util.js
+ M node_modules/ws/lib/constants.js
+ M node_modules/ws/lib/event-target.js
+ M node_modules/ws/lib/extension.js
+ M node_modules/ws/lib/limiter.js
+ M node_modules/ws/lib/permessage-deflate.js
+ M node_modules/ws/lib/receiver.js
+ M node_modules/ws/lib/sender.js
+ M node_modules/ws/lib/stream.js
+ M node_modules/ws/lib/subprotocol.js
+ M node_modules/ws/lib/validation.js
+ M node_modules/ws/lib/websocket-server.js
+ M node_modules/ws/lib/websocket.js
+ M node_modules/ws/package.json
+ M node_modules/ws/wrapper.mjs
+ M package-lock.json
+ M package.json
+ M planner/__init__.py
+ M planner/__pycache__/ego_local_planner.cpython-310.pyc
+ M planner/__pycache__/local_avoidance_planner.cpython-310.pyc
+ M planner/__pycache__/native_ego_local_planner.cpython-310.pyc
+ M planner/ego_local_planner.py
+ M planner/local_avoidance_planner.py
+ M planner/native_ego/CMakeLists.txt
+ M planner/native_ego/build-vs2026/ALL_BUILD.vcxproj
+ M planner/native_ego/build-vs2026/ALL_BUILD.vcxproj.filters
+ M planner/native_ego/build-vs2026/CMakeCache.txt
+ M planner/native_ego/build-vs2026/CMakeFiles/37c8c2596be1445ec302781d352e76c7/Continuous.rule
+ M planner/native_ego/build-vs2026/CMakeFiles/37c8c2596be1445ec302781d352e76c7/Experimental.rule
+ M planner/native_ego/build-vs2026/CMakeFiles/37c8c2596be1445ec302781d352e76c7/Nightly.rule
+ M planner/native_ego/build-vs2026/CMakeFiles/37c8c2596be1445ec302781d352e76c7/NightlyMemoryCheck.rule
+ M planner/native_ego/build-vs2026/CMakeFiles/37c8c2596be1445ec302781d352e76c7/RUN_TESTS_force.rule
+ M planner/native_ego/build-vs2026/CMakeFiles/37c8c2596be1445ec302781d352e76c7/generate.stamp.rule
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CMakeCXXCompiler.cmake
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CMakeRCCompiler.cmake
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CMakeSystem.cmake
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CompilerIdCXX/CMakeCXXCompilerId.cpp
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CompilerIdCXX/CompilerIdCXX.vcxproj
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CompilerIdCXX/Debug/CompilerIdCXX.exe.recipe
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CompilerIdCXX/Debug/CompilerIdCXX.tlog/Cl.items.tlog
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CompilerIdCXX/Debug/CompilerIdCXX.tlog/CompilerIdCXX.lastbuildstate
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/CompilerIdCXX/Debug/CompilerIdCXX.tlog/link.secondary.1.tlog
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/VCTargetsPath.txt
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/VCTargetsPath.vcxproj
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/VCTargetsPath/x64/Debug/VCTargetsPath.recipe
+ M planner/native_ego/build-vs2026/CMakeFiles/4.4.2/VCTargetsPath/x64/Debug/VCTargetsPath.tlog/VCTargetsPath.lastbuildstate
+ M planner/native_ego/build-vs2026/CMakeFiles/CMakeConfigureLog.yaml
+ M planner/native_ego/build-vs2026/CMakeFiles/CTestScript.cmake
+ M planner/native_ego/build-vs2026/CMakeFiles/InstallScripts.json
+ M planner/native_ego/build-vs2026/CMakeFiles/TargetDirectories.txt
+ M planner/native_ego/build-vs2026/CMakeFiles/cmake.check_cache
+ M planner/native_ego/build-vs2026/CMakeFiles/generate.stamp
+ M planner/native_ego/build-vs2026/CMakeFiles/generate.stamp.depend
+ M planner/native_ego/build-vs2026/CMakeFiles/generate.stamp.list
+ M planner/native_ego/build-vs2026/CTestTestfile.cmake
+ M planner/native_ego/build-vs2026/Continuous.vcxproj
+ M planner/native_ego/build-vs2026/Continuous.vcxproj.filters
+ M planner/native_ego/build-vs2026/DartConfiguration.tcl
+ M planner/native_ego/build-vs2026/Experimental.vcxproj
+ M planner/native_ego/build-vs2026/Experimental.vcxproj.filters
+ M planner/native_ego/build-vs2026/Nightly.vcxproj
+ M planner/native_ego/build-vs2026/Nightly.vcxproj.filters
+ M planner/native_ego/build-vs2026/NightlyMemoryCheck.vcxproj
+ M planner/native_ego/build-vs2026/NightlyMemoryCheck.vcxproj.filters
+ M planner/native_ego/build-vs2026/RUN_TESTS.vcxproj
+ M planner/native_ego/build-vs2026/RUN_TESTS.vcxproj.filters
+ M planner/native_ego/build-vs2026/Testing/Temporary/CTestCostData.txt
+ M planner/native_ego/build-vs2026/Testing/Temporary/LastTest.log
+ M planner/native_ego/build-vs2026/ZERO_CHECK.vcxproj
+ M planner/native_ego/build-vs2026/ZERO_CHECK.vcxproj.filters
+ M planner/native_ego/build-vs2026/_native_ego.dir/Release/_native_ego.cp310-win_amd64.pyd.recipe
+ M planner/native_ego/build-vs2026/_native_ego.dir/Release/_native_ego.tlog/Cl.items.tlog
+ M planner/native_ego/build-vs2026/_native_ego.dir/Release/_native_ego.tlog/CustomBuild.command.1.tlog
+ M planner/native_ego/build-vs2026/_native_ego.dir/Release/_native_ego.tlog/CustomBuild.read.1.tlog
+ M planner/native_ego/build-vs2026/_native_ego.dir/Release/_native_ego.tlog/CustomBuild.write.1.tlog
+ M planner/native_ego/build-vs2026/_native_ego.dir/Release/_native_ego.tlog/_native_ego.lastbuildstate
+ M planner/native_ego/build-vs2026/_native_ego.dir/Release/_native_ego.tlog/link.secondary.1.tlog
+ M planner/native_ego/build-vs2026/_native_ego.vcxproj
+ M planner/native_ego/build-vs2026/_native_ego.vcxproj.filters
+ M planner/native_ego/build-vs2026/cmake_install.cmake
+ M planner/native_ego/build-vs2026/native_ego_core_test.dir/Release/native_e.CF79795F.tlog/Cl.items.tlog
+ M planner/native_ego/build-vs2026/native_ego_core_test.dir/Release/native_e.CF79795F.tlog/CustomBuild.command.1.tlog
+ M planner/native_ego/build-vs2026/native_ego_core_test.dir/Release/native_e.CF79795F.tlog/CustomBuild.read.1.tlog
+ M planner/native_ego/build-vs2026/native_ego_core_test.dir/Release/native_e.CF79795F.tlog/CustomBuild.write.1.tlog
+ M planner/native_ego/build-vs2026/native_ego_core_test.dir/Release/native_e.CF79795F.tlog/link.secondary.1.tlog
+ M planner/native_ego/build-vs2026/native_ego_core_test.dir/Release/native_e.CF79795F.tlog/native_ego_core_test.lastbuildstate
+ M planner/native_ego/build-vs2026/native_ego_core_test.dir/Release/native_ego_core_test.exe.recipe
+ M planner/native_ego/build-vs2026/native_ego_core_test.vcxproj
+ M planner/native_ego/build-vs2026/native_ego_core_test.vcxproj.filters
+ M planner/native_ego/build-vs2026/native_ego_planner.slnx
+ M planner/native_ego/build-vs2026/x64/Release/ALL_BUILD/ALL_BUILD.recipe
+ M planner/native_ego/build-vs2026/x64/Release/ALL_BUILD/ALL_BUILD.tlog/ALL_BUILD.lastbuildstate
+ M planner/native_ego/build-vs2026/x64/Release/ALL_BUILD/ALL_BUILD.tlog/CustomBuild.command.1.tlog
+ M planner/native_ego/build-vs2026/x64/Release/ALL_BUILD/ALL_BUILD.tlog/CustomBuild.read.1.tlog
+ M planner/native_ego/build-vs2026/x64/Release/ALL_BUILD/ALL_BUILD.tlog/CustomBuild.write.1.tlog
+ M planner/native_ego/build-vs2026/x64/Release/ZERO_CHECK/ZERO_CHECK.recipe
+ M planner/native_ego/build-vs2026/x64/Release/ZERO_CHECK/ZERO_CHECK.tlog/CustomBuild.command.1.tlog
+ M planner/native_ego/build-vs2026/x64/Release/ZERO_CHECK/ZERO_CHECK.tlog/CustomBuild.read.1.tlog
+ M planner/native_ego/build-vs2026/x64/Release/ZERO_CHECK/ZERO_CHECK.tlog/CustomBuild.write.1.tlog
+ M planner/native_ego/build-vs2026/x64/Release/ZERO_CHECK/ZERO_CHECK.tlog/ZERO_CHECK.lastbuildstate
+ M planner/native_ego/include/native_ego/ego_planner.hpp
+ M planner/native_ego/src/bindings.cpp
+ M planner/native_ego/src/ego_planner.cpp
+ M planner/native_ego/tests/test_core.cpp
+ M planner/native_ego_local_planner.py
+ M "readme/FAST_LIO\346\216\245\345\205\245\345\256\241\346\237\245.md"
+ M "readme/NED\345\215\241\345\260\224\346\233\274\350\257\255\344\271\211\345\256\236\344\276\213\345\205\263\350\201\224\350\257\264\346\230\216.md"
+ M "readme/RflySim_UE\345\234\272\346\231\257\350\257\255\344\271\211\346\240\207\346\263\250\350\247\204\350\214\203_TypeID4.md"
+ M "readme/\344\275\215\345\247\277\345\215\217\346\226\271\345\267\256\344\274\240\346\222\255\350\257\264\346\230\216.md"
+ M "readme/\345\215\241\345\260\224\346\233\274\346\273\244\346\263\242\344\270\216\345\215\217\346\226\271\345\267\256\345\205\254\345\274\217\350\257\264\346\230\216.md"
+ M "readme/\350\257\255\344\271\211\345\257\274\350\210\252\346\212\200\346\234\257\350\267\257\347\272\277.txt"
+ M recording/__init__.py
+ M recording/hdf5_flight_recorder.py
+ M rl_episode_reset.py
+ M run_explore.py
+ M sensors/__init__.py
+ M sensors/empirical_pose_covariance.py
+ M sensors/observation_hub.py
+ M sensors/pose_uncertainty.py
+ M server.js
+ M test_collision_format.py
+ M thought.txt
+ M tools/export_foxglove_voxel_map.py
+ M tools/probe_px4_covariance.py
+ M vehicle/__init__.py
+ M vehicle/__pycache__/rfly_multirotor.cpython-310.pyc
+ M vehicle/rfly_multirotor.py
+ D "\345\220\216\347\273\255\346\203\263\346\263\225.md"
+?? __pycache__/run_explore.cpython-313.pyc
+?? __pycache__/run_fastlio_test.cpython-310.pyc
+?? config/__pycache__/__init__.cpython-313.pyc
+?? config/__pycache__/camera_config.cpython-313.pyc
+?? config/__pycache__/drone_config.cpython-313.pyc
+?? config/__pycache__/exploration_config.cpython-313.pyc
+?? config/__pycache__/frontier_decision_config.cpython-313.pyc
+?? config/__pycache__/global_map_config.cpython-313.pyc
+?? config/__pycache__/lidar_config.cpython-313.pyc
+?? config/__pycache__/mission_config.cpython-313.pyc
+?? config/__pycache__/occupancy_grid_config.cpython-313.pyc
+?? config/__pycache__/planner_config.cpython-313.pyc
+?? config/__pycache__/recording_config.cpython-313.pyc
+?? config/__pycache__/run_output.cpython-313.pyc
+?? config/__pycache__/websocket_client_config.cpython-313.pyc
+?? config/explore.json
+?? data/audits/
+?? data/fastlio_validation/
+?? data/rollback_backups/
+?? data/runs/
+?? detections/__pycache__/sam3_client.cpython-310.pyc
+?? detections/__pycache__/sam3_process.cpython-310.pyc
+?? detections/sam3_client.py
+?? detections/sam3_process.py
+?? localization/__pycache__/__init__.cpython-313.pyc
+?? localization/__pycache__/fastlio_backend.cpython-310.pyc
+?? localization/__pycache__/fastlio_live_map.cpython-310.pyc
+?? localization/__pycache__/fastlio_live_map.cpython-313.pyc
+?? localization/__pycache__/fastlio_navigation_frames.cpython-310.pyc
+?? localization/__pycache__/fastlio_recording.cpython-310.pyc
+?? localization/__pycache__/fastlio_recording.cpython-313.pyc
+?? localization/__pycache__/fastlio_semantics.cpython-310.pyc
+?? localization/__pycache__/fastlio_semantics.cpython-313.pyc
+?? localization/__pycache__/scene_graph_adapter.cpython-310.pyc
+?? localization/fastlio_backend.py
+?? localization/fastlio_live_map.py
+?? localization/fastlio_navigation_frames.py
+?? localization/fastlio_recording.py
+?? localization/fastlio_semantics.py
+?? localization/native_fastlio/
+?? localization/scene_graph_adapter.py
+?? mapping/__pycache__/__init__.cpython-313.pyc
+?? mapping/__pycache__/depth_rays.cpython-313.pyc
+?? mapping/__pycache__/foxglove_export.cpython-313.pyc
+?? mapping/__pycache__/global_mapping_worker.cpython-313.pyc
+?? mapping/__pycache__/global_sparse_occupancy_map.cpython-313.pyc
+?? mapping/__pycache__/local_occupancy_grid.cpython-313.pyc
+?? mapping/__pycache__/semantic_numbering.cpython-310.pyc
+?? mapping/__pycache__/vehicle_footprint.cpython-313.pyc
+?? mapping/semantic_numbering.py
+?? navigation/__pycache__/__init__.cpython-313.pyc
+?? navigation/__pycache__/atomic_file.cpython-313.pyc
+?? navigation/__pycache__/exploration_failures.cpython-310.pyc
+?? navigation/__pycache__/object_inspection.cpython-310.pyc
+?? navigation/__pycache__/path_smoothing.cpython-310.pyc
+?? navigation/__pycache__/scene_memory.cpython-313.pyc
+?? navigation/__pycache__/session_server.cpython-313.pyc
+?? navigation/__pycache__/standalone_navigation.cpython-310.pyc
+?? navigation/__pycache__/target.cpython-313.pyc
+?? navigation/__pycache__/terminal_commands.cpython-310.pyc
+?? navigation/__pycache__/terminal_progress.cpython-310.pyc
+?? navigation/__pycache__/vehicle_inspection.cpython-310.pyc
+?? navigation/exploration_failures.py
+?? navigation/object_inspection.py
+?? navigation/path_smoothing.py
+?? navigation/standalone_navigation.py
+?? navigation/terminal_commands.py
+?? navigation/terminal_progress.py
+?? planner/__pycache__/waypoint_planning_worker.cpython-310.pyc
+?? planner/waypoint_planning_worker.py
+?? "readme/FAST_LIO\344\270\211\347\273\264\345\215\240\346\215\256\345\273\272\345\233\276.md"
+?? "readme/FAST_LIO\345\216\237\347\224\237\346\216\245\345\205\245\344\270\216\351\252\214\350\257\201.md"
+?? "readme/FAST_LIO\347\237\255\347\250\213\351\227\255\345\220\210\346\265\213\350\257\225.md"
+?? "readme/SAM3\345\217\257\351\200\211\345\220\216\347\253\257\344\270\216\345\257\271\346\257\224.md"
+?? "readme/SAM3\345\275\223\345\211\215\347\216\257\345\242\203\345\205\274\345\256\271\346\200\247\346\240\270\346\237\245_20261021.md"
+?? "readme/SPIN\345\234\272\346\231\257\345\233\276\344\273\243\347\240\201\350\260\203\347\240\224\344\270\216\346\216\245\345\205\245\346\226\271\346\241\210.md"
+?? readme/comparisons/
+?? readme/reviews/
+?? "readme/\346\216\242\347\264\242\344\270\215\345\256\214\346\225\264\346\240\270\346\237\245_20261021.md"
+?? "readme/\346\216\242\347\264\242\345\220\257\345\212\250\351\205\215\347\275\256.md"
+?? "readme/\347\213\254\347\253\213\344\277\235\345\255\230\345\234\260\345\233\276\345\257\274\350\210\252.md"
+?? "readme/\347\233\270\346\234\272\351\233\267\350\276\276\345\256\232\344\275\215\346\240\270\346\237\245_20261021.md"
+?? "readme/\350\275\246\350\276\206\344\270\273\345\212\250\350\241\245\345\205\205\350\247\202\346\265\213.md"
+?? "readme/\351\231\215\350\220\275\346\202\254\345\201\234\346\216\222\346\237\245_20261026.md"
+?? run_fastlio_test.py
+?? sensors/__pycache__/__init__.cpython-313.pyc
+?? sensors/__pycache__/observation_hub.cpython-313.pyc
+?? sensors/__pycache__/rfly_rgbd_camera.cpython-313.pyc
+?? sensors/__pycache__/synchronized_rgbd.cpython-313.pyc
+?? tests/
+?? tools/__pycache__/audit_fastlio_inputs.cpython-310.pyc
+?? tools/__pycache__/build_fastlio_map.cpython-310.pyc
+?? tools/__pycache__/compare_fastlio_replay.cpython-310.pyc
+?? tools/__pycache__/prepare_fastlio_validation.cpython-310.pyc
+?? tools/__pycache__/replay_fastlio.cpython-310.pyc
+?? tools/__pycache__/sam3_service.cpython-310.pyc
+?? tools/__pycache__/setup_sam3_image.cpython-310.pyc
+?? tools/__pycache__/validate_fastlio_semantics.cpython-310.pyc
+?? tools/audit_camera_lidar_geometry.py
+?? tools/audit_fastlio_inputs.py
+?? tools/build_fastlio_map.py
+?? tools/compare_fastlio_replay.py
+?? tools/compare_perception.py
+?? tools/prepare_fastlio_validation.py
+?? tools/replay_fastlio.py
+?? tools/sam3_service.py
+?? tools/setup_sam3_image.py
+?? tools/test_fastlio_native.py
+?? tools/validate_fastlio_semantics.py
+?? vehicle/__pycache__/__init__.cpython-313.pyc
+?? vehicle/__pycache__/rfly_multirotor.cpython-313.pyc

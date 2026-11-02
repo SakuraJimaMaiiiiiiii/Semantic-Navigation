@@ -1,0 +1,205 @@
+.--- 飞行状态：等待通路稳定 (holding_for_stable_clearance) ----
+--- 飞行状态：A*跟随 (route_clear) ----
+.............E.E...E..............usage: python.exe -m unittest [-h] [--config CONFIG] [--port PORT]
+                              [--timeout TIMEOUT] [--max-radius MAX_RADIUS]
+                              [--height-step HEIGHT_STEP]
+                              [--max-height-gain MAX_HEIGHT_GAIN]
+                              [--max-viewpoints MAX_VIEWPOINTS]
+                              [--viewpoint-spacing VIEWPOINT_SPACING]
+                              [--information-radius INFORMATION_RADIUS]
+                              [--frontier-empty-seconds FRONTIER_EMPTY_SECONDS]
+                              [--completion-frontier-area COMPLETION_FRONTIER_AREA]
+                              [--coverage-plateau-seconds COVERAGE_PLATEAU_SECONDS]
+                              [--minimum-map-gain-area MINIMUM_MAP_GAIN_AREA]
+                              [--return-reserve RETURN_RESERVE]
+                              [--sam2 | --sam3] [--sam3-url SAM3_URL]
+                              [--fastlio {off,record,shadow,live}]
+                              [--lidar-scan-model {unverified,snapshot,snapshot_assumed}]
+                              [--object-prompts OBJECT_PROMPTS [OBJECT_PROMPTS ...]]
+python.exe -m unittest: error: FAST-LIO requires --lidar-scan-model snapshot (verified) or snapshot_assumed (experimental)
+................F..--- 返航 A* 安全路线：1 个航点（与探索相同净空规则） ----
+--- 已到起点附近（半径 0.40 m），准备 PX4 降落 ----
+{
+  "source": "C:\\Users\\QiangYD\\AppData\\Local\\Temp\\tmp2e0xnhkh\\inputs.h5",
+  "source_sha256": "87d6d8d929643984fcc4afb90079c500c65b3e7947afc262b04d872e461d32fa",
+  "copy_sha256": "fdacd13f208286a0202d50980437c4c50d5636f6b0fff7f6e33ab463d1473422",
+  "removed_trailing_zero_imu_rows": 2,
+  "retained_imu_rows": 3,
+  "original_capture_complete": false,
+  "scope": "usable recorded prefix only; no claim of lossless capture"
+}
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 前沿恢复观察：预计未知格=1，仅转向一次 ----
+--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 近地下降准备达到时限，交给 PX4 AUTO.LAND 继续降落；当前相对起飞地面高度=0.98 m，近地目标高度=0.35 m ----
+.........--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 原点近地下降：保持水平位置和航向，限速下降后交给 PX4 AUTO.LAND ----
+--- 位置航点控制：transient_no_path；目标NED=[2.0, 0.0, 0.0] ----
+--- 飞行状态：等待通路稳定 (holding_for_stable_clearance) ----
+--- 飞行状态：A*跟随 (route_clear) ----
+......................................--- 无全局路径，局部安全规划器直返：飞行中逐步转向，目标 yaw=0.0° ----
+返回本次起飞点 North=-0.05 m, East=0.03 m……
+--- 无全局路径，局部安全规划器直返：飞行中逐步转向，目标 yaw=0.0° ----
+返回本次起飞点 North=-0.05 m, East=0.03 m……
+--- 已到达起飞点附近，进入悬停、恢复航向与降落流程 ----
+--- 进入 Offboard 模式…… ----
+--- 进入 Offboard 模式…… ----
+--- 进入 Offboard 模式…… ----
+--- 返航起点暂不可通行：悬停等待地图更新并复查 ----
+--- 未找到 SAM3 权重，正在下载 facebook/sam3 到 detections/Yolomode ----
+.--- 未找到 SAM3 权重，正在下载 facebook/sam3 到 detections/Yolomode ----
+.--- 复用已启动的 SAM3 服务 ----
+.--- SAM3 使用本地权重：<MagicMock name='ensure_checkpoint()' id='2283650834464'> ----
+--- 正在自动启动 SAM3，等待模型加载和预热 ----
+.--- SAM3 使用本地权重：models\sam3.pt ----
+--- 正在自动启动 SAM3，等待模型加载和预热 ----
+............E...........--- Semantic navigation: QUERY {'request': {'class_name': None, 'instance_id': 'vehicle_03', 'color': None, 'near_instance_id': None, 'near_distance': 3.0, 'min_confidence': 0.25, 'min_observations': 3, 'max_age': 120.0}} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: SUCCEEDED {'target_id': 'vehicle_03', 'target_position_ned': [3.0, 2.0, -0.5]} ----
+--- Semantic navigation: QUERY {'request': {'class_name': None, 'instance_id': 'vehicle_03', 'color': None, 'near_instance_id': None, 'near_distance': 3.0, 'min_confidence': 0.25, 'min_observations': 3, 'max_age': 120.0}} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: APPROACH {'target_id': 'vehicle_03', 'goal_ned': [1.0, 2.0, -1.5]} ----
+--- Semantic navigation: RETRY {'target_id': 'vehicle_03', 'reason': 'target_not_reobserved'} ----
+--- Semantic navigation: FAILED {'reason': 'verification_attempts_exhausted'} ----
+--- 本次任务返航原点：NED=[1.0, 2.0, 0.0]，起飞前航向=22.9° ----
+--- 跳过不可用地图 run_20261026_110000：checksum mismatch ----
+--- 跳过不可用地图 run_20261026_110000：unfinished ----
+--- 跳过不可用地图 run_20261026_100000：unfinished ----
+--- 导航地图：E:\files\Semantic Navigation\saved ----
+--- 导航地图：E:\files\Semantic Navigation\saved ----
+--- 飞行状态：航点跟随 (position_waypoint) ----
+...............E..............
+======================================================================
+ERROR: test_known_space_transit_does_not_cancel_unvisited_review (test_exploration_coverage_review.CoverageReviewTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_exploration_coverage_review.py", line 17, in test_known_space_transit_does_not_cancel_unvisited_review
+    self.assertTrue(coverage.metrics['review_due'])
+KeyError: 'review_due'
+
+======================================================================
+ERROR: test_supplementary_views_do_not_unlock_more_supplementary_sessions (test_exploration_regression.ExplorationRegressionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_exploration_regression.py", line 30, in test_supplementary_views_do_not_unlock_more_supplementary_sessions
+    method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_inspection_due')
+StopIteration
+
+======================================================================
+ERROR: test_curve_executes_without_stop_and_align (test_exploration_smoothing.ExplorationSmoothingTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_exploration_smoothing.py", line 39, in test_curve_executes_without_stop_and_align
+    FrontierExplorer._move(nav, [np.zeros(3),np.array([.2,.06,0])], flowing=True, turning=True)
+TypeError: FrontierExplorer._move() got an unexpected keyword argument 'flowing'
+
+======================================================================
+ERROR: test_stair_height_recovery (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_stair_height_recovery
+Traceback (most recent call last):
+  File "D:\ananconda\envs\Segm-Navi-python3.10\lib\unittest\loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "D:\ananconda\envs\Segm-Navi-python3.10\lib\unittest\loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "E:\files\semantic navigation\tests\test_stair_height_recovery.py", line 5, in <module>
+    from navigation.height_clearance import ascent_levels, vertical_corridor_free
+ImportError: cannot import name 'ascent_levels' from 'navigation.height_clearance' (E:\files\semantic navigation\navigation\height_clearance.py)
+
+--- A* 探索路线已生成：1 个航点，按顺序执行；EGO负责局部避障 ----
+--- A* 探索路线已生成：1 个航点，按顺序执行；EGO负责局部避障 ----
+
+======================================================================
+ERROR: test_committed_transit_is_not_preempted (test_vehicle_inspection.InspectionTests) (inspecting=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_vehicle_inspection.py", line 111, in test_committed_transit_is_not_preempted
+    outcome = namespace['_travel'](nav, goal)
+  File "<flight>", line 639, in _travel
+TypeError: InspectionTests.test_committed_transit_is_not_preempted.<locals>.move() missing 2 required keyword-only arguments: 'flowing' and 'turning'
+
+======================================================================
+ERROR: test_committed_transit_is_not_preempted (test_vehicle_inspection.InspectionTests) (inspecting=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_vehicle_inspection.py", line 111, in test_committed_transit_is_not_preempted
+    outcome = namespace['_travel'](nav, goal)
+  File "<flight>", line 639, in _travel
+TypeError: InspectionTests.test_committed_transit_is_not_preempted.<locals>.move() missing 2 required keyword-only arguments: 'flowing' and 'turning'
+
+======================================================================
+ERROR: test_fresh_observation_and_execution_budget (test_vehicle_inspection.InspectionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_vehicle_inspection.py", line 122, in test_fresh_observation_and_execution_budget
+    method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '_inspect_object')
+StopIteration
+
+======================================================================
+FAIL: test_map_recovery_does_not_arm_stationary_watchdog (test_frontier_observation_watchdog.ObservationWatchdogTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 36, in test_map_recovery_does_not_arm_stationary_watchdog
+    self.assertIsNone(nav._motion_progress)
+AssertionError: (array([0., 0., 0.]), 20.0) is not None
+
+======================================================================
+FAIL: test_stationary_observation_survives_map_recovery_and_restores_on_error (test_frontier_observation_watchdog.ObservationWatchdogTests) (moving=False, fail=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 68, in test_stationary_observation_survives_map_recovery_and_restores_on_error
+    self.assertTrue(nav._recovery_observation(grid,(0,0)))
+  File "E:\files\semantic navigation\navigation\frontier_explorer.py", line 217, in _recovery_observation
+    self._align(yaw)
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 56, in align
+    self.assertIsNone(nav._motion_progress)
+AssertionError: (array([0., 0., 0.]), 20.0) is not None
+
+======================================================================
+FAIL: test_stationary_observation_survives_map_recovery_and_restores_on_error (test_frontier_observation_watchdog.ObservationWatchdogTests) (moving=False, fail=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 66, in test_stationary_observation_survives_map_recovery_and_restores_on_error
+    nav._recovery_observation(grid,(0,0))
+  File "E:\files\semantic navigation\navigation\frontier_explorer.py", line 217, in _recovery_observation
+    self._align(yaw)
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 56, in align
+    self.assertIsNone(nav._motion_progress)
+AssertionError: (array([0., 0., 0.]), 20.0) is not None
+
+======================================================================
+FAIL: test_stationary_observation_survives_map_recovery_and_restores_on_error (test_frontier_observation_watchdog.ObservationWatchdogTests) (moving=True, fail=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 68, in test_stationary_observation_survives_map_recovery_and_restores_on_error
+    self.assertTrue(nav._recovery_observation(grid,(0,0)))
+  File "E:\files\semantic navigation\navigation\frontier_explorer.py", line 217, in _recovery_observation
+    self._align(yaw)
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 54, in align
+    self.assertIsNone(nav._motion_progress)
+AssertionError: (array([0., 0., 0.]), 0.0) is not None
+
+======================================================================
+FAIL: test_stationary_observation_survives_map_recovery_and_restores_on_error (test_frontier_observation_watchdog.ObservationWatchdogTests) (moving=True, fail=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 66, in test_stationary_observation_survives_map_recovery_and_restores_on_error
+    nav._recovery_observation(grid,(0,0))
+  File "E:\files\semantic navigation\navigation\frontier_explorer.py", line 217, in _recovery_observation
+    self._align(yaw)
+  File "E:\files\semantic navigation\tests\test_frontier_observation_watchdog.py", line 54, in align
+    self.assertIsNone(nav._motion_progress)
+AssertionError: (array([0., 0., 0.]), 0.0) is not None
+
+----------------------------------------------------------------------
+Ran 161 tests in 13.179s
+
+FAILED (failures=5, errors=7)

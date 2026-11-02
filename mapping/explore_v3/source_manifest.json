@@ -1,0 +1,25 @@
+{
+  "commit": "599499a",
+  "scope": "exploration mapping and semantic instance localization",
+  "sha256": {
+    "global_sparse_occupancy_map.py": "6a425f781d56752c5af52267255b8e1003d31f121671686d18473e9a4ce95ef7",
+    "local_occupancy_grid.py": "2c590db788535d92fb28f642a1679bb4b401a4122217f472d1fc5f1c06e0a32f",
+    "lidar_mapping_worker.py": "15603fcb9ce5f00ce1a4223b4c1e5e319b384c46b0251cbd2152dec51c64d2f0",
+    "semantic_instance_mapper.py": "8d225374e16c7afc8c3a3ab5b984ffd8e43406d1377379e5c4e9f5510a41cb8a",
+    "vehicle_instance_tracker.py": "e7f956e3b5bcaec85bf9e9d7f076d7b5c2237fd0361831e399c166b8d792d2ff",
+    "instance_surface.py": "55e34927eeca4bec4455d2ae66c84dcfab5cfe8d2415d456d8cdffd78791aa66",
+    "online_loop_navigation.py": "ab98742bbe7dad288f94e3e9cb749dd88b81cc74ba5f1a5d4949052eebc02896"
+  },
+  "modified_sha256": {
+    "global_sparse_occupancy_map.py": "96c5bdefbb32a362d96f415d71f5b3214a3769030be6df3484b6ae495f6151ce",
+    "local_occupancy_grid.py": "d850f0e315f9b3aef880fe835a4a03e48453b87c3d0f9b9b91491902d2104d71",
+    "lidar_mapping_worker.py": "90d5759b1b72fc4edef8f5968da8049e8ee48d6d4f3c0cffc345e687cde5b8fc",
+    "online_loop_navigation.py": "ea6717bc61f378811b84c7bb026e7b5e935636954b4b615d07f6b202808719d3"
+  },
+  "modifications": {
+    "global_sparse_occupancy_map.py": "Read completed-integration heartbeat without waiting on the geometry lock; use equivalent scalar saturation instead of per-voxel NumPy clipping (same integration order, limits and occupancy thresholds).",
+    "local_occupancy_grid.py": "Read completed-integration heartbeat without waiting on the geometry lock.",
+    "lidar_mapping_worker.py": "Capture synchronized FAST-LIO inputs and run local and global LiDAR fusion independently; ray and occupancy rules remain unchanged.",
+    "online_loop_navigation.py": "Expose the active map integration heartbeat."
+  }
+}

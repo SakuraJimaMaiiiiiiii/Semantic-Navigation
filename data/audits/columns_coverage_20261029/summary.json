@@ -1,0 +1,83 @@
+{
+  "raw": {
+    "before": 26,
+    "retained": 10,
+    "retained_ids": [
+      "column_01",
+      "column_02",
+      "column_03",
+      "column_04",
+      "column_08",
+      "column_09",
+      "column_14",
+      "column_15",
+      "column_16",
+      "column_19"
+    ],
+    "filtered_ids": [
+      "column_05",
+      "column_06",
+      "column_07",
+      "column_10",
+      "column_11",
+      "column_12",
+      "column_13",
+      "column_17",
+      "column_18",
+      "column_20",
+      "column_21",
+      "column_22",
+      "column_23",
+      "column_24",
+      "column_25",
+      "column_26"
+    ]
+  },
+  "corrected": {
+    "before": 23,
+    "retained": 10,
+    "retained_ids": [
+      "column_01",
+      "column_02",
+      "column_03",
+      "column_04",
+      "column_08",
+      "column_09",
+      "column_14",
+      "column_15",
+      "column_16",
+      "column_18"
+    ],
+    "filtered_ids": [
+      "column_05",
+      "column_06",
+      "column_07",
+      "column_10",
+      "column_11",
+      "column_12",
+      "column_13",
+      "column_17",
+      "column_19",
+      "column_20",
+      "column_21",
+      "column_22",
+      "column_23"
+    ]
+  },
+  "exploration": {
+    "reason": "map_expansion_stalled",
+    "remaining_regions": 18,
+    "perception_stops": 356,
+    "semantic_wait_seconds": 1068.319000000949,
+    "max_semantic_wait_seconds": 9.280999999959022,
+    "failed_waypoints": [
+      9,
+      10,
+      11
+    ],
+    "common_failure": "start_not_free near [6.93,28.8,-1.49]",
+    "comparison_run": "run_20261028_140435_896686",
+    "previous_observed_area_m2": 1138.68,
+    "current_observed_area_m2": 1002.87
+  }
+}

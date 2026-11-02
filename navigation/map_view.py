@@ -18,6 +18,7 @@ def render_map(
     state="exploring",
     navigation_config=None,
     exploration_waypoints=None,
+    show_place_links=True,
 ):
     c, s = math.cos(memory.initial_yaw), math.sin(memory.initial_yaw)
 
@@ -78,6 +79,14 @@ def render_map(
     object_xy = local([r["position_world"] for r in records])
     footprints = []
     for record in records:
+        if record.get("position_status") == "multi_surface_estimate":
+            box = record["observed_oriented_box"]
+            c_box, s_box = math.cos(box["yaw"]), math.sin(box["yaw"])
+            rotation = np.array([[c_box, -s_box], [s_box, c_box]])
+            offsets = np.array([[-1., -1.], [1., -1.], [1., 1.], [-1., 1.]])
+            corners = offsets*np.asarray(box["size"][:2])*.5 @ rotation.T + box["center"][:2]
+            footprints.append(local(np.column_stack((corners, np.zeros(4)))))
+            continue
         bounds = record.get("bbox_3d")
         if bounds is None:
             footprints.append(np.empty((0, 2)))
@@ -139,7 +148,7 @@ def render_map(
             f'fill="{fill}" fill-opacity=".85" stroke="{color}" stroke-width="{stroke}"{dash}>'
             f'<title>{title}</title></rect>'
         )
-    for identity, node in memory.places.items():
+    for identity, node in (memory.places.items() if show_place_links else ()):
         parent = node["parent"]
         if parent is not None:
             a, b = local([node["position"], memory.places[parent]["position"]])
@@ -178,6 +187,8 @@ def render_map(
         title = html.escape(
             f"{identity} / {record['class_name']} · 估计锚点 NED={position.round(3).tolist()} m"
             f" · 距起点高度={height:.2f} m · 观测次数={record.get('observation_count', 0)}{band_note}"
+            + (" · 位置待完善（局部车面）" if record.get('position_status') == 'partial_surface'
+               else " · 多表面位置估计" if record.get('position_status') == 'multi_surface_estimate' else "")
             + (" · 原始识别ID=" + ", ".join(record['source_runtime_instance_ids'])
                if record.get('source_runtime_instance_ids') else "")
             + (" · 包围框为已观测车面范围，非完整车体尺寸"
@@ -187,10 +198,14 @@ def render_map(
         )
         if len(footprint):
             coordinates = " ".join(f"{px},{py}" for px, py in footprint)
+            is_vehicle = record['class_name'] in {'car', 'truck', 'bus', 'van'}
+            footprint_style = (f'fill="#3b82f6" fill-opacity=".55" stroke="{"#e53935" if chosen else "#2563eb"}"'
+                               if is_vehicle else
+                               f'fill="none" stroke="{color}" stroke-opacity=".4" stroke-dasharray=".15 .12"')
             parts.append(
                 f'<polygon class="semantic-footprint" data-instance-id="{html.escape(identity, quote=True)}" '
-                f'points="{coordinates}" fill="none" stroke="{color}" '
-                f'stroke-width="{stroke}" stroke-opacity=".4" stroke-dasharray=".15 .12"/>'
+                f'points="{coordinates}" {footprint_style} '
+                f'stroke-width="{stroke}"><title>{title}</title></polygon>'
             )
         parts.append(
             f'<circle class="semantic-object" data-instance-id="{html.escape(identity, quote=True)}" '
@@ -200,9 +215,9 @@ def render_map(
             f'<text class="semantic-label" data-instance-id="{html.escape(identity, quote=True)}" '
             f'x="{x+.25}" y="{y-.25}" font-size=".32" fill="{color}">{html.escape(identity)}</text>'
         )
-    waypoint_colors = {"active": "#f97316", "arrived": "#2563eb",
+    waypoint_colors = {"active": "#f97316", "arrived": "#2563eb", "deferred": "#8b5cf6",
                        "blocked": "#dc2626", "interrupted": "#6b7280", "stopped": "#6b7280"}
-    waypoint_status = {"active": "当前目标", "arrived": "已到达",
+    waypoint_status = {"active": "当前目标", "arrived": "已到达", "deferred": "优先观测物体，暂缓",
                        "blocked": "受阻", "interrupted": "中断", "stopped": "低增长结束"}
     for waypoint, (x, y) in zip(waypoints, waypoint_xy):
         number = html.escape(str(waypoint["number"]))
@@ -250,7 +265,7 @@ def render_map(
                          "未提供全图边界，不将此指标当作整图覆盖率。</p>")
     if progress:
         stage_names = {"collecting": "收集窗口数据", "expanding": "地图仍在扩展",
-                       "review": "低增长最终复查", "return_required": "结束条件已满足：完成当前航点后返航，不再选择新目标"}
+                       "review": "低增长复查", "review_due": "低增长计时到期：检查剩余未访问区域，补充复查次数有限", "return_required": "旧版低增长复查到期"}
         remaining = progress.get("review_remaining_seconds")
         progress_text += f"<p>结束判定：{stage_names.get(progress.get('stage'), '评估中')}"
         if remaining is not None:
@@ -268,10 +283,10 @@ def render_map(
                         "frontiers_exhausted": "可达前沿已耗尽，探索已结束"}
         progress_text += f"<p><strong>结束原因：{html.escape(reason_names.get(reason, str(reason)))}</strong>；返航及落地结果见上方状态。</p>"
     page += (
-        f"<h2>语义探索地图</h2><p>状态：{status}　目标：<b>{selection}</b>　上方＝初始朝向，右方＝初始朝向的右侧。显示高度＝起点上方 {memory.home[2]-altitude:.2f} m（机身上下各 {config.vertical_half_extent:.2f} m）；浅灰＝未知或净空证据不足；白色＝该高度带已观测空闲（未计水平安全距离）；深灰＝该高度带障碍。物体圆点使用地图中的稳定 ID，表示多帧可见表面估计锚点的俯视投影；虚线为观测包围框投影，不代表完整物体轮廓或障碍栅格。悬停显示世界 NED 坐标（北、东、下），物体可能不在当前障碍显示高度带内。红色＝目标；黄色＝接近点；蓝线＝当前 A* 规划路径；P1、P2…＝该路线依次执行的航点（重新规划后重新编号）。W1、W2…＝探索目标航点及选择顺序（橙色＝当前目标，蓝色＝已到达，红色＝受阻，灰色＝中断）；鼠标悬停查看详情。每 2 秒刷新，地图数据随探索检查点更新。</p>"
+        f"<h2>语义探索地图</h2><p>状态：{status}　目标：<b>{selection}</b>　上方＝初始朝向，右方＝初始朝向的右侧。显示高度＝起点上方 {memory.home[2]-altitude:.2f} m（机身上下各 {config.vertical_half_extent:.2f} m）；浅灰＝未知或净空证据不足；白色＝该高度带已观测空闲（未计水平安全距离）；深灰＝该高度带障碍。物体圆点使用地图中的稳定 ID，表示多帧可见表面估计锚点的俯视投影；蓝色色块为车辆已观测包围框的填充投影，其他物体使用虚线框；均不代表完整物体轮廓或当前高度障碍栅格。悬停显示世界 NED 坐标（北、东、下），物体可能不在当前障碍显示高度带内。红色＝目标；黄色＝接近点；蓝线＝当前 A* 规划路径；P1、P2…＝该路线依次执行的航点（重新规划后重新编号）。W1、W2…＝探索目标航点及选择顺序（橙色＝当前目标，蓝色＝已到达，红色＝受阻，灰色＝中断）；鼠标悬停查看详情。每 2 秒刷新，地图数据随探索检查点更新。</p>"
         + progress_text
         + '<p>彩色占据格：蓝＝车辆，棕＝柱子，粉＝交通指示牌，紫＝其他或多类别；深灰障碍格尚无确定物体归属。'
-          '悬停彩色格查看稳定 ID。只标注有多帧表面观测支持的占据体素，包围框不填充。'
+          '悬停彩色格查看稳定 ID。彩色占据格只标注有多帧表面观测支持的占据体素；车辆蓝色填充仅用于显示，不写入导航占据数据。'
           '<label><input type="checkbox" id="show-outside">显示高度带外语义投影（彩色空心虚线，不代表当前高度障碍）</label></p>'
         + '<p id="identity-status" aria-live="polite">点击物体 ID 或彩色占据格，查看同一实例的对应标注。</p>'
           '<button type="button" id="clear-instance">取消高亮</button>'

@@ -18,6 +18,11 @@ class OnlineLoopNavigationMap:
     def revision(self):
         return self._state[1]
 
+    @property
+    def last_observation_completed_at(self):
+        # Liveness is a scalar read, not a request to construct/lock geometry.
+        return self._state[0].last_observation_completed_at
+
     def snapshot_with_revision(self):
         world, revision = self._state
         return world.snapshot(), revision

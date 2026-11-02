@@ -16,9 +16,6 @@ import ultralytics.nn.text_model as ultralytics_text_model
 from ultralytics import SAM, YOLOWorld  # pylint: disable=import-error
 
 from mapping.semantic_instance_mapper import (
-    STRUCTURAL_COLUMN_PROMPTS,
-    TRAFFIC_SIGN_PROMPTS,
-    EXIT_SIGN_PROMPTS,
     SemanticInstanceMapper,
     SemanticObservation3D,
     canonical_semantic_class_name as canonical_class_name,
@@ -46,6 +43,7 @@ SEMANTIC_CLASS_COLORS = {
     "exit sign": (0, 255, 128),
     "exit door": (255, 200, 0),
     "fire cabinet": (40, 40, 230),
+    "fire extinguisher": (0, 80, 255),
     "car": (255, 80, 80),
     "truck": (180, 80, 255),
     "bus": (80, 200, 255),
@@ -67,28 +65,15 @@ def semantic_class_color(class_name: str) -> tuple[int, int, int]:
 class DetectorConfig:
     """YOLO-World 与 SAM2 共用的实时感知配置。"""
 
+    backend: str = "yolo_sam2"
+    sam3_url: str = "http://127.0.0.1:8878"
+
     weights: str | Path = (
         BASE_DIR / "Yolomode" / "yolov8s-worldv2.pt"
     )
     sam_weights: str | Path = BASE_DIR / "Yolomode" / "sam2.1_t.pt"
-    class_prompts: tuple[str, ...] = (
-        "floor",
-        "wall",
-        "ceiling",
-        *STRUCTURAL_COLUMN_PROMPTS,
-        *TRAFFIC_SIGN_PROMPTS,
-        *EXIT_SIGN_PROMPTS,
-        "emergency exit door",
-        "fire exit door",
-        "fire hose cabinet",
-        "fire hydrant cabinet",
-        "car",
-        "truck",
-        "bus",
-        "van",
-        "person",
-        "parking barrier",
-    )
+    # 当前阶段仅识别车辆；其他类别的实现保留，暂不参与推理。
+    class_prompts: tuple[str, ...] = VEHICLE_CLASSES
     tile_size: int = 640
     overlap: float = 0.25
     confidence: float = 0.12
@@ -106,7 +91,7 @@ class DetectorConfig:
     inference_fps: float = 30.0
     window_name: str = "YOLO-World Detection / SAM2 Segmentation"
     hidden_box_classes: tuple[str, ...] = ("floor", "ceiling", "wall")
-    semantic_landmark_classes: tuple[str, ...] = ("column", "signboard", "exit sign", "exit door", "fire cabinet", *VEHICLE_CLASSES)
+    semantic_landmark_classes: tuple[str, ...] = VEHICLE_CLASSES
     instance_duplicate_merge_distance_xy: float = 1.5
     instance_mahalanobis_gate: float = 7.815
     instance_kalman_process_noise_std: float = 0.05
@@ -147,6 +132,8 @@ class DetectorConfig:
         return 16 if self.use_fp16 and uses_cuda else None
 
     def __post_init__(self) -> None:
+        if self.backend not in {"yolo_sam2", "sam3"}:
+            raise ValueError("Unknown perception backend")
         if not 0 < self.vehicle_map_min_confidence <= 1:
             raise ValueError("vehicle_map_min_confidence must be in (0, 1]")
         if not 0 < self.sign_min_confidence <= 1:
@@ -331,7 +318,7 @@ class TiledVehicleDetector:
         valid = [i for i, name in enumerate(canonical_classes)
                  if (name not in {"signboard", "exit sign"}
                      or float(scores[i]) >= self.config.sign_min_confidence)
-                 and (name not in {'exit door', 'fire cabinet'}
+                 and (name not in {'exit door', 'fire cabinet', 'fire extinguisher'}
                       or float(scores[i]) >= self.config.safety_landmark_min_confidence)]
         boxes, scores, classes = boxes[valid], scores[valid], classes[valid]
         canonical_classes = [canonical_classes[i] for i in valid]
@@ -369,7 +356,7 @@ class TiledVehicleDetector:
             x1, y1, x2, y2 = detection.box
             color = semantic_class_color(detection.class_name)
             label = f"{detection.class_name} {detection.confidence:.2f}"
-            if canonical_class_name(detection.class_name) in {'exit door', 'fire cabinet'}:
+            if canonical_class_name(detection.class_name) in {'exit door', 'fire cabinet', 'fire extinguisher'}:
                 label += ' [candidate]'
             cv2.rectangle(output, (x1, y1), (x2, y2), color, 2)
             cv2.putText(
@@ -470,17 +457,14 @@ class TiledVehicleDetector:
         return torch.stack(keep)
 
 
-class SAM2Segmenter:
-    """用 YOLO-World 检测框提示 SAM2 逐帧生成实例掩膜。"""
+class SemanticMaskProcessor:
+    """Shared mask geometry, instance association and visualization."""
 
-    def __init__(self, config: DetectorConfig | None = None) -> None:
+    def __init__(self, config: DetectorConfig | None = None, *, mapper_type=SemanticInstanceMapper) -> None:
         self.config = config or DetectorConfig()
-        weights = Path(self.config.sam_weights).expanduser()
-        # 项目内显式模型路径必须存在，避免拼写错误时静默下载其他文件。
-        if weights.parent != Path(".") and not weights.is_file():
-            raise FileNotFoundError(f"SAM2 模型文件不存在: {weights}")
-        self.model = SAM(str(weights))
-        self.mapper = SemanticInstanceMapper(
+        self.lidar_fused_objects = 0
+        self.lidar_fused_points = 0
+        self.mapper = mapper_type(
             landmark_classes=self.config.semantic_landmark_classes,
             sign_min_confidence=self.config.sign_min_confidence,
             vehicle_map_min_confidence=self.config.vehicle_map_min_confidence,
@@ -522,6 +506,7 @@ class SAM2Segmenter:
         timestamp: float | None = None,
         camera_pose_covariance: np.ndarray | None = None,
         lidar_alignment=None,
+        masks=None,
     ) -> tuple[np.ndarray, int]:
         """返回分割图；同步深度和位姿可启用持久三维实例关联。"""
         self.mapper.last_observation_batch = None
@@ -532,7 +517,7 @@ class SAM2Segmenter:
             rendered = image.copy()
             cv2.putText(
                 rendered,
-                "No YOLO-World boxes to prompt SAM2",
+                "No detected objects",
                 (12, 58),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.6,
@@ -541,17 +526,13 @@ class SAM2Segmenter:
                 cv2.LINE_AA,
             )
             return rendered, 0
-        active_items = self._select_sam_detections(all_detections)
-
-        result = self.model.predict(
-            image,
-            bboxes=[list(item[1].box) for item in active_items],
-            imgsz=self.config.tile_size,
-            device=self.config.device,
-            quantize=self.config.prediction_quantization,
-            verbose=False,
-        )[0]
-        masks = None if result.masks is None else result.masks.data.detach().cpu()
+        if masks is None:
+            active_items = self._select_sam_detections(all_detections)
+            masks = self._predict_masks(image, active_items)
+        else:
+            if len(masks) != len(all_detections):
+                raise ValueError("One mask is required per detection")
+            active_items = list(enumerate(all_detections))
         height, width = image.shape[:2]
         prepared_masks: list[tuple[int, np.ndarray]] = []
         observations_3d: list[SemanticObservation3D | None] = (
@@ -561,13 +542,14 @@ class SAM2Segmenter:
             active_items,
             () if masks is None else masks,
         ):
-            mask = mask_tensor.numpy()
+            mask = np.asarray(mask_tensor)
             if mask.shape != (height, width):
                 mask = cv2.resize(
                     mask, (width, height), interpolation=cv2.INTER_NEAREST
                 )
             foreground = mask > 0.5
-            if self._is_semantic_landmark(detection.class_name):
+            is_landmark = self._is_semantic_landmark(detection.class_name)
+            if is_landmark:
                 # 所有地标都只使用提示框内的 SAM 支持，避免柱/牌子泄漏到背景。
                 x1, y1, x2, y2 = detection.box
                 bounded = np.zeros_like(foreground)
@@ -578,7 +560,7 @@ class SAM2Segmenter:
             if not np.any(foreground):
                 continue
             prepared_masks.append((detection_index, foreground))
-            if self._is_semantic_landmark(detection.class_name):
+            if is_landmark:
                 observations_3d[detection_index] = self._mask_world_geometry(
                     foreground,
                     depth,
@@ -622,7 +604,7 @@ class SAM2Segmenter:
                     self.config.instance_display_min_observations,
                 )
             )
-            if (canonical_class_name(detection.class_name) in {'exit door', 'fire cabinet'}
+            if (canonical_class_name(detection.class_name) in {'exit door', 'fire cabinet', 'fire extinguisher'}
                     and confirmed_instance_id is None):
                 continue
             color = (
@@ -673,7 +655,7 @@ class SAM2Segmenter:
         if not prepared_masks:
             cv2.putText(
                 rendered,
-                "SAM2 returned no mask for YOLO-World boxes",
+                "No valid instance masks",
                 (12, 58),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.6,
@@ -706,7 +688,7 @@ class SAM2Segmenter:
                 signs.append(item)
             elif name == "exit door":
                 doors.append(item)
-            elif name == "fire cabinet":
+            elif name in {"fire cabinet", "fire extinguisher"}:
                 cabinets.append(item)
             else:
                 others.append(item)
@@ -852,8 +834,8 @@ class SAM2Segmenter:
                     # Use measured LiDAR geometry for the anchor where supported,
                     # rather than allowing dense camera pixels to dominate it.
                     center_camera = core_lidar
-                self.lidar_fused_objects = getattr(self, "lidar_fused_objects", 0) + 1
-                self.lidar_fused_points = getattr(self, "lidar_fused_points", 0) + len(lidar_points)
+                self.lidar_fused_objects += 1
+                self.lidar_fused_points += len(lidar_points)
                 # Keep the original camera uncertainty; extra samples alone do
                 # not justify claiming better calibrated absolute accuracy.
         point_cloud_world = (
@@ -938,3 +920,23 @@ class SAM2Segmenter:
         )
         temporary_path.replace(path)
         return path
+
+
+class SAM2Segmenter(SemanticMaskProcessor):
+    """Original YOLO-box-prompted SAM2 backend."""
+
+    def __init__(self, config=None, *, mapper_type=None):
+        super().__init__(config, **({"mapper_type": mapper_type} if mapper_type is not None else {}))
+        weights = Path(self.config.sam_weights).expanduser()
+        # 项目内显式模型路径必须存在，避免拼写错误时静默下载其他文件。
+        if weights.parent != Path(".") and not weights.is_file():
+            raise FileNotFoundError(f"SAM2 模型文件不存在: {weights}")
+        self.model = SAM(str(weights))
+
+    def _predict_masks(self, image, active_items):
+        result = self.model.predict(
+            image, bboxes=[list(item[1].box) for item in active_items],
+            imgsz=self.config.tile_size, device=self.config.device,
+            quantize=self.config.prediction_quantization, verbose=False,
+        )[0]
+        return None if result.masks is None else result.masks.data.detach().cpu().numpy()

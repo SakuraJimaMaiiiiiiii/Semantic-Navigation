@@ -18,7 +18,8 @@ class NavigationGrid:
         self.altitude = float(altitude)
         self.config = config
         self.occupied = set(occupied)
-        self.known = set(free) | set(occupied)
+        raw_free = set(free) - self.occupied
+        self.known = raw_free | self.occupied
         radius = int(math.ceil(config.clearance_radius / self.resolution))
         offsets = [
             (i, j)
@@ -27,7 +28,6 @@ class NavigationGrid:
             if math.hypot(i, j) * self.resolution
             <= config.clearance_radius + self.resolution * 0.5
         ]
-        raw_free = set(free) - set(occupied)
         self.free = {
             cell
             for cell in raw_free
@@ -39,14 +39,11 @@ class NavigationGrid:
         r = float(snapshot.resolution)
         zmin, zmax = height_band_indices(altitude, config.vertical_half_extent, r)
         mask = (snapshot.indices[:, 2] >= zmin) & (snapshot.indices[:, 2] <= zmax)
-        counts, occupied = {}, set()
-        for index, odds in zip(snapshot.indices[mask], snapshot.log_odds[mask]):
-            cell = (int(index[0]), int(index[1]))
-            if odds >= snapshot.occupied_threshold:
-                occupied.add(cell)
-            elif odds <= snapshot.free_threshold:
-                counts[cell] = counts.get(cell, 0) + 1
-        free = {cell for cell, count in counts.items() if count == zmax - zmin + 1}
+        indices = snapshot.indices[mask, :2]
+        odds = snapshot.log_odds[mask]
+        occupied = set(map(tuple, indices[odds >= snapshot.occupied_threshold].tolist()))
+        free_cells, counts = np.unique(indices[odds <= snapshot.free_threshold], axis=0, return_counts=True)
+        free = set(map(tuple, free_cells[counts == zmax - zmin + 1].tolist()))
         if local_snapshot is not None and current is not None:
             # Temporary evidence fusion near the vehicle only. A coarse world
             # cell is certified only when its ENTIRE volume is locally free;
@@ -72,7 +69,6 @@ class NavigationGrid:
                     free.difference_update(occupied)
                 center = np.floor(np.asarray(current)[:2] / r).astype(int)
                 extent = math.ceil((2.4 + config.clearance_radius) / r)
-                lr = float(local.resolution)
                 zlo = math.floor((zmin*r-local.origin_ned[2])/lr + 1e-8)
                 zhi = math.ceil(((zmax+1)*r-local.origin_ned[2])/lr - 1e-8)
                 if 0 <= zlo < zhi <= local.states.shape[2]:
@@ -121,19 +117,24 @@ class NavigationGrid:
                 )
                 if odds <= global_snapshot.free_threshold
             }
-            for index in missing:
-                index3 = index + np.array([0, 0, zmin])
-                low = snapshot.origin_ned + index3 * r
-                high = low + r
-                first = np.floor(low / gr + 1e-8).astype(int)
-                last = np.floor(high / gr - 1e-8).astype(int)
-                if all(
-                    (x, y, z) in global_free
-                    for x in range(first[0], last[0] + 1)
-                    for y in range(first[1], last[1] + 1)
-                    for z in range(first[2], last[2] + 1)
-                ):
-                    band[tuple(index)] = 0
+            if len(missing) and global_free:
+                # Check all coarse cells covering each missing local voxel in
+                # batches; the previous Python loop repeated this per voxel.
+                index3 = missing + np.array([0, 0, zmin])
+                low = snapshot.origin_ned + index3*r
+                first = np.floor(low/gr + 1e-8).astype(np.int64)
+                last = np.floor((low+r)/gr - 1e-8).astype(np.int64)
+                free_indices = np.asarray(sorted(global_free), dtype=np.int64)
+                row_dtype = np.dtype((np.void, 3*free_indices.dtype.itemsize))
+                free_keys = np.ascontiguousarray(free_indices).view(row_dtype).ravel()
+                covered = np.ones(len(missing), dtype=bool)
+                span = (last-first).max(axis=0)+1
+                for offset in np.ndindex(tuple(span)):
+                    cells = first + offset
+                    active = np.all(cells <= last, axis=1)
+                    keys = np.ascontiguousarray(cells).view(row_dtype).ravel()
+                    covered &= ~active | np.isin(keys, free_keys)
+                band[tuple(missing[covered].T)] = 0
         free = set(map(tuple, np.argwhere(np.all(band == 0, axis=2))))
         occupied = set(map(tuple, np.argwhere(np.any(band == 1, axis=2))))
         return cls(free, occupied, r, snapshot.origin_ned, altitude, config)
@@ -291,10 +292,55 @@ class NavigationGrid:
         return None
 
 
-def next_leg(path, length):
-    for start, end in zip(path[:-1], path[1:]):
-        distance = float(np.linalg.norm(end - start))
-        if distance >= length:
-            return start + (end - start) * length / distance
-        length -= distance
-    return path[-1].copy()
+
+
+def observed_body_segment_free(snapshot, start, end, config):
+    """Certify a height-recovery chord using actual observed 3D body volumes."""
+    r = float(snapshot.resolution)
+    start, end = np.asarray(start, float), np.asarray(end, float)
+    count = max(2, int(math.ceil(np.linalg.norm(end-start)/(.5*r)))+1)
+    extent = math.ceil(config.clearance_radius/r)
+    offsets = np.array([(x, y) for x in range(-extent, extent+1)
+                        for y in range(-extent, extent+1)
+                        if math.hypot(x, y)*r <= config.clearance_radius+.5*r])
+    for point in np.linspace(start, end, count):
+        center = np.floor((point[:2]-snapshot.origin_ned[:2])/r).astype(int)
+        cells = center+offsets
+        low, high = height_band_indices(point[2], config.vertical_half_extent, r, snapshot.origin_ned[2])
+        if (low < 0 or high >= snapshot.states.shape[2] or np.any(cells < 0)
+                or np.any(cells >= np.asarray(snapshot.states.shape[:2]))):
+            return False
+        if not np.all(snapshot.states[cells[:, 0], cells[:, 1], low:high+1] == 0):
+            return False
+    return True
+
+
+def execution_segment_free(snapshot, start, end, config, certified_grid):
+    """Recheck only the commanded chord's body volume in the newest local map.
+
+    Never replace a new hit or observed ambiguity with old free evidence.
+    Never-observed cells may retain the preceding grid's certified history.
+    """
+    if not certified_grid.segment_free(start, end):
+        return False
+    r = float(snapshot.resolution)
+    low, high = height_band_indices(certified_grid.altitude, config.vertical_half_extent,
+                                    r, snapshot.origin_ned[2])
+    if low < 0 or high >= snapshot.states.shape[2]:
+        return False
+    start, end = np.asarray(start), np.asarray(end)
+    count = max(2, int(math.ceil(np.linalg.norm(end-start)/(.5*r)))+1)
+    centers = np.floor((np.linspace(start, end, count)[:, :2]-snapshot.origin_ned[:2])/r).astype(int)
+    extent = math.ceil(config.clearance_radius/r)
+    offsets = np.array([(x,y) for x in range(-extent,extent+1) for y in range(-extent,extent+1)
+                        if math.hypot(x,y)*r <= config.clearance_radius+.5*r])
+    cells = (centers[:,None,:]+offsets).reshape(-1,2)
+    if np.any(cells < 0) or np.any(cells >= np.asarray(snapshot.states.shape[:2])):
+        return False
+    states = snapshot.states[cells[:,0], cells[:,1], low:high+1]
+    if np.any(states == 1):
+        return False
+    if snapshot.observed is None:
+        return bool(np.all(states == 0))
+    observed = snapshot.observed[cells[:,0], cells[:,1], low:high+1]
+    return not np.any((states == -1) & observed)

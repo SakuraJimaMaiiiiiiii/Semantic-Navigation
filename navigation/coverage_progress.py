@@ -49,7 +49,7 @@ class CoverageProgress:
         reviewing = self.review_started is not None
         remaining = max(0., self.plateau_seconds-(now-self.review_started)) if reviewing else None
         stop_due = reviewing and remaining <= 0.
-        stage = ('return_required' if stop_due else 'review' if reviewing else
+        stage = ('review_due' if stop_due else 'review' if reviewing else
                  'collecting' if elapsed < self.plateau_seconds else 'expanding')
         self.metrics = dict(observed_area_m2=area,
                             arrivals_without_meaningful_expansion=max(0, visits-start_visits),
@@ -62,5 +62,6 @@ class CoverageProgress:
                             review_gain_m2=max(0., area-self.review_area) if reviewing else None,
                             review_resume_gain_m2=2*self.review_threshold if reviewing else None,
                             stop_due=stop_due,
+                            review_due=stop_due,
                             full_map_coverage=None)
         return reviewing

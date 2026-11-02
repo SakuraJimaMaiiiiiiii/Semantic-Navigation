@@ -1,0 +1,38 @@
+         7385010 function calls (7370585 primitive calls) in 26.878 seconds
+
+   Ordered by: cumulative time
+   List reduced from 899 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   26.883   26.883 E:\files\Semantic Navigation\mapping\live_loop_mapping.py:169(finalize)
+        1    0.004    0.004   26.883   26.883 E:\files\Semantic Navigation\mapping\live_loop_mapping.py:46(update)
+        1    0.060    0.060   18.449   18.449 E:\files\Semantic Navigation\mapping\lidar_loop_map.py:46(rebuild)
+      369    0.114    0.000   18.310    0.050 E:\files\Semantic Navigation\mapping\explore_v3\global_sparse_occupancy_map.py:142(integrate_lidar_points)
+      369    0.702    0.002   11.588    0.031 E:\files\Semantic Navigation\mapping\explore_v3\global_sparse_occupancy_map.py:492(_ray_indices)
+     5639    0.058    0.000   10.788    0.002 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_arraysetops_impl.py:145(unique)
+     5639    0.517    0.000   10.537    0.002 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_arraysetops_impl.py:339(_unique1d)
+     3072    9.176    0.003    9.176    0.003 {method 'sort' of 'numpy.ndarray' objects}
+      738    4.960    0.007    6.545    0.009 E:\files\Semantic Navigation\mapping\explore_v3\global_sparse_occupancy_map.py:536(_apply_indices)
+        1    0.022    0.022    4.548    4.548 E:\files\Semantic Navigation\mapping\lidar_loop_map.py:11(optimize_frames)
+        1    0.003    0.003    4.479    4.479 E:\files\Semantic Navigation\mapping\loop_closure.py:358(_optimize_pose_graph)
+        8    0.032    0.004    4.315    0.539 E:\files\Semantic Navigation\mapping\loop_closure.py:473(_pcg_solve)
+      960    4.245    0.004    4.245    0.004 E:\files\Semantic Navigation\mapping\loop_closure.py:512(_normal_matrix_product)
+        1    0.002    0.002    3.880    3.880 E:\files\Semantic Navigation\mapping\loop_semantic_replay.py:104(export_bundle)
+        1    0.017    0.017    3.300    3.300 E:\files\Semantic Navigation\mapping\loop_semantic_replay.py:47(replay)
+      589    0.016    0.000    3.053    0.005 E:\files\Semantic Navigation\mapping\explore_v3\semantic_instance_mapper.py:215(update)
+      589    0.074    0.000    2.896    0.005 E:\files\Semantic Navigation\mapping\vehicle_instance_tracker.py:94(update)
+  5187871    1.598    0.000    1.598    0.000 {method 'get' of 'dict' objects}
+      273    0.011    0.000    1.108    0.004 E:\files\Semantic Navigation\mapping\vehicle_instance_tracker.py:483(_merge_duplicates)
+      369    0.003    0.000    1.071    0.003 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_arraysetops_impl.py:1015(isin)
+      369    0.203    0.001    1.067    0.003 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_arraysetops_impl.py:862(_in1d)
+     3697    0.033    0.000    1.034    0.000 E:\files\Semantic Navigation\mapping\vehicle_instance_tracker.py:35(map_position)
+     3704    0.291    0.000    0.999    0.000 E:\files\Semantic Navigation\mapping\instance_surface.py:50(vehicle_geometry)
+     5057    0.652    0.000    0.652    0.000 {method 'argsort' of 'numpy.ndarray' objects}
+     1906    0.112    0.000    0.551    0.000 E:\files\Semantic Navigation\mapping\instance_surface.py:107(supports)
+     1439    0.011    0.000    0.483    0.000 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_function_base_impl.py:4067(percentile)
+     1439    0.003    0.000    0.465    0.000 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_function_base_impl.py:4541(_quantile_unchecked)
+     1440    0.012    0.000    0.462    0.000 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_function_base_impl.py:3834(_ureduce)
+     1439    0.004    0.000    0.443    0.000 D:\ananconda\envs\Segm-Navi-python3.10\lib\site-packages\numpy\lib\_function_base_impl.py:4697(_quantile_ureduce_func)
+    99201    0.397    0.000    0.397    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+
+

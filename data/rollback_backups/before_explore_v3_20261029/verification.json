@@ -1,0 +1,29 @@
+{
+  "protected_files_unchanged": {
+    "navigate_target.py": true,
+    "navigation/standalone_navigation.py": true,
+    "navigation/terminal_commands.py": true,
+    "navigation/mission.py": true,
+    "vehicle/rfly_multirotor.py": true,
+    "detections/sam3_client.py": true,
+    "detections/sam3_process.py": true,
+    "tools/sam3_service.py": true
+  },
+  "exact_v3_modules": [
+    "global_sparse_occupancy_map.py",
+    "local_occupancy_grid.py",
+    "lidar_mapping_worker.py",
+    "semantic_instance_mapper.py",
+    "vehicle_instance_tracker.py",
+    "instance_surface.py",
+    "online_loop_navigation.py"
+  ],
+  "tests": {
+    "main_suite": "162 passed (161 existing plus isolated integration runner)",
+    "isolated_v3_checks": 6
+  },
+  "explore_backend": "599499a v3 / PX4 LiDAR occupancy and semantic association",
+  "fastlio_for_explore": false,
+  "target_navigation_defaults": "preserved",
+  "sam3_service": "unchanged"
+}

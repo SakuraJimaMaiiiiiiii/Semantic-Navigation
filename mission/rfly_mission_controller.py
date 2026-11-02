@@ -27,7 +27,7 @@ class RflyMissionController:
         self._return_origin_ned = None
         self.semantic_navigator = semantic_navigator
 
-    def run(self) -> None:
+    def run(self, *, hold_at_target=False) -> None:
         """执行完整飞行任务；碰撞异常继续交给上层统一处理。"""
         vehicle = self.vehicle
         mission = self.mission
@@ -41,6 +41,7 @@ class RflyMissionController:
             f"NED={self._return_origin_ned.round(3).tolist()}，"
             f"起飞前航向={math.degrees(pre_takeoff_yaw):.1f}° ----"
         )
+        self._return_yaw = pre_takeoff_yaw
         takeoff_yaw = pre_takeoff_yaw if mission.initial_yaw is None else float(mission.initial_yaw)
         if not math.isfinite(takeoff_yaw):
             raise ValueError("Takeoff yaw must be finite.")
@@ -64,14 +65,35 @@ class RflyMissionController:
                 if waypoint.hold_time > 0.0:
                     vehicle.wait(waypoint.hold_time)
 
-        if mission.return_to_origin:
+        if hold_at_target:
+            vehicle.hover()
+            self._set_navigation_phase("holding_at_target")
+            return
+        self.return_and_land()
+
+    def run_target(self, *, resume=False):
+        if resume:
+            self.vehicle._require_offboard()
+            if not self.vehicle.mav.isArmed:
+                raise RuntimeError("Cannot resume target navigation: vehicle is disarmed")
+            self.semantic_navigator.run()
+            self.vehicle.hover()
+            self._set_navigation_phase("holding_at_target")
+        else:
+            self.run(hold_at_target=True)
+
+    def return_and_land(self, *, force_return=False):
+        vehicle, mission = self.vehicle, self.mission
+        pre_takeoff_yaw = self._return_yaw
+        return_to_origin = force_return or mission.return_to_origin
+        if return_to_origin:
             self._set_navigation_phase("returning")
             if self.global_return_planner is None:
                 self._return_with_local_planner()
             else:
                 self._return_on_global_path()
         vehicle.wait(mission.final_hover_time)
-        if mission.return_to_origin:
+        if return_to_origin:
             self._confirm_return_position()
             if mission.restore_initial_yaw:
                 print(
@@ -121,8 +143,14 @@ class RflyMissionController:
         origin = self._return_origin()
         position = vehicle.get_position()
         direction = origin[:2] - position[:2]
-        if float(np.linalg.norm(direction)) <= 1e-6:
-            print("--- 已位于本次起飞点，无需执行局部返航 ----")
+        nav_config = getattr(self.semantic_navigator, "config", None)
+        exploration_config = getattr(self.semantic_navigator, "exploration_config", None)
+        tolerance = float(getattr(exploration_config, "home_tolerance",
+                                  getattr(nav_config, "arrival_tolerance", .3)))
+        # Use the same home acceptance as the pre-landing confirmation. A
+        # completed closed loop must not trigger a second centimetre-scale leg.
+        if np.all(np.isfinite(position)) and float(np.linalg.norm(direction)) <= tolerance:
+            print("--- 已到达起飞点附近，进入悬停、恢复航向与降落流程 ----")
             return
         return_yaw = math.atan2(
             float(direction[1]),
@@ -134,6 +162,14 @@ class RflyMissionController:
         )
         target = position.copy()
         target[:2] = origin[:2]
+        # The position controller requires its terminal command to equal the
+        # requested target. Do not pass measured Z while the planner projects
+        # that command back onto a different fixed navigation plane.
+        plane = getattr(return_planner, "navigation_altitude", None)
+        if plane is not None:
+            if not math.isfinite(float(plane)):
+                raise ValueError("Return navigation altitude must be finite")
+            target[2] = float(plane)
         print(
             f"返回本次起飞点 North={origin[0]:.2f} m, "
             f"East={origin[1]:.2f} m……"
@@ -205,7 +241,11 @@ class RflyMissionController:
             raise RuntimeError("Certified return requires a local safety planner")
         target = vehicle.get_position().copy()
         target[:2] = self._return_origin()[:2]
-        altitude = float(target[2])
+        # Keep the task's certified plane across the return handoff. A few
+        # centimetres of measured Z drift can cross a voxel-layer boundary and
+        # turn the same safe start into an occupied/unknown projected cell.
+        altitude = float(nav.altitude)
+        target[2] = altitude
         configure = getattr(planner, "set_navigation_plane", None)
         if callable(configure):
             configure(altitude, nav.config, nav.global_map)
@@ -230,6 +270,7 @@ class RflyMissionController:
         aligned_endpoint = None
         start_blocked_since = None
         height_recovery_attempted = False
+        holding_for_route = False
         cursor = WaypointCursor()
         tolerance = min(.1, nav.config.arrival_tolerance)
         home_radius = float(nav.config.arrival_tolerance)
@@ -270,7 +311,12 @@ class RflyMissionController:
                     if not all(grid.segment_free(a, b) for a, b in zip(path, path[1:])):
                         path = None
                 if path is None:
-                    vehicle.hover()
+                    # Keep the first hold setpoint while waiting for a route.
+                    # Re-capturing measured position each retry makes the target
+                    # follow drift/residual motion, including upward motion.
+                    if not holding_for_route:
+                        vehicle.hover()
+                        holding_for_route = True
                     path = grid.path(current, target)
                     if path is None:
                         if not height_recovery_attempted:
@@ -322,13 +368,15 @@ class RflyMissionController:
                         guard.capture_failure(reason, detail)
                         raise RuntimeError(f"Return A* found no route with observed body clearance: {reason}; "
                                            f"current={current.round(3).tolist()}, home={target.round(3).tolist()}")
-                    print(f"--- 返航 A* 安全路线：{len(path)-1} 个航点（与探索相同净空规则） ----")
+                    from navigation.terminal_progress import shared_progress
+                    shared_progress().update('return_route', detail=f'{len(path)-1} 个航点')
                     start_blocked_since = None
                     aligned_endpoint = None
                     cursor = WaypointCursor()
                     nav.active_route = path
                     if callable(getattr(nav, "checkpoint", None)):
                         nav.checkpoint(nav)
+                holding_for_route = False
                 endpoint = np.asarray(path[1])
                 distance = float(np.linalg.norm(endpoint-current))
                 if progress_endpoint is None or not np.array_equal(progress_endpoint, endpoint):
@@ -368,6 +416,21 @@ class RflyMissionController:
                                   nav.config.arrival_tolerance if cursor.intermediate else tolerance),
                     control_horizon=1.0, timeout=nav.config.leg_timeout,
                 )
+        except Exception as error:
+            # Save collision context before normal cleanup can obscure the last
+            # waypoint command. Failure of diagnostics must not mask the cause.
+            try:
+                vehicle.hover()
+                guard._diagnostic_context = (nav.local_map.snapshot(), nav.global_map.snapshot(),
+                                             vehicle.get_position(), target)
+                guard.capture_failure("return_exception", {
+                    "reason": type(error).__name__, "message": str(error),
+                    "flight_context": getattr(error, "flight_context", None),
+                    "planning_altitude": altitude,
+                }, terminal=True)
+            except Exception as diagnostic_error:
+                print(f"--- 返航异常诊断保存失败：{diagnostic_error} ----")
+            raise
         finally:
             vehicle.hover()
             guard.close_diagnostics()

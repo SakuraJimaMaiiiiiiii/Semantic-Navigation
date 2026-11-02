@@ -1,0 +1,127 @@
+{
+  "reference": "PX4 estimate, NOT ground truth",
+  "alignment": "first matched pose SE(3), no scale or full-trajectory fitting",
+  "matched_poses": 100,
+  "duration_s": 70.48378187424441,
+  "disagreement_rmse_m": 0.04675973187499603,
+  "disagreement_median_m": 0.04395905232471762,
+  "disagreement_p95_m": 0.07130878898455532,
+  "disagreement_max_m": 0.08043635942317637,
+  "endpoint_disagreement_m": 0.06273812033931497,
+  "endpoint_displacement_px4_m": 9.334636563084855,
+  "endpoint_displacement_lio_m": 9.378109703611708,
+  "endpoint_note": "Displacements are not closure errors unless start/end physically coincide.",
+  "scan_timing_verified": false,
+  "online_navigation_validated": false,
+  "nearest_late_return": {
+    "timestamp": 1175.5026590395264,
+    "px4_distance_to_start_m": 4.420345720247382,
+    "lio_distance_to_start_m": 4.436151660234973,
+    "paired_disagreement_m": 0.025579568922797377
+  },
+  "vehicle_roi_surface_proxy": {
+    "vehicle_01": {
+      "px4": {
+        "points": 520,
+        "valid_neighborhoods": 520,
+        "plane_residual_median_m": 0.029925782396426494,
+        "plane_residual_p90_m": 0.08010894586741228
+      },
+      "lio": {
+        "points": 446,
+        "valid_neighborhoods": 446,
+        "plane_residual_median_m": 0.015283525078851041,
+        "plane_residual_p90_m": 0.0594934587356733
+      }
+    },
+    "vehicle_02": {
+      "px4": {
+        "points": 512,
+        "valid_neighborhoods": 510,
+        "plane_residual_median_m": 0.06340619619882992,
+        "plane_residual_p90_m": 0.09819345642125728
+      },
+      "lio": {
+        "points": 433,
+        "valid_neighborhoods": 432,
+        "plane_residual_median_m": 0.018408408246003687,
+        "plane_residual_p90_m": 0.05250371414723884
+      }
+    }
+  },
+  "outer_wall_strip_surface_proxy": {
+    "north_low": {
+      "coordinate": -11.91014103275115,
+      "half_width_m": 0.35,
+      "surfaces": {
+        "px4": {
+          "points": 5360,
+          "valid_neighborhoods": 1989,
+          "plane_residual_median_m": 0.033033968558851254,
+          "plane_residual_p90_m": 0.08519027401611333
+        },
+        "lio": {
+          "points": 4424,
+          "valid_neighborhoods": 1973,
+          "plane_residual_median_m": 0.0042531265943867805,
+          "plane_residual_p90_m": 0.02113542802631357
+        }
+      }
+    },
+    "north_high": {
+      "coordinate": 11.938546264059466,
+      "half_width_m": 0.35,
+      "surfaces": {
+        "px4": {
+          "points": 5622,
+          "valid_neighborhoods": 1998,
+          "plane_residual_median_m": 0.03528521015153581,
+          "plane_residual_p90_m": 0.07482979970492701
+        },
+        "lio": {
+          "points": 4388,
+          "valid_neighborhoods": 1999,
+          "plane_residual_median_m": 0.003819798948499404,
+          "plane_residual_p90_m": 0.013672546905986755
+        }
+      }
+    },
+    "east_low": {
+      "coordinate": -2.945968548617084,
+      "half_width_m": 0.35,
+      "surfaces": {
+        "px4": {
+          "points": 2606,
+          "valid_neighborhoods": 1995,
+          "plane_residual_median_m": 0.026027843781448984,
+          "plane_residual_p90_m": 0.04941922488815395
+        },
+        "lio": {
+          "points": 1997,
+          "valid_neighborhoods": 1997,
+          "plane_residual_median_m": 0.005182178073012617,
+          "plane_residual_p90_m": 0.016926697842543904
+        }
+      }
+    },
+    "east_high": {
+      "coordinate": 25.4037966664173,
+      "half_width_m": 0.35,
+      "surfaces": {
+        "px4": {
+          "points": 74,
+          "valid_neighborhoods": 38,
+          "plane_residual_median_m": 0.10927814261916804,
+          "plane_residual_p90_m": 0.1396596334342814
+        },
+        "lio": {
+          "points": 92,
+          "valid_neighborhoods": 75,
+          "plane_residual_median_m": 0.007129538349236697,
+          "plane_residual_p90_m": 0.05775411996501473
+        }
+      }
+    }
+  },
+  "surface_proxy_caveat": "Local plane residual is not ground-truth accuracy; partial surfaces, sampling, and wrong associations affect it."
+}

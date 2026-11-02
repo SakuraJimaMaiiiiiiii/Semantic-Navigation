@@ -1,0 +1,13 @@
+{
+  "name": "semantic-navigation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WebSocket relay for the Semantic Navigation UE scene",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "path": "application/demo_runtime.py",
+    "action": "restore",
+    "before_sha256": "088e8985013c9ea719ced5847053c87782bb476636556e4cc6beadca846f2876",
+    "after_sha256": "892648efcd68bdb13d91a6a1db61596cdae7f66428c88a2bb89524deea9e99c6"
+  },
+  {
+    "path": "config/explore.json",
+    "action": "restore",
+    "before_sha256": "07fe5ccef5940d107070c362d7a222bf650ad70428a36b3ac9fd41d6200cda01",
+    "after_sha256": "18a9ef7a3cda4e951f4cc06cf8bee605df3f3c89dafb83c0cb9661ce18b9f39d"
+  },
+  {
+    "path": "detections/object_detect.py",
+    "action": "restore",
+    "before_sha256": "1f6cc92e2a57bc85b2c23fa24fbc276507e919df932b874ecdc7ad417565e7c1",
+    "after_sha256": "dd73d99359a7083df62b51199c9a67e2caf9e06e590bcc4d866ecc3a16c7de43"
+  },
+  {
+    "path": "localization/fastlio_live_map.py",
+    "action": "restore",
+    "before_sha256": "f67d885b4d9fe686cd9fa408dce663b6cf39adc674d4494a0ae6bbfb661ebc5e",
+    "after_sha256": "9a5697ff2e6705b2a398360842a6911e6d487795106133aa13c7bb49e9566e6c"
+  },
+  {
+    "path": "localization/fastlio_navigation_frames.py",
+    "action": "remove",
+    "before_sha256": "64c61ede82b9c8982afadda2d23103fd482398756b3212c25ee784d16170521d",
+    "after_sha256": null
+  },
+  {
+    "path": "localization/fastlio_recording.py",
+    "action": "restore",
+    "before_sha256": "1b73979d2b53cc0a1346de6ab32fe1131783d8e512e8be7ae4f4951b696f32de",
+    "after_sha256": "9e54b22ca919c3f87bba8e584676d4dff4b822deb659757a7bb763b14fbd8381"
+  },
+  {
+    "path": "mapping/semantic_instance_mapper.py",
+    "action": "restore",
+    "before_sha256": "0bd7a02c2056f86f70e69f5702b8b92a08f7ba546f63b21fea3217cf60e793c9",
+    "after_sha256": "f065841aea333081abe5fcc6a6de9367a6759058da6999e4d583742824066dbb"
+  },
+  {
+    "path": "navigation/frontier_explorer.py",
+    "action": "restore",
+    "before_sha256": "0c5dd7d6f79a4c3e8c33e6148e49a6cd31d6142b752ebc2a4fb49b13056ed778",
+    "after_sha256": "4b4f26703b5a18c4daca9ccbbc1ccc291eb7e299ad165b48087e6b7009f948ef"
+  },
+  {
+    "path": "navigation/mission.py",
+    "action": "restore",
+    "before_sha256": "71fcaf7b2c84154d01a49adda1b6c1504299ab6c9409cb0078740410a7d6db38",
+    "after_sha256": "e6f3f1bd136598e5505726f65e0f5ba08abcde521cbf104787ce38c766e73fc8"
+  },
+  {
+    "path": "planner/waypoint_planning_worker.py",
+    "action": "restore",
+    "before_sha256": "d72479cc4b4dc381461e3f831472a5151c4ecbc4f9a5c212f018bf8db666ac53",
+    "after_sha256": "1c9f3c299062f26a5f964ecac30f170d306a6205cc4b535253ed77b97f2c10e3"
+  },
+  {
+    "path": "readme/FAST_LIO三维占据建图.md",
+    "action": "remove",
+    "before_sha256": "76840a79fdfda6f2bc573d3981df3328dea4aed8d8fc503cedc2d0901d3ad545",
+    "after_sha256": null
+  },
+  {
+    "path": "readme/FAST_LIO原生接入与验证.md",
+    "action": "restore",
+    "before_sha256": "3fff1a82309a6d0b29ca65c72643209862901134302fd6c9f6fb009e0846d1d6",
+    "after_sha256": "115d0cd0081cc5cabd16e06f71f539384f140fb78c55af86f116434e558345f0"
+  },
+  {
+    "path": "run_explore.py",
+    "action": "restore",
+    "before_sha256": "22ae1fa7b9ed038dba2d10565486ab8b241477187fef1112c05b9a86728e72b8",
+    "after_sha256": "79c27cd37234cb8b34065033555a0bef9abcdeb71cf97c65f3be051a90c0dd16"
+  },
+  {
+    "path": "tests/test_async_waypoint_reference.py",
+    "action": "restore",
+    "before_sha256": "20c2fbce7c82f80641dd78a71504b5c4e367b04678a0f2d66ed0737468e58c14",
+    "after_sha256": "fb43ccd9e25b2c8584ecc6b765d9722f28a4b740275461e48bf3b9287e9a5263"
+  },
+  {
+    "path": "tests/test_explore_startup_config.py",
+    "action": "restore",
+    "before_sha256": "16346c7780819231d086da3f01286b1ca24728da42875229c785332d99387445",
+    "after_sha256": "dd3305c04da57352a80a621895880ea041fb92ea19c239b998442f4a9f952f98"
+  },
+  {
+    "path": "tests/test_fastlio_live_map.py",
+    "action": "restore",
+    "before_sha256": "8bc3deb031d8e679c61ad91cf125d13305af52226fbf4432c1ea00e3a51d5235",
+    "after_sha256": "82a7ce0c2c9c38359666faf5a7e365a8580562efc0eb2321b6da03cce8c5a002"
+  },
+  {
+    "path": "tests/test_fastlio_map_reconstruction.py",
+    "action": "remove",
+    "before_sha256": "4832fa60794f5e0cf08146c9ac3a8c8ee0033cc0b3b36ef38ac28c5af76171ea",
+    "after_sha256": null
+  },
+  {
+    "path": "tests/test_fastlio_navigation_frames.py",
+    "action": "remove",
+    "before_sha256": "debc04ac61f29d32cd26080a2ee507fcc5a4f5db055c61b1587361996c511e17",
+    "after_sha256": null
+  },
+  {
+    "path": "tests/test_frontier_observation_watchdog.py",
+    "action": "restore",
+    "before_sha256": "5eb3c785fcca529a5a8d22e95b0dd19295414dbbf7cd1c8c013149b7237068ed",
+    "after_sha256": "8a1cc0bad7705240dd470fd42b38ad9e3c29013546286498f2d4165c1da7b756"
+  },
+  {
+    "path": "tools/build_fastlio_map.py",
+    "action": "remove",
+    "before_sha256": "51515335af345f52e3733384f111c44565ed61299cbe46d89e08ac2b7361135a",
+    "after_sha256": null
+  }
+]

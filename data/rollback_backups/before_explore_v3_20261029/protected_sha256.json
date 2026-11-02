@@ -1,0 +1,10 @@
+{
+  "navigate_target.py": "40af69ec1e6faa2fa2f84fba9452cb841419c8a22e1add47744ed2cb8ef65c45",
+  "navigation/standalone_navigation.py": "abe0d786f7a9b3e40c2531fbef7efa9f3d6951851cb8c7aacce509c8dcdb7359",
+  "navigation/terminal_commands.py": "5c40dd35dee0805996ff470cfafc8e1d55884b51b04a00a0bc3c0c4818ddda30",
+  "navigation/mission.py": "e6f3f1bd136598e5505726f65e0f5ba08abcde521cbf104787ce38c766e73fc8",
+  "vehicle/rfly_multirotor.py": "4a19d457b90d3758b913428600bd94ff1ac14f74482ce3b46f4208c152cb333f",
+  "detections/sam3_client.py": "042492f5e2e6a7c2b03fa012c675c5f5a270b80175fbe57afc9c5e1c2d891979",
+  "detections/sam3_process.py": "7d86ff4266379f44266d6f6ef7bb75cf95d1657dc6fbd1828bfb670ae3f781f1",
+  "tools/sam3_service.py": "4f428e5aaff7c83d15b738a07e27b212c89ce119378f2a31e10ddcc6f0a31f31"
+}

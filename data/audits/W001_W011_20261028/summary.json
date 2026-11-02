@@ -1,0 +1,138 @@
+[
+  {
+    "waypoint": 1,
+    "status": "arrived",
+    "reason": null,
+    "local_status": null
+  },
+  {
+    "waypoint": 2,
+    "status": "blocked",
+    "reason": "exploration_no_motion_progress",
+    "local_status": "route_clear",
+    "local_segment_free": true,
+    "planning_seconds": 3.202999999979511,
+    "post_validation_seconds": 2.843999999924563,
+    "reference_lead_m": 0.012558746311592268,
+    "footprint": {
+      "free": 63,
+      "occupied": 0,
+      "unknown": 0,
+      "outside": 0
+    }
+  },
+  {
+    "waypoint": 3,
+    "status": "blocked",
+    "reason": "Yaw alignment timed out after 30.0 s: current=175.7 deg, target=-179.8 deg, error=+4.5 deg",
+    "local_status": "route_clear"
+  },
+  {
+    "waypoint": 4,
+    "status": "blocked",
+    "reason": "exploration_no_motion_progress",
+    "local_status": "route_clear",
+    "local_segment_free": true,
+    "planning_seconds": 3.390999999945052,
+    "post_validation_seconds": 1.640999999945052,
+    "reference_lead_m": 0.01815747913909133,
+    "footprint": {
+      "free": 63,
+      "occupied": 0,
+      "unknown": 0,
+      "outside": 0
+    }
+  },
+  {
+    "waypoint": 5,
+    "status": "blocked",
+    "reason": "Yaw alignment timed out after 30.0 s: current=88.3 deg, target=83.2 deg, error=-5.1 deg",
+    "local_status": "route_clear"
+  },
+  {
+    "waypoint": 6,
+    "status": "blocked",
+    "reason": "exploration_no_motion_progress",
+    "local_status": "route_clear",
+    "local_segment_free": true,
+    "planning_seconds": 3.25,
+    "post_validation_seconds": 2.89000000001397,
+    "reference_lead_m": 0.011661016992104187,
+    "footprint": {
+      "free": 63,
+      "occupied": 0,
+      "unknown": 0,
+      "outside": 0
+    }
+  },
+  {
+    "waypoint": 7,
+    "status": "blocked",
+    "reason": "Yaw alignment timed out after 30.0 s: current=158.2 deg, target=179.1 deg, error=+20.8 deg",
+    "local_status": "route_clear"
+  },
+  {
+    "waypoint": 8,
+    "status": "blocked",
+    "reason": "exploration_no_motion_progress",
+    "local_status": "route_clear",
+    "local_segment_free": true,
+    "planning_seconds": 3.6869999999180436,
+    "post_validation_seconds": 1.5459999999729916,
+    "reference_lead_m": 0.08379124993283656,
+    "footprint": {
+      "free": 63,
+      "occupied": 0,
+      "unknown": 0,
+      "outside": 0
+    }
+  },
+  {
+    "waypoint": 9,
+    "status": "blocked",
+    "reason": "exploration_no_motion_progress",
+    "local_status": "route_clear",
+    "local_segment_free": true,
+    "planning_seconds": 2.984000000054948,
+    "post_validation_seconds": 1.984000000054948,
+    "reference_lead_m": 0.09446651725223949,
+    "footprint": {
+      "free": 63,
+      "occupied": 0,
+      "unknown": 0,
+      "outside": 0
+    }
+  },
+  {
+    "waypoint": 10,
+    "status": "blocked",
+    "reason": "exploration_no_motion_progress",
+    "local_status": "route_clear",
+    "local_segment_free": true,
+    "planning_seconds": 3.077999999979511,
+    "post_validation_seconds": 2.1719999999040738,
+    "reference_lead_m": 0.009149549715813556,
+    "footprint": {
+      "free": 63,
+      "occupied": 0,
+      "unknown": 0,
+      "outside": 0
+    }
+  },
+  {
+    "waypoint": 11,
+    "status": "blocked",
+    "reason": "exploration_no_motion_progress",
+    "local_status": "route_clear",
+    "local_segment_free": true,
+    "planning_seconds": 2.797000000020489,
+    "post_validation_seconds": 1.827999999979511,
+    "reference_lead_m": 0.01616487365782845,
+    "footprint": {
+      "free": 63,
+      "occupied": 0,
+      "unknown": 0,
+      "outside": 0
+    }
+  }
+]

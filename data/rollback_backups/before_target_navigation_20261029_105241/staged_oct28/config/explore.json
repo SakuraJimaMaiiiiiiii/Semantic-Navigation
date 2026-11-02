@@ -1,0 +1,59 @@
+{
+  "_comment": {
+    "使用方式": "修改下方实际参数，然后运行 python run_explore.py。命令行参数可临时覆盖。本说明字段不参与运行。",
+    "perception_backend": "识别后端切换：yolo_sam2 = YOLO-World 检测 + SAM2 分割（等价于 --sam2）；sam3 = SAM3 检测与分割（等价于 --sam3）。二选一。",
+    "sam3_url": "SAM3 服务地址，仅 sam3 后端使用；启动探索时自动管理本地服务。",
+    "fastlio": "off = 关闭；record = 仅录制雷达和 IMU；shadow = 录制并计算 FAST-LIO 位姿；live = 位姿加实时点云地图。live 尚未接管导航。",
+    "lidar_scan_model": "unverified = 未确认扫描时序，仅支持 record 或关闭 FAST-LIO；snapshot_assumed = 实验性假设整帧瞬时采集；snapshot = 已确认整帧瞬时采集。shadow/live 必须选择后两者之一。",
+    "object_prompts": "启用车辆、消防/安全出口门及车库承重柱。parking garage structural column 统一记为 column；柱子保留多帧高度至少2.2m、竖直长宽比至少1.2的过滤，排除矮柱。SAM3和YOLO-World+SAM2共用此列表。",
+    "port": "探索会话服务端口，默认 8877；不是 WebSocket 的 8766，也不是 SAM3 的 8878。",
+    "timeout": "探索时间预算，单位秒。",
+    "max_radius": "最大探索半径，单位米。",
+    "max_viewpoints": "探索观察点数量上限，正整数。",
+    "viewpoint_spacing": "观察点间距参数，单位米。",
+    "information_radius": "候选观察点信息增益统计半径，单位米。",
+    "frontier_empty_seconds": "前沿持续为空的确认时长，单位秒；需结合其他终止条件。",
+    "completion_frontier_area": "结束判断使用的剩余前沿面积门槛，单位平方米。",
+    "coverage_plateau_seconds": "地图增长统计窗口，单位秒；低增长触发复查。复查计时到期后仍先检查未访问候选，最多执行现有3次补充复查；不是到时立即返航。",
+    "minimum_map_gain_area": "窗口内地图增长面积门槛，单位平方米；还会结合相对增长门槛判断。",
+    "return_reserve": "探索预算中预留的返航时间，单位秒。",
+    "切换示例": {
+      "YOLO-World加SAM2": {
+        "perception_backend": "yolo_sam2"
+      },
+      "SAM3": {
+        "perception_backend": "sam3"
+      },
+      "关闭FAST-LIO": {
+        "fastlio": "off"
+      }
+    },
+    "height_step": "上方候选高度的检查间隔（m，至少0.1）。不是盲目逐次爬升；起飞前规划高度以外的上升必须有已观测净空。",
+    "max_height_gain": "相对起飞巡航高度允许增加的最大高度（m）。楼梯场景设2.0；0禁用上升。天花板、未知区域和不可达上层路线仍会阻止上升。"
+  },
+  "perception_backend": "sam3",
+  "sam3_url": "http://127.0.0.1:8878",
+  "fastlio": "live",
+  "lidar_scan_model": "snapshot_assumed",
+  "object_prompts": [
+    "car",
+    "truck",
+    "bus",
+    "van",
+    "fire exit door",
+    "parking garage structural column"
+  ],
+  "port": 8877,
+  "timeout": 3600.0,
+  "max_radius": 100.0,
+  "max_viewpoints": 600,
+  "viewpoint_spacing": 3.0,
+  "information_radius": 3.0,
+  "frontier_empty_seconds": 10.0,
+  "completion_frontier_area": 1.0,
+  "coverage_plateau_seconds": 120.0,
+  "minimum_map_gain_area": 1.0,
+  "return_reserve": 120.0,
+  "height_step": 0.4,
+  "max_height_gain": 2.0
+}

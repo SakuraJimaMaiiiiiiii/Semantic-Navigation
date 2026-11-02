@@ -1,0 +1,33 @@
+{
+  "run": "run_20261028_140435_896686",
+  "samples": 7620,
+  "duration_seconds": 2707.3250000476837,
+  "telemetry_interval_seconds": {
+    "median": 0.19900012016296387,
+    "p95": 1.2050999402999873,
+    "max": 7.569000005722046
+  },
+  "airborne_pitch_abs_degrees": {
+    "median": 0.4469233755486536,
+    "p95": 1.3931088822633724,
+    "max": 5.448143631210874
+  },
+  "straight_segment": {
+    "start_seconds": 100,
+    "end_seconds": 140,
+    "samples": 163,
+    "largest_record_gap_seconds": 1.2649998664855957,
+    "yaw_range_degrees": 0.02457901442222976,
+    "pitch_peak_to_peak_degrees": 4.17164254994271,
+    "horizontal_speed_p10_mps": 0.06944764131428276,
+    "horizontal_speed_p90_mps": 0.2885464875394285,
+    "pitch_oscillation_spectrum_peak_hz": 0.35000000000000003
+  },
+  "unavailable": [
+    "position setpoint timestamps/values throughout flight",
+    "attitude/rate setpoints",
+    "actuator outputs or motor RPM",
+    "saturation/control-allocation status"
+  ],
+  "conclusion": "Output oscillation and slow outer-reference updates are observable; actuator closed-loop bandwidth is NOT identifiable from these signals alone."
+}

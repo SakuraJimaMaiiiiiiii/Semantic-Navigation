@@ -1,0 +1,62 @@
+{
+  "source": "data/fastlio_validation/run_20261022_190623_019668/input/inputs.h5",
+  "scope": "Count ray sample positions for identical recorded scans using current _ray_indices sampling rule; compare existing global map and new independent LIO map, not a runtime or causal benchmark.",
+  "rows": [
+    {
+      "scan": "00000000",
+      "points": 3000,
+      "existing_global_ray_samples": 44788,
+      "new_fastlio_ray_samples": 220869,
+      "ratio": 4.931432526569617
+    },
+    {
+      "scan": "00001097",
+      "points": 3000,
+      "existing_global_ray_samples": 48644,
+      "new_fastlio_ray_samples": 254205,
+      "ratio": 5.225824356549626
+    },
+    {
+      "scan": "00002195",
+      "points": 3000,
+      "existing_global_ray_samples": 67799,
+      "new_fastlio_ray_samples": 321735,
+      "ratio": 4.7454239738049235
+    },
+    {
+      "scan": "00003293",
+      "points": 3000,
+      "existing_global_ray_samples": 60574,
+      "new_fastlio_ray_samples": 304339,
+      "ratio": 5.024251328953016
+    },
+    {
+      "scan": "00004390",
+      "points": 3000,
+      "existing_global_ray_samples": 46327,
+      "new_fastlio_ray_samples": 226560,
+      "ratio": 4.890452651801326
+    },
+    {
+      "scan": "00005488",
+      "points": 3000,
+      "existing_global_ray_samples": 53276,
+      "new_fastlio_ray_samples": 274698,
+      "ratio": 5.156130340115625
+    },
+    {
+      "scan": "00006586",
+      "points": 3000,
+      "existing_global_ray_samples": 19057,
+      "new_fastlio_ray_samples": 87850,
+      "ratio": 4.609854646586556
+    },
+    {
+      "scan": "00007684",
+      "points": 3000,
+      "existing_global_ray_samples": 61910,
+      "new_fastlio_ray_samples": 311429,
+      "ratio": 5.030350508803101
+    }
+  ]
+}

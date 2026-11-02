@@ -1,0 +1,116 @@
+[
+  {
+    "waypoint": 4,
+    "reason": "exploration_no_motion_progress",
+    "seconds_since_progress": 8.952999999979511,
+    "displacement_cm": 0.7501960126537337,
+    "controller_status": "route_clear",
+    "snapshot_chord_free": true,
+    "detail_chord_free": true,
+    "command_offset_cm": 0.39409183352332083,
+    "background_planning_seconds": 3.422000000020489,
+    "control_dt_seconds": 0.375,
+    "last_route_clear_to_failure_seconds": 4.0,
+    "clearance_stable_seconds": 0.0,
+    "current_ned": [
+      1.193141222000122,
+      23.631202697753906,
+      -1.4942587614059448
+    ]
+  },
+  {
+    "waypoint": 5,
+    "reason": "exploration_no_motion_progress",
+    "seconds_since_progress": 8.079000000027008,
+    "displacement_cm": 0.8146244256158036,
+    "controller_status": "route_clear",
+    "snapshot_chord_free": true,
+    "detail_chord_free": true,
+    "command_offset_cm": 0.7547116946295501,
+    "background_planning_seconds": 4.23499999998603,
+    "control_dt_seconds": 0.2190000000409782,
+    "last_route_clear_to_failure_seconds": 0.6879999999655411,
+    "clearance_stable_seconds": 0.0,
+    "current_ned": [
+      1.181926965713501,
+      23.644861221313477,
+      -1.5060744285583496
+    ]
+  },
+  {
+    "waypoint": 6,
+    "reason": "exploration_no_motion_progress",
+    "seconds_since_progress": 8.030999999959022,
+    "displacement_cm": 1.8580330223700967,
+    "controller_status": "holding_for_stable_clearance",
+    "snapshot_chord_free": true,
+    "detail_chord_free": true,
+    "command_offset_cm": 1.5322698687702843,
+    "background_planning_seconds": 4.297000000020489,
+    "control_dt_seconds": 0.05,
+    "last_route_clear_to_failure_seconds": 0.5309999999590218,
+    "clearance_stable_seconds": 0.4529999999795109,
+    "current_ned": [
+      -2.8700788021087646,
+      22.523767471313477,
+      -1.4887895584106445
+    ]
+  },
+  {
+    "waypoint": 7,
+    "reason": "exploration_no_motion_progress",
+    "seconds_since_progress": 8.016000000061467,
+    "displacement_cm": 1.6269944510043106,
+    "controller_status": "route_clear",
+    "snapshot_chord_free": true,
+    "detail_chord_free": true,
+    "command_offset_cm": 1.060219499094275,
+    "background_planning_seconds": 2.172000000020489,
+    "control_dt_seconds": 0.06199999991804361,
+    "last_route_clear_to_failure_seconds": 0.609000000054948,
+    "clearance_stable_seconds": 0.0,
+    "current_ned": [
+      -2.8734118938446045,
+      22.51746940612793,
+      -1.4870507717132568
+    ]
+  },
+  {
+    "waypoint": 8,
+    "reason": "exploration_no_motion_progress",
+    "seconds_since_progress": 9.125,
+    "displacement_cm": 3.6254343757732044,
+    "controller_status": "route_clear",
+    "snapshot_chord_free": true,
+    "detail_chord_free": true,
+    "command_offset_cm": 1.5693458748874238,
+    "background_planning_seconds": 1.0790000000270084,
+    "control_dt_seconds": 0.125,
+    "last_route_clear_to_failure_seconds": 2.422000000020489,
+    "clearance_stable_seconds": 0.0,
+    "current_ned": [
+      -2.8543245792388916,
+      22.467636108398438,
+      -1.4900938272476196
+    ]
+  },
+  {
+    "waypoint": 9,
+    "reason": "exploration_no_motion_progress",
+    "seconds_since_progress": 8.327999999979511,
+    "displacement_cm": 3.6839573665717906,
+    "controller_status": "route_clear",
+    "snapshot_chord_free": true,
+    "detail_chord_free": true,
+    "command_offset_cm": 11.840715607770475,
+    "background_planning_seconds": 1.672000000020489,
+    "control_dt_seconds": 0.05,
+    "last_route_clear_to_failure_seconds": 2.5929999999934807,
+    "clearance_stable_seconds": 0.0,
+    "current_ned": [
+      -2.86234188079834,
+      22.45867156982422,
+      -1.4650667905807495
+    ]
+  }
+]

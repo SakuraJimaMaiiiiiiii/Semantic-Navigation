@@ -1,6 +1,6 @@
 """局部主动避障配置。"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 
 @dataclass(frozen=True)
@@ -73,62 +73,12 @@ class PlannerConfig:
                     f"{name} must be 'depth_guard', 'astar', 'ego', "
                     "or 'ego_native'."
                 )
-        positive = {
-            "replan_rate": self.replan_rate,
-            "map_timeout": self.map_timeout,
-            "planning_lookahead": self.planning_lookahead,
-            "local_target_distance": self.local_target_distance,
-            "minimum_forward_progress": self.minimum_forward_progress,
-            "map_boundary_margin": self.map_boundary_margin,
-            "reachable_goal_tolerance": self.reachable_goal_tolerance,
-            "emergency_stop_distance": self.emergency_stop_distance,
-            "map_emergency_stop_distance": (
-                self.map_emergency_stop_distance
-            ),
-            "slowdown_distance": self.slowdown_distance,
-            "cruise_max_speed": self.cruise_max_speed,
-            "avoidance_max_speed": self.avoidance_max_speed,
-            "vertical_target_step": self.vertical_target_step,
-            "avoidance_reuse_min_distance": (
-                self.avoidance_reuse_min_distance
-            ),
-            "vertical_band": self.vertical_band,
-            "safety_corridor_half_width": self.safety_corridor_half_width,
-            "max_search_nodes": self.max_search_nodes,
-            "global_return_inflation_radius": (
-                self.global_return_inflation_radius
-            ),
-            "global_return_trace_radius": self.global_return_trace_radius,
-            "global_return_above_height": self.global_return_above_height,
-            "global_return_below_height": self.global_return_below_height,
-            "global_return_max_search_nodes": (
-                self.global_return_max_search_nodes
-            ),
-            "ego_control_point_spacing": self.ego_control_point_spacing,
-            "ego_trajectory_lookahead_time": (
-                self.ego_trajectory_lookahead_time
-            ),
-            "ego_clearance": self.ego_clearance,
-            "ego_knot_interval": self.ego_knot_interval,
-            "ego_max_acceleration": self.ego_max_acceleration,
-            "ego_feasibility_tolerance": (
-                self.ego_feasibility_tolerance
-            ),
-            "ego_optimization_iterations": (
-                self.ego_optimization_iterations
-            ),
-            "ego_lbfgs_memory": self.ego_lbfgs_memory,
-            "ego_rebound_max_restarts": self.ego_rebound_max_restarts,
-            "ego_optimization_step": self.ego_optimization_step,
-            "ego_smoothness_weight": self.ego_smoothness_weight,
-            "ego_collision_weight": self.ego_collision_weight,
-            "ego_feasibility_weight": self.ego_feasibility_weight,
-            "ego_fitness_weight": self.ego_fitness_weight,
-            "ego_collision_check_step": self.ego_collision_check_step,
-        }
-        for name, value in positive.items():
-            if float(value) <= 0.0:
-                raise ValueError(f"{name} must be greater than zero.")
+        # String modes, flags and confirmation counts have separate rules.
+        excluded = {"navigation_mode", "return_navigation_mode", "unknown_is_occupied",
+                    "allow_diagonal", "no_path_confirmation_count", "clear_path_confirmation_count"}
+        for item in fields(self):
+            if item.name not in excluded and float(getattr(self, item.name)) <= 0.0:
+                raise ValueError(f"{item.name} must be greater than zero.")
         if self.slowdown_distance <= self.emergency_stop_distance:
             raise ValueError(
                 "slowdown_distance must exceed emergency_stop_distance."

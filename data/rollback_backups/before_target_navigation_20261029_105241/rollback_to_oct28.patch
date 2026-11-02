@@ -1,0 +1,1232 @@
+--- a/application/demo_runtime.py
++++ b/application/demo_runtime.py
+@@ -413,7 +413,7 @@
+             print("--- FAST-LIO 静止初始化中，初始化完成后才开始任务 ----", flush=True)
+             self.fastlio_recorder.wait_ready()
+             if self.fastlio_mode == 'live':
+-                print(f"--- FAST-LIO 三维占据建图：{self.run_output_dir / 'fastlio' / 'occupancy.html'}；导航仍使用 PX4 ----", flush=True)
++                print(f"--- FAST-LIO 实时实验地图：{self.run_output_dir / 'fastlio' / 'map.html'}；导航仍使用 PX4 ----", flush=True)
+         print("--- LiDAR enabled: Type20 / 360° / body FRD / LiDAR-only occupancy / camera semantic association ----")
+         if self.detection_worker is not None:
+             self.detection_worker.start()
+--- a/config/explore.json
++++ b/config/explore.json
+@@ -3,9 +3,9 @@
+     "使用方式": "修改下方实际参数，然后运行 python run_explore.py。命令行参数可临时覆盖。本说明字段不参与运行。",
+     "perception_backend": "识别后端切换：yolo_sam2 = YOLO-World 检测 + SAM2 分割（等价于 --sam2）；sam3 = SAM3 检测与分割（等价于 --sam3）。二选一。",
+     "sam3_url": "SAM3 服务地址，仅 sam3 后端使用；启动探索时自动管理本地服务。",
+-    "fastlio": "off = 关闭；record = 仅录制雷达和 IMU；shadow = 录制并计算 FAST-LIO 位姿；live = 使用 LIO 位姿建立点云和三维占据地图（fastlio/occupancy.html）。live 尚未接管导航。",
++    "fastlio": "off = 关闭；record = 仅录制雷达和 IMU；shadow = 录制并计算 FAST-LIO 位姿；live = 位姿加实时点云地图。live 尚未接管导航。",
+     "lidar_scan_model": "unverified = 未确认扫描时序，仅支持 record 或关闭 FAST-LIO；snapshot_assumed = 实验性假设整帧瞬时采集；snapshot = 已确认整帧瞬时采集。shadow/live 必须选择后两者之一。",
+-    "object_prompts": "启用车辆、消防/安全出口门及车库承重柱。parking garage structural column 统一记为 column；柱子要求可观测高度至少2.2m、竖直长宽比至少1.2、横向两个方向至少0.25m，并复用安全地标的0.30置信度与8帧确认门槛，排除矮柱和细长片段。SAM3和YOLO-World+SAM2共用此列表。",
++    "object_prompts": "启用车辆、消防/安全出口门及车库承重柱。parking garage structural column 统一记为 column；柱子保留多帧高度至少2.2m、竖直长宽比至少1.2的过滤，排除矮柱。SAM3和YOLO-World+SAM2共用此列表。",
+     "port": "探索会话服务端口，默认 8877；不是 WebSocket 的 8766，也不是 SAM3 的 8878。",
+     "timeout": "探索时间预算，单位秒。",
+     "max_radius": "最大探索半径，单位米。",
+--- a/detections/object_detect.py
++++ b/detections/object_detect.py
+@@ -99,7 +99,6 @@
+     instance_depth_noise_std: float = 0.60
+     column_min_vertical_extent: float = 2.2  # 多帧可观测高度下限（米），过滤矮柱
+     column_min_vertical_aspect_ratio: float = 1.2
+-    column_min_horizontal_extent: float = 0.25  # 多视角横向厚度下限；不把细长墙边或管线发布为柱子
+     instance_depth_min: float = 0.3
+     instance_depth_max: float = 15.0
+     instance_depth_stride: int = 4
+@@ -173,8 +172,6 @@
+             raise ValueError("instance_mask_pixel_noise_std 必须大于 0")
+         if self.instance_depth_noise_std <= 0:
+             raise ValueError("instance_depth_noise_std 必须大于 0")
+-        if self.column_min_horizontal_extent <= 0:
+-            raise ValueError("column_min_horizontal_extent 必须大于 0")
+         if self.column_min_vertical_extent <= 0:
+             raise ValueError("column_min_vertical_extent 必须大于 0")
+         if self.column_min_vertical_aspect_ratio <= 0:
+@@ -487,7 +484,6 @@
+             column_min_vertical_aspect_ratio=(
+                 self.config.column_min_vertical_aspect_ratio
+             ),
+-            column_min_horizontal_extent=self.config.column_min_horizontal_extent,
+             vehicle_max_association_distance=self.config.vehicle_max_association_distance,
+             vehicle_appearance_gate=self.config.vehicle_appearance_gate,
+             vehicle_ambiguity_margin=self.config.vehicle_ambiguity_margin,
+@@ -608,7 +604,7 @@
+                     self.config.instance_display_min_observations,
+                 )
+             )
+-            if (canonical_class_name(detection.class_name) in {'column', 'exit door', 'fire cabinet', 'fire extinguisher'}
++            if (canonical_class_name(detection.class_name) in {'exit door', 'fire cabinet', 'fire extinguisher'}
+                     and confirmed_instance_id is None):
+                 continue
+             color = (
+@@ -684,8 +680,6 @@
+         columns, vehicles, signs, cabinets, doors, others = [], [], [], [], [], []
+         for item in indexed:
+             name = canonical_class_name(item[1].class_name)
+-            if name == 'column' and item[1].confidence < self.config.safety_landmark_min_confidence:
+-                continue
+             if self._is_semantic_landmark(name) and name == "column":
+                 columns.append(item)
+             elif self._is_semantic_landmark(name) and name in VEHICLE_CLASSES:
+--- a/localization/fastlio_live_map.py
++++ b/localization/fastlio_live_map.py
+@@ -1,4 +1,4 @@
+-"""LIO point and probabilistic occupancy mapping, separate from flight control.
++"""Experimental LIO point map; never supplied to the flight planner.
+ 
+ The first tracking pose is aligned once to simultaneous PX4 NED. Subsequent
+ poses retain LIO drift; repeatedly anchoring to PX4 would hide that drift.
+@@ -6,8 +6,6 @@
+ import json
+ from html import escape
+ import time
+-import threading
+-from dataclasses import replace
+ from pathlib import Path
+ 
+ import numpy as np
+@@ -16,8 +14,6 @@
+ 
+ class FastLioLiveMap:
+     def __init__(self, directory, scan_model):
+-        if scan_model not in {'snapshot', 'snapshot_assumed'}:
+-            raise ValueError('FAST-LIO occupancy requires an explicit instantaneous scan model')
+         self.directory = Path(directory)
+         self.scan_model = scan_model
+         self.alignment = None
+@@ -26,34 +22,11 @@
+         self.last_publish = 0.
+         self.resolution = .15
+         self.timestamp = None
+-        from config.global_map_config import GlobalSparseMapConfig
+-        from config.lidar_config import LidarConfig
+-        from mapping.global_sparse_occupancy_map import GlobalSparseOccupancyMap
+-        self.occupancy = GlobalSparseOccupancyMap(replace(
+-            GlobalSparseMapConfig(), enabled=True, resolution=self.resolution,
+-            ray_step=self.resolution / 2, max_depth=LidarConfig().max_range,
+-            loop_closure_enabled=False, visualize=False, output_dir=self.directory,
+-        ))
+-        self._condition = threading.Condition()
+-        self._pending = None
+-        self._busy = False
+-        self._closed = False
+-        self._thread = None
+-        self.error = None
+-        self.estimator_error = None
+-        self.counts = dict(tracking_frames=0, integrated_scans=0, skipped_mapping_scans=0,
+-                           rejected_tracking_frames=0)
+-        from localization.fastlio_navigation_frames import FastLioNavigationFrames
+-        self.navigation_frames = FastLioNavigationFrames()
+         from localization.fastlio_semantics import FastLioSemantics
+         self.semantics = FastLioSemantics()
+ 
+-    def update(self, result, px4_pose, shared_timestamp=None, points_body=None):
+-        self.raise_if_failed()
+-        if self._closed:
+-            raise RuntimeError('FAST-LIO map is closed')
++    def update(self, result, px4_pose, shared_timestamp=None):
+         if result.get('status') != 'tracking':
+-            self.counts['rejected_tracking_frames'] += 1
+             return False
+         pose = np.asarray(result['pose'], dtype=float)
+         points = np.asarray(result['points_world'], dtype=float)
+@@ -61,108 +34,32 @@
+         if (pose.shape != (4, 4) or points.ndim != 2 or points.shape[1] != 3
+                 or px4.shape != (7,) or not all(np.isfinite(x).all() for x in (pose, points, px4))):
+             raise ValueError('Invalid FAST-LIO map pose/points')
+-        stamp = float(result['timestamp'])
+-        if not np.isfinite(stamp) or (self.timestamp is not None and stamp <= self.timestamp):
+-            raise ValueError('FAST-LIO map timestamps must increase')
+-        if points_body is not None:
+-            body = np.asarray(points_body, dtype=float)
+-            if body.ndim != 2 or body.shape[1] != 3 or not np.isfinite(body).all():
+-                raise ValueError('Invalid FAST-LIO body scan')
+-            # Type20 uses a zero mount transform and instantaneous scan model.
+-            # Use actual returns, not estimator voxel centroids, for ray evidence.
+-            points = body @ pose[:3, :3].T + pose[:3, 3]
+         if self.alignment is None:
+             anchor = np.eye(4)
+             anchor[:3, :3] = Rotation.from_quat(px4[[4, 5, 6, 3]]).as_matrix()
+             anchor[:3, 3] = px4[:3]
+             self.alignment = anchor @ np.linalg.inv(pose)
+         mapped = points @ self.alignment[:3, :3].T + self.alignment[:3, 3]
++        cells = np.unique(np.floor(mapped / self.resolution).astype(np.int64), axis=0)
++        self.cells.update(map(tuple, cells.tolist()))
+         current = self.alignment @ pose
+         if shared_timestamp is not None:
+             px4_transform = np.eye(4)
+             px4_transform[:3, :3] = Rotation.from_quat(px4[[4, 5, 6, 3]]).as_matrix()
+             px4_transform[:3, 3] = px4[:3]
+-            self.navigation_frames.add(float(shared_timestamp), current, px4_transform)
+             self.semantics.add_pose(float(shared_timestamp), current @ np.linalg.inv(px4_transform))
+         self.path.append(current[:3, 3].tolist())
+-        self.timestamp = stamp
+-        self.counts['tracking_frames'] += 1
+-        with self._condition:
+-            if self._pending is not None:
+-                self.counts['skipped_mapping_scans'] += 1
+-            self._pending = (current[:3, 3].copy(), mapped, stamp)
+-            if self._thread is None:
+-                self._thread = threading.Thread(target=self._map_loop, name='FastLioOccupancy', daemon=True)
+-                self._thread.start()
+-            self._condition.notify_all()
++        self.timestamp = float(result['timestamp'])
++        if time.monotonic() - self.last_publish >= 2.:
++            self.publish()
+         return True
+-
+-    def set_estimator_error(self, message):
+-        """Make a stopped estimator visible even while PX4 navigation continues."""
+-        self.estimator_error = str(message)
+-        self.navigation_frames.fail(message)
+-        self._write_status()
+-
+-    def _write_status(self):
+-        self.directory.mkdir(parents=True, exist_ok=True)
+-        from navigation.scene_memory import write_json
+-        write_json(self.directory / 'map_status.json', dict(
+-            status='failed' if self.error or self.estimator_error else
+-                   'closed' if self._closed else 'tracking',
+-            error=str(self.error) if self.error else self.estimator_error,
+-            last_source_timestamp=self.timestamp, counts=dict(self.counts),
+-            last_occupancy_timestamp=self.occupancy.last_update_timestamp,
+-            scan_model=self.scan_model, controls_navigation=False))
+-
+-    def raise_if_failed(self):
+-        if self.error is not None:
+-            raise RuntimeError('FAST-LIO occupancy mapping failed') from self.error
+-
+-    def _map_loop(self):
+-        try:
+-            while True:
+-                with self._condition:
+-                    while self._pending is None and not self._closed:
+-                        self._condition.wait()
+-                    if self._pending is None:
+-                        return
+-                    origin, points, stamp = self._pending
+-                    self._pending = None
+-                    self._busy = True
+-                self.occupancy.integrate_lidar_points(origin, points, stamp, origin)
+-                cells = np.unique(np.floor(points / self.resolution).astype(np.int64), axis=0)
+-                self.cells.update(map(tuple, cells.tolist()))
+-                self.counts['integrated_scans'] += 1
+-                if time.monotonic() - self.last_publish >= 2.:
+-                    self.publish()
+-                with self._condition:
+-                    self._busy = False
+-                    self._condition.notify_all()
+-        except Exception as error:
+-            with self._condition:
+-                self.error = error
+-                self._busy = False
+-                self._condition.notify_all()
+-            self._write_status()
+-
+-    def wait_idle(self, timeout=30.):
+-        """Drain mapping for deterministic offline replay without dropping scans."""
+-        deadline = time.monotonic() + timeout
+-        with self._condition:
+-            while self._pending is not None or self._busy:
+-                self.raise_if_failed()
+-                remaining = deadline-time.monotonic()
+-                if remaining <= 0:
+-                    raise TimeoutError('FAST-LIO occupancy mapping did not finish')
+-                self._condition.wait(remaining)
+-        self.raise_if_failed()
+ 
+     def publish(self):
+         if not self.path:
+             return
+         self.directory.mkdir(parents=True, exist_ok=True)
+         cells = np.asarray(sorted(self.cells), dtype=np.int64).reshape(-1, 3)
+-        path = np.asarray(self.path.copy())
++        path = np.asarray(self.path)
+         # This is an XY projection of returns at ALL heights, not a free-space grid.
+         xy = np.unique(cells[:, :2], axis=0) * self.resolution
+         extent = np.vstack((xy, path[:, :2]))
+@@ -188,7 +85,6 @@
+         html = (f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="3">'
+                 f'<title>FAST-LIO experimental map</title><p>FAST-LIO 实时点云地图（非导航占据地图）'
+                 f'；扫描模型：{self.scan_model}；时间：{self.timestamp:.3f}；帧数：{len(path)}。'
+-                '<a href="occupancy.html">查看三维占据地图高度切片</a>。'
+                 '全部高度的回波投影；灰色不代表当前飞行高度不可通行。蓝色标签为 LIO 独立语义实例（不与旧地图 ID 通用）。PX4 继续控制飞行。<a href="scene_graph.json">物体与观测图 JSON</a></p>'
+                 f'<svg width="95vw" height="85vh" viewBox="{low[0]} {low[1]} {span[0]} {span[1]}">'
+                 f'<g fill="#78858b">{rects}</g><polyline points="{line}" fill="none" stroke="#1677ff" '
+@@ -196,59 +92,9 @@
+         temporary = self.directory / 'map.html.tmp'
+         temporary.write_text(html, encoding='utf-8')
+         temporary.replace(self.directory / 'map.html')
+-        self._publish_occupancy()
+-        self._write_status()
+         self.last_publish = time.monotonic()
+ 
+-    def _publish_occupancy(self):
+-        snapshot = self.occupancy.snapshot()
+-        occupied = snapshot.occupied_points_ned
+-        free = snapshot.free_points_ned
+-        # Browser preview only; saved occupancy and PLY retain every voxel.
+-        occupied = occupied[::max(1, int(np.ceil(len(occupied)/100000)))]
+-        free = free[::max(1, int(np.ceil(len(free)/100000)))]
+-        payload = json.dumps(dict(occupied=occupied.tolist(), free=free.tolist(),
+-                                  path=self.path.copy(), resolution=self.resolution), allow_nan=False)
+-        html = '''<!doctype html><meta charset="utf-8"><title>FAST-LIO occupancy</title>
+-<style>body{font:16px sans-serif;margin:20px}canvas{width:95vw;height:75vh;background:#f1f3f5}</style>
+-<h2>FAST-LIO 三维占据地图 · 高度切片</h2><p id="status"></p>
+-<p>红：占据；绿：已观测自由；灰：未显示体素（含未知，预览可能抽稀）。蓝：轨迹投影。
+-初始对齐至 PX4 NED，随后使用 LIO 位姿。
+-尚未接管飞行导航。<a href="map.html">全部高度点云</a></p>
+-<label>切片 NED z <input id="height" type="range" step="0.15"><output id="value"></output></label>
+-<button onclick="location.reload()">刷新</button><canvas id="map" width="1400" height="850"></canvas>
+-<script>const data=PAYLOAD;
+-const slider=document.getElementById('height'), canvas=document.getElementById('map'),ctx=canvas.getContext('2d');
+-const all=data.occupied.concat(data.free); let lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];
+-for(const p of all)for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p[i]);hi[i]=Math.max(hi[i],p[i]);}
+-if(!all.length){lo=[-1,-1,-1];hi=[1,1,1];}
+-slider.min=lo[2];slider.max=hi[2];slider.value=data.path.at(-1)[2];
+-function draw(){let z=Number(slider.value);document.getElementById('value').textContent=z.toFixed(2)+' m';
+-ctx.clearRect(0,0,canvas.width,canvas.height);
+-let scale=Math.min((canvas.width-40)/Math.max(hi[0]-lo[0],1),(canvas.height-40)/Math.max(hi[1]-lo[1],1));
+-function point(p,color,size){ctx.fillStyle=color;ctx.fillRect(20+(p[0]-lo[0])*scale,20+(p[1]-lo[1])*scale,size,size);}
+-for(const [points,color] of [[data.free,'#a2d9ac'],[data.occupied,'#d44949']])
+-for(const p of points)if(Math.abs(p[2]-z)<=data.resolution/2+1e-6)point(p,color,Math.max(1,data.resolution*scale));
+-for(const p of data.path)point(p,'#1677ff',2);point(data.path.at(-1),'#111',7);}
+-slider.oninput=draw;draw();
+-async function status(){try{const s=await(await fetch('map_status.json',{cache:'no-store'})).json();
+-document.getElementById('status').textContent=s.status+(s.error?' · '+s.error:'')+' · '+s.scan_model;
+-document.getElementById('status').style.color=s.status==='failed'?'#b00020':'#333';}catch(e){
+-document.getElementById('status').textContent='无法读取实时状态；若通过文件打开，请检查同目录 map_status.json';}}
+-status();setInterval(status,3000);</script>'''.replace('PAYLOAD', payload)
+-        temporary = self.directory / 'occupancy.html.tmp'
+-        temporary.write_text(html, encoding='utf-8')
+-        temporary.replace(self.directory / 'occupancy.html')
+-
+     def close(self):
+-        with self._condition:
+-            self._closed = True
+-            self._condition.notify_all()
+-        if self._thread is not None:
+-            self._thread.join(timeout=30.)
+-            if self._thread.is_alive():
+-                raise TimeoutError('FAST-LIO occupancy worker did not stop')
+-        self.raise_if_failed()
+         self.semantics.drain(final=True)
+         self.publish()
+         if self.alignment is None:
+@@ -256,33 +102,7 @@
+         np.savez_compressed(self.directory / 'live_map.npz',
+                             voxel_indices=np.asarray(sorted(self.cells)), resolution=self.resolution,
+                             trajectory=np.asarray(self.path), alignment=self.alignment)
+-        snapshot = self.occupancy.snapshot()
+-        np.savez_compressed(self.directory / 'occupancy_map.npz',
+-                            indices=snapshot.indices, log_odds=snapshot.log_odds,
+-                            resolution=snapshot.resolution,
+-                            occupied_threshold=snapshot.occupied_threshold,
+-                            free_threshold=snapshot.free_threshold,
+-                            trajectory=np.asarray(self.path), alignment=self.alignment,
+-                            frame='lio_aligned_to_initial_px4_ned', timestamp=snapshot.timestamp)
+-        self.occupancy.export_occupied_ply(self.directory / 'occupied.ply')
+-        occupancy_path = self.occupancy.save(self.directory / 'occupancy_map.h5')
+-        import h5py
+-        with h5py.File(occupancy_path, 'r+') as output:
+-            output.attrs['world_frame'] = 'lio_aligned_to_initial_px4_ned'
+-            output.attrs['pose_source'] = 'FAST-LIO'
+-            output.attrs['scan_model'] = self.scan_model
+-            output.attrs['controls_navigation'] = False
+-            output.create_dataset('initial_lio_to_ned', data=self.alignment)
+-            output.create_dataset('trajectory_ned', data=np.asarray(self.path))
+         (self.directory / 'live_map.json').write_text(json.dumps(dict(
+             frame='lio_aligned_to_initial_px4_ned', scan_model=self.scan_model,
+-            controls_navigation=False, representation='point_hits_and_raycast_occupancy',
+-            point_map_representation='point_hits_not_free_space',
+-            tracking_frames=len(self.path), last_timestamp=self.timestamp,
+-            occupancy=dict(representation='raycast_log_odds', resolution=self.resolution,
+-                           voxel_count=snapshot.voxel_count, occupied_count=snapshot.occupied_count,
+-                           free_count=len(snapshot.free_points_ned),
+-                           dropped_new_voxels=snapshot.dropped_new_voxels,
+-                           **self.counts),
+-            scan_timing_verified=self.scan_model == 'snapshot',
+-            loop_closure_applied=False), indent=2), encoding='utf-8')
++            controls_navigation=False, representation='point_hits_not_free_space',
++            tracking_frames=len(self.path), last_timestamp=self.timestamp), indent=2), encoding='utf-8')
+--- a/localization/fastlio_navigation_frames.py
++++ b/localization/fastlio_navigation_frames.py
+@@ -1,156 +0,0 @@
+-"""Time-bounded transforms between the LIO map and the PX4 control frame.
+-
+-This module performs coordinate conversions only. It does not issue commands
+-or substitute PX4 poses for missing LIO tracking samples.
+-"""
+-from collections import deque
+-from dataclasses import dataclass
+-import threading
+-import time
+-
+-import numpy as np
+-from scipy.spatial.transform import Rotation, Slerp
+-
+-
+-@dataclass(frozen=True)
+-class FrameSample:
+-    timestamp: float
+-    received_monotonic: float
+-    map_from_body: np.ndarray
+-    px4_from_body: np.ndarray
+-
+-
+-def _rigid(value):
+-    pose = np.asarray(value, dtype=float)
+-    if (pose.shape != (4, 4) or not np.isfinite(pose).all()
+-            or not np.allclose(pose[3], [0., 0., 0., 1.], atol=1e-7)
+-            or not np.allclose(pose[:3, :3].T @ pose[:3, :3], np.eye(3), atol=1e-5)
+-            or not np.isclose(np.linalg.det(pose[:3, :3]), 1., atol=1e-5)):
+-        raise ValueError('Expected a finite rigid SE(3) pose')
+-    result = pose.copy()
+-    result.setflags(write=False)
+-    return result
+-
+-
+-def _interpolate(a, b, fraction):
+-    result = np.eye(4)
+-    result[:3, :3] = Slerp([0., 1.], Rotation.from_matrix(
+-        np.stack([a[:3, :3], b[:3, :3]])))(fraction).as_matrix()
+-    result[:3, 3] = a[:3, 3] * (1. - fraction) + b[:3, 3] * fraction
+-    return result
+-
+-
+-class FastLioNavigationFrames:
+-    """Pair LIO and PX4 poses; use matched LIO poses as map coordinates.
+-
+-    T_map_from_px4 is updated from paired same-time body poses. It is used
+-    only to express map goals in the PX4 control frame, and to associate
+-    already synchronized observations with the LIO map frame.
+-    """
+-    def __init__(self, *, max_age=1., max_interpolation_gap=.5, capacity=512,
+-                 clock=time.monotonic, wall_clock=time.time):
+-        if max_age <= 0 or max_interpolation_gap <= 0 or capacity < 2:
+-            raise ValueError('Invalid FAST-LIO frame limits')
+-        self.max_age = float(max_age)
+-        self.max_interpolation_gap = float(max_interpolation_gap)
+-        self.clock = clock
+-        self.wall_clock = wall_clock
+-        self._samples = deque(maxlen=capacity)
+-        self._error = None
+-        self._lock = threading.Lock()
+-
+-    def add(self, timestamp, map_from_body, px4_from_body):
+-        stamp = float(timestamp)
+-        if not np.isfinite(stamp):
+-            raise ValueError('Invalid FAST-LIO shared timestamp')
+-        sample = FrameSample(stamp, float(self.clock()), _rigid(map_from_body),
+-                             _rigid(px4_from_body))
+-        with self._lock:
+-            if self._error is not None:
+-                raise RuntimeError('FAST-LIO frame source failed') from self._error
+-            if self._samples and stamp <= self._samples[-1].timestamp:
+-                raise ValueError('FAST-LIO shared timestamps must increase')
+-            self._samples.append(sample)
+-
+-    def fail(self, error):
+-        with self._lock:
+-            self._error = error if isinstance(error, Exception) else RuntimeError(str(error))
+-
+-    def latest(self):
+-        with self._lock:
+-            error = self._error
+-            sample = self._samples[-1] if self._samples else None
+-        if error is not None:
+-            raise RuntimeError('FAST-LIO frame source failed') from error
+-        if sample is None:
+-            raise RuntimeError('FAST-LIO frame source is not ready')
+-        age = float(self.clock()) - sample.received_monotonic
+-        if age < 0 or age > self.max_age:
+-            raise RuntimeError(f'FAST-LIO frame source is stale: {age:.3f}s')
+-        # Tracking results can be computed late from queued scans. Their
+-        # publication time alone must not make an old source frame look fresh.
+-        source_age = float(self.wall_clock()) - sample.timestamp
+-        if source_age < -.05 or source_age > self.max_age:
+-            raise RuntimeError(f'FAST-LIO source timestamp is stale: {source_age:.3f}s')
+-        return sample
+-
+-    def at(self, timestamp):
+-        """Interpolate paired poses for a sensor timestamp; never extrapolate."""
+-        stamp = float(timestamp)
+-        if not np.isfinite(stamp):
+-            raise ValueError('Invalid sensor timestamp')
+-        with self._lock:
+-            error, samples = self._error, tuple(self._samples)
+-        if error is not None:
+-            raise RuntimeError('FAST-LIO frame source failed') from error
+-        stamps = np.asarray([sample.timestamp for sample in samples])
+-        i = int(np.searchsorted(stamps, stamp))
+-        if i < len(samples) and samples[i].timestamp == stamp:
+-            return samples[i]
+-        if i == 0 or i == len(samples):
+-            raise ValueError('Sensor timestamp outside LIO pose history')
+-        before, after = samples[i - 1], samples[i]
+-        gap = after.timestamp - before.timestamp
+-        if gap > self.max_interpolation_gap:
+-            raise ValueError('LIO pose history gap exceeds limit')
+-        fraction = (stamp - before.timestamp) / gap
+-        return FrameSample(stamp, after.received_monotonic,
+-                           _rigid(_interpolate(before.map_from_body, after.map_from_body, fraction)),
+-                           _rigid(_interpolate(before.px4_from_body, after.px4_from_body, fraction)))
+-
+-    @staticmethod
+-    def map_from_px4(sample):
+-        return sample.map_from_body @ np.linalg.inv(sample.px4_from_body)
+-
+-    def px4_goal(self, map_point):
+-        point = np.asarray(map_point, dtype=float)
+-        if point.shape != (3,) or not np.isfinite(point).all():
+-            raise ValueError('Invalid map waypoint')
+-        px4_from_map = np.linalg.inv(self.map_from_px4(self.latest()))
+-        return px4_from_map[:3, :3] @ point + px4_from_map[:3, 3]
+-
+-    def px4_position_command(self, map_point, map_yaw):
+-        """Convert position and heading with one consistent frame sample."""
+-        point = np.asarray(map_point, dtype=float)
+-        yaw = float(map_yaw)
+-        if point.shape != (3,) or not np.isfinite(point).all() or not np.isfinite(yaw):
+-            raise ValueError('Invalid map position command')
+-        px4_from_map = np.linalg.inv(self.map_from_px4(self.latest()))
+-        rotation = px4_from_map[:3, :3]
+-        heading = rotation @ np.array([np.cos(yaw), np.sin(yaw), 0.])
+-        if np.linalg.norm(heading[:2]) < 1e-6:
+-            raise ValueError('Map heading is vertical in the control frame')
+-        return (rotation @ point + px4_from_map[:3, 3],
+-                float(np.arctan2(heading[1], heading[0])))
+-
+-    def px4_velocity(self, map_velocity):
+-        velocity = np.asarray(map_velocity, dtype=float)
+-        if velocity.shape != (3,) or not np.isfinite(velocity).all():
+-            raise ValueError('Invalid map velocity command')
+-        px4_from_map = np.linalg.inv(self.map_from_px4(self.latest()))
+-        return px4_from_map[:3, :3] @ velocity
+-
+-    def map_observation_pose(self, timestamp, px4_from_sensor):
+-        """Transform a synchronized camera pose into the LIO map frame."""
+-        sample = self.at(timestamp)
+-        return self.map_from_px4(sample) @ _rigid(px4_from_sensor)
+--- a/localization/fastlio_recording.py
++++ b/localization/fastlio_recording.py
+@@ -135,7 +135,7 @@
+                             if backend is not None and shadow_error is None:
+                                 if value[0] <= last_source:
+                                     shadow_error='IMU source time duplicated or moved backwards'
+-                                    self._report_estimator_error(shadow_error)
++                                    self.estimator_error = shadow_error
+                                 else:
+                                     pending_imu.append(value[:7]);last_source=value[0]
+                             continue
+@@ -157,7 +157,7 @@
+                                     last_processed=stamp
+                                     pending_imu=[r for r in pending_imu if r[0]>stamp]
+                                     if self.live_map is not None:
+-                                        self.live_map.update(result, pose, received, points_body=points)
++                                        self.live_map.update(result, pose, received)
+                                         result['shared_timestamp'] = received
+                                         if result.get('status') == 'tracking':
+                                             result['px4_to_lio_map'] = self.live_map.semantics.poses[-1][1]
+@@ -169,7 +169,7 @@
+                                     trajectory.write(json.dumps(result,allow_nan=False)+'\n')
+                                 except Exception as error:
+                                     shadow_error=f'{type(error).__name__}: {error}'
+-                                    self._report_estimator_error(shadow_error)
++                                    self.estimator_error = shadow_error
+                         if self.counts['scans'] % 10 == 0:
+                             output.flush();trajectory.flush()
+                     flush_imu()
+@@ -183,12 +183,6 @@
+             (self.directory/'capture_report.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
+             if self.error or shadow_error:
+                 print(f'--- FAST-LIO recording/shadow diagnostic: {self.error or shadow_error} ----',flush=True)
+-
+-    def _report_estimator_error(self, message):
+-        self.estimator_error = message
+-        if self.live_map is not None:
+-            self.live_map.set_estimator_error(message)
+-        print(f'--- FAST-LIO 定位建图已停止：{message}；PX4 导航仍独立运行 ----', flush=True)
+ 
+     def wait_ready(self, timeout=45.):
+         deadline = time.monotonic() + timeout
+--- a/mapping/semantic_instance_mapper.py
++++ b/mapping/semantic_instance_mapper.py
+@@ -153,7 +153,6 @@
+         duplicate_merge_distance_xy=1.5,
+         column_min_vertical_extent=2.2,
+         column_min_vertical_aspect_ratio=1.2,
+-        column_min_horizontal_extent=0.25,
+         vehicle_max_association_distance=2.5,
+         vehicle_appearance_gate=0.55,
+         vehicle_ambiguity_margin=0.12,
+@@ -180,7 +179,6 @@
+         self.column_min_vertical_aspect_ratio = float(
+             column_min_vertical_aspect_ratio
+         )
+-        self.column_min_horizontal_extent = float(column_min_horizontal_extent)
+         self.vehicle_map_min_confidence = float(vehicle_map_min_confidence)
+         if not 0 < self.vehicle_map_min_confidence <= 1:
+             raise ValueError("vehicle_map_min_confidence must be in (0, 1]")
+@@ -502,10 +500,6 @@
+         required = max(int(min_observations), self.sign_min_observations) if canonical in {"signboard", "exit sign"} else int(min_observations)
+         if canonical in {'exit door', 'fire cabinet', 'fire extinguisher'}:
+             required = max(required, self.safety_landmark_min_observations)
+-        if canonical == 'column':
+-            required = max(required, self.safety_landmark_min_observations)
+-            if landmark.confidence < self.safety_landmark_min_confidence:
+-                return None
+         if landmark.observation_count < required:
+             return None
+         if not self._has_valid_landmark_geometry(
+@@ -521,10 +515,6 @@
+         """导出统一身份；过滤或合并不会给剩余物体重新编号。"""
+         records = []
+         for memory in self.snapshot():
+-            if memory.class_name == 'column' and (
+-                    memory.confidence < self.safety_landmark_min_confidence
+-                    or memory.observation_count < self.safety_landmark_min_observations):
+-                continue
+             if memory.class_name in VEHICLE_CLASSES and memory.confidence < self.vehicle_map_min_confidence:
+                 continue
+             required = (max(int(min_observations), self.sign_min_observations)
+@@ -949,7 +939,6 @@
+             return True
+         return (
+             vertical_extent >= self.column_min_vertical_extent
+-            and min(extents[:2]) >= self.column_min_horizontal_extent
+             and vertical_extent
+             >= self.column_min_vertical_aspect_ratio
+             * max(horizontal_extent, 1e-6)
+@@ -973,8 +962,6 @@
+             raise ValueError(
+                 "duplicate_merge_distance_xy must be greater than zero"
+             )
+-        if self.column_min_horizontal_extent <= 0:
+-            raise ValueError("column_min_horizontal_extent must be positive")
+         if self.column_min_vertical_extent <= 0:
+             raise ValueError("column_min_vertical_extent must be positive")
+         if self.column_min_vertical_aspect_ratio <= 0:
+--- a/navigation/frontier_explorer.py
++++ b/navigation/frontier_explorer.py
+@@ -118,12 +118,7 @@
+ 
+     def _frame(self):
+         try:
+-            # Semantic inference does not certify collision clearance. During
+-            # transit, tolerate its existing bounded recovery interval while
+-            # LiDAR map freshness and body clearance remain checked normally.
+-            max_age = (max(self.config.perception_timeout, self.exploration_config.perception_recovery_timeout)
+-                       if self._motion_progress is not None else self.config.perception_timeout)
+-            frame = super()._frame(max_age=max_age)
++            frame = super()._frame()
+         except RuntimeError as error:
+             if str(error) != "semantic_perception_stale":
+                 raise
+@@ -354,10 +349,7 @@
+             if local.cell(point) not in local.free:
+                 continue
+             distance = float(np.linalg.norm(point[:2]-current[:2]))
+-            # At a coarse-grid boundary the nearest certified center can be
+-            # only 20cm away. Requiring an 80cm move skips that valid escape
+-            # and sends every new frontier through the same invalid start.
+-            if (.5*global_grid.resolution <= distance <= 2.4
++            if (max(.8, 2*self.config.arrival_tolerance) <= distance <= 2.4
+                     and global_grid.cell(point) in global_grid.free
+                     and np.linalg.norm(point[:2]-self.exploration_origin[:2]) <= self.exploration_config.max_radius):
+                 candidates.append((distance, point))
+@@ -385,10 +377,7 @@
+                 self._wait(min(0.2, end-self.clock()))
+                 self._frame()
+                 grid = self._grid()
+-                position = self.vehicle.get_position()
+-                if (grid.cell(position) in grid.free
+-                        and (recovery_goal is None or np.linalg.norm(position[:2]-recovery_goal[:2])
+-                             <= min(.05, self.config.arrival_tolerance))):
++                if grid.cell(self.vehicle.get_position()) in grid.free:
+                     self._event("FREE_SPACE_EVIDENCE_RECOVERED",
+                                 via="local_certified_path" if recovery_goal is not None else "map_update")
+                     return grid
+--- a/navigation/mission.py
++++ b/navigation/mission.py
+@@ -350,12 +350,12 @@
+             self.trajectory.append(p.copy())
+         return p
+ 
+-    def _frame(self, *, max_age=None):
++    def _frame(self):
+         self.perception.raise_if_failed()
+         frame = self.perception.semantic_snapshot()
+         if (
+             frame is None
+-            or self.clock() - frame.completed_at > (self.config.perception_timeout if max_age is None else max_age)
++            or self.clock() - frame.completed_at > self.config.perception_timeout
+         ):
+             raise RuntimeError("semantic_perception_stale")
+         self._latencies[frame.timestamp] = frame.inference_seconds
+--- a/planner/waypoint_planning_worker.py
++++ b/planner/waypoint_planning_worker.py
+@@ -121,15 +121,5 @@
+                 if self._stopped:
+                     return
+                 if generation == self._generation:
+-                    previous = self._latest
+-                    # A failed solve does not invalidate an already published
+-                    # route. Keep it for THIS target only; the flight thread
+-                    # still revalidates its chord on the newest geometry before
+-                    # every command. Hard stop statuses must replace it.
+-                    reuse = (error is None and previous is not None
+-                             and result.plan.status in {'transient_no_path', 'no_path'}
+-                             and previous.plan.can_move
+-                             and np.array_equal(previous.target, target)
+-                             and callable(getattr(self.planner, 'revalidate_plan', None)))
+-                    self._latest, self._error = (previous if reuse else result), error
++                    self._latest, self._error = result, error
+             next_update = started+1./self.planner.config.replan_rate
+--- a/readme/FAST_LIO三维占据建图.md
++++ b/readme/FAST_LIO三维占据建图.md
+@@ -1,75 +0,0 @@
+-# FAST-LIO 三维占据建图（2026-10-29）
+-
+-`live` 模式现在将实际雷达回波与同帧 FAST-LIO 位姿送入独立的三维概率占据地图。
+-原有 `map.html` 和 `live_map.npz` 继续保留；原导航仍使用 PX4，尚未把 LIO 地图送入 A*/EGO。
+-这次完成建图接入，不等同于导航定位接管，也不代表实际精度已经验收。
+-
+-## 启动与输出
+-
+-在现有项目 Python 环境运行 `python run_explore.py`，默认配置已为 `fastlio: live`。
+-当前 `lidar_scan_model: snapshot_assumed` 是瞬时扫描假设，只有获得传感器扫描时序证据后
+-才改成 `snapshot`，不能通过修改标记证明时序正确。
+-
+-本次运行目录的 `fastlio/` 新增：
+-
+-- `occupancy.html`：三维地图的可选高度 XY 切片，红色占据、绿色自由，蓝色为轨迹投影。
+-  页面只为预览，每类最多约十万个体素；灰色也可能来自预览抽稀，不可当作规划证据。
+-  点击刷新更新几何；实时状态通过同目录 `map_status.json` 查询，直接用文件协议打开时
+-  浏览器可能阻止查询，此时直接查看 JSON。
+-- `occupancy_map.npz`：完整体素索引、log-odds、分辨率、占据/自由阈值、轨迹、初始对齐矩阵。
+-  未记录的索引为未知；已记录但在两个阈值之间的体素仍是不确定状态。
+-- `occupancy_map.h5`：复用项目稀疏占据地图格式，坐标轴为初始 PX4 NED 对齐的 LIO 地图轴。
+-- `occupied.ply`：最终占据体素中心，可由 CloudCompare/Open3D 打开。
+-- `map_status.json`：tracking/failed/closed、源时间、错误与融合/跳帧计数。
+-- `live_map.json`：增加占据统计、扫描模型声明、无回环校正声明。
+-
+-## 融合与线程
+-
+-首次 tracking 用同期 PX4 位姿作一次刚体对齐。后续雷达位置、朝向和射线起点全部来自
+-LIO，不逐帧重新对齐 PX4，不用 PX4 填补 LIO 失效段。
+-当前 Type20 零安装位移、统一机体 FRD，使用实际原始回波，而不是估计器降采样后的
+-体素质心构造射线。估计器仍使用原有输入、滤波与 tracking 判定。
+-
+-地图为 0.15m 体素，射线采样间距 0.075m，量程使用 LidarConfig.max_range（30m），
+-避免沿用深度相机地图的 10m 上限而截断雷达。回波端点增加占据证据，射线内部增加自由证据；
+-没有回波的方向、端点后方不会被补成自由。未启用机身自由空间填充。
+-同帧端点不会被该帧自由射线擦除；跨帧证据按现有 log-odds 累积。
+-
+-占据融合和页面导出在 `FastLioOccupancy` 线程执行，待处理扫描最多一份。
+-负载过高时只保留最新扫描，丢弃数量记录为 `skipped_mapping_scans`，不能据此声称完整覆盖。
+-关闭时处理待完成扫描，停止线程后导出完整地图；后台错误显式上报。
+-语义仍走原有按时间插值的 LIO 独立语义关联链路。
+-
+-## 离线重建与验证
+-
+-无需重新飞行或重新运行原生估计器：
+-
+-```powershell
+-python tools/build_fastlio_map.py data/runs/run_20261029_101001_223727 --output data/fastlio_validation/自选新目录
+-```
+-
+-输出目录必须不存在，原始数据不会被覆盖。工具按录制源时间匹配 tracking 位姿和真实扫描，
+-逐帧等待融合，不跳帧，不用 PX4 代替缺失的 LIO；本工具不重放语义测量。
+-`reconstruction_report.json` 保存未匹配扫描数、IMU 空档、原估计器错误。
+-
+-本次原始运行共有 706 帧雷达。原估计器约运行 23 秒后停止，错误为
+-`IMU gap exceeds 100 ms`；HIGHRES_IMU 源时间中确有 0.172 秒空档。
+-因此只能从已有 tracking 记录重建前缀，不能恢复完整探索地图。
+-在线现已即时提示此类错误，状态文件保留 failed，不再只有结束时的 capture_report 提示。
+-没有放宽时间阈值、插值补造 IMU 或伪装 tracking。
+-
+-精度验收还需实际数据：检查输入时序/外参、墙面重影和厚度、UE 真值轨迹、真实闭环误差。
+-单独比较 PX4 或平面残差不能证明绝对精度；本次没有新增 FAST-LIO 回环后端。
+-
+-## 本轮验证结果
+-
+-Windows 项目环境 `Segm-Navi-python3.10`：
+-`python -X utf8 -m unittest discover -s tests -p "test_fastlio_*.py"`，27 项通过。
+-新增验证实际回波而非质心参与融合、自由射线与端点后方未知状态、初始对齐后不追随 PX4、
+-慢融合时有界跳帧、后台错误传播、线程关闭和离线缺失位姿不补填。
+-
+-已有录制重建位于 `data/fastlio_validation/occupancy_20261029_101001/`。
+-117 个有效 tracking 扫描全部融合，无跳帧；370542 个体素，22737 个占据、345329 个自由，
+-其余为阈值之间的不确定体素，没有超过容量而丢失新体素。
+-另外 589 帧没有 tracking 位姿，未重建。原始 run 文件未改动。
+-这验证建图接线和保存流程，不代表 UE 真值精度或在线飞行验证。
+--- a/readme/FAST_LIO原生接入与验证.md
++++ b/readme/FAST_LIO原生接入与验证.md
+@@ -1,9 +1,4 @@
+ # FAST-LIO2 原生接入与验证
+-
+-2026-10-29 更新：`live` 现已接入独立三维概率占据建图，新增自由空间射线融合、
+-`occupancy.html` 高度切片、HDF5/NPZ/PLY 导出及失效提示。详见
+-[FAST_LIO三维占据建图](FAST_LIO三维占据建图.md)。下面较早阶段中“只有回波点云”的描述
+-仅对应旧实现；导航定位与飞行控制仍未切换到 LIO。
+ 
+ ## 当前阶段（2026-10-22）
+ 
+--- a/run_explore.py
++++ b/run_explore.py
+@@ -89,7 +89,7 @@
+     parser.set_defaults(perception_backend="yolo_sam2")
+     parser.add_argument("--sam3-url", default="http://127.0.0.1:8878")
+     parser.add_argument("--fastlio", choices=("off", "record", "shadow", "live"),
+-                        help="record: raw inputs; shadow: LIO poses; live: LIO point/occupancy maps (navigation unchanged)")
++                        help="record: raw inputs; shadow: LIO poses; live: LIO poses and point map (navigation unchanged)")
+     parser.add_argument("--lidar-scan-model", choices=("unverified", "snapshot", "snapshot_assumed"), default="unverified",
+                         help="snapshot requires verified instantaneous scans; snapshot_assumed is an explicit experimental assumption")
+     parser.add_argument("--object-prompts", nargs="+", help='Shared prompts, e.g. car "fire hose cabinet"')
+--- a/tests/test_async_waypoint_reference.py
++++ b/tests/test_async_waypoint_reference.py
+@@ -17,45 +17,6 @@
+ 
+ 
+ class AsyncWaypointReferenceTests(unittest.TestCase):
+-    def test_failed_resolve_keeps_same_target_route_but_hard_stop_replaces_it(self):
+-        second, third, release = threading.Event(), threading.Event(), threading.Event()
+-        calls = [0]
+-        def solve(current, target):
+-            calls[0] += 1
+-            if calls[0] == 1:
+-                return clear_plan(current, target)
+-            if calls[0] == 2:
+-                second.set()
+-                return LocalPlan('transient_no_path', None, np.empty((0,3)), 0.)
+-            third.set()
+-            release.wait(2.)
+-            return LocalPlan('stale_map', None, np.empty((0,3)), 0.)
+-        worker = WaypointPlanningWorker(NS(config=PlannerConfig(), plan=solve, revalidate_plan=Mock()))
+-        current, target = np.zeros(3), np.ones(3)
+-        try:
+-            end = time.monotonic()+1.
+-            update = None
+-            while update is None and time.monotonic()<end:
+-                update = worker.poll(current, target, current)
+-                time.sleep(.01)
+-            self.assertIsNotNone(update)
+-            worker.poll(current, target, current)
+-            self.assertTrue(second.wait(1.))
+-            worker.poll(current, target, current)
+-            self.assertTrue(third.wait(1.))  # Second solve has completed publication.
+-            self.assertIs(worker.poll(current, target, current), update)
+-            release.set()
+-            end = time.monotonic()+1.
+-            while time.monotonic()<end:
+-                latest = worker.poll(current, target, current)
+-                if latest.plan.status == 'stale_map':
+-                    break
+-                time.sleep(.01)
+-            self.assertEqual(latest.plan.status, 'stale_map')
+-            self.assertFalse(latest.plan.can_move)
+-        finally:
+-            release.set()
+-            worker.close()
+ 
+     def test_initial_async_wait_does_not_consume_failure_evidence_budget(self):
+         from navigation.mission import _FlightGuard
+--- a/tests/test_explore_startup_config.py
++++ b/tests/test_explore_startup_config.py
+@@ -15,16 +15,14 @@
+         _, args = parse_config([], include_perception=True)
+         self.assertIn('parking garage structural column', args.object_prompts)
+         mapper = SemanticInstanceMapper(landmark_classes=tuple(args.object_prompts))
+-        names = ['parking garage structural column'] * 4
++        names = ['parking garage structural column'] * 2
+         observations = []
+-        for x, height in [(0., 2.6), (5., .8), (10., 2.6), (15., 2.6)]:
++        for x, height in [(0., 2.6), (5., .8)]:
+             low = np.array([x, 0., -height])
+             high = np.array([x+.5, .5, 0.])
+-            if x == 10.:
+-                high[0] = x + .03  # Tall wall/pipe fragment, not a supported column.
+             observations.append(SemanticObservation3D((low+high)/2, low, high, np.eye(3)*.01))
+-        for stamp in range(1, 9):
+-            mapper.update(names, [.8, .8, .8, .15], observations, stamp)
++        for stamp in (1., 2., 3.):
++            mapper.update(names, [.8, .8], observations, stamp)
+         records = mapper.semantic_map_records(min_observations=3)
+         self.assertEqual(len(records), 1)
+         self.assertEqual(records[0]['class_name'], 'column')
+--- a/tests/test_fastlio_live_map.py
++++ b/tests/test_fastlio_live_map.py
+@@ -1,8 +1,6 @@
+ import json
+ import tempfile
+ import unittest
+-import threading
+-from unittest.mock import patch
+ from pathlib import Path
+ 
+ import numpy as np
+@@ -12,98 +10,6 @@
+ 
+ 
+ class LiveMapTests(unittest.TestCase):
+-    def test_real_scan_rays_and_lio_pose_own_occupancy(self):
+-        with tempfile.TemporaryDirectory() as tmp:
+-            mapping = FastLioLiveMap(tmp, 'snapshot_assumed')
+-            pose = np.eye(4)
+-            px4 = np.array([0., 0., 0., 1., 0., 0., 0.])
+-            # Estimator centroids are deliberately different from actual hits.
+-            result = dict(status='tracking', timestamp=1., pose=pose,
+-                          points_world=np.array([[8., 0., 0.]]))
+-            mapping.update(result, px4, points_body=np.array([[1.55, 0., 0.]]))
+-            mapping.wait_idle()
+-            pose[1, 3] = .6
+-            result['timestamp'] = 2.
+-            px4[0] = 100.  # LIO, not later PX4, positions the second scan.
+-            mapping.update(result, px4, points_body=np.array([[1.55, 0., 0.]]))
+-            mapping.close()
+-            with np.load(Path(tmp)/'occupancy_map.npz') as data:
+-                values = {tuple(key): value for key, value in zip(data['indices'], data['log_odds'])}
+-                self.assertGreaterEqual(values[(10, 0, 0)], data['occupied_threshold'])
+-                self.assertGreaterEqual(values[(10, 4, 0)], data['occupied_threshold'])
+-                self.assertLessEqual(values[(3, 0, 0)], data['free_threshold'])
+-                self.assertNotIn((20, 0, 0), values)  # Beyond hit remains unknown.
+-                self.assertNotIn((53, 0, 0), values)  # No centroid endpoint.
+-            self.assertTrue((Path(tmp)/'occupied.ply').exists())
+-            self.assertTrue((Path(tmp)/'occupancy_map.h5').exists())
+-            self.assertTrue((Path(tmp)/'occupancy.html').exists())
+-
+-    def test_mapping_is_bounded_and_does_not_block_estimator(self):
+-        with tempfile.TemporaryDirectory() as tmp:
+-            mapping = FastLioLiveMap(tmp, 'snapshot')
+-            entered, release = threading.Event(), threading.Event()
+-            original = mapping.occupancy.integrate_lidar_points
+-            def slow(*args):
+-                entered.set()
+-                if not release.wait(5.):
+-                    raise TimeoutError('Test did not release mapper')
+-                return original(*args)
+-            result = dict(status='tracking', timestamp=1., pose=np.eye(4),
+-                          points_world=np.array([[1., 0., 0.]]))
+-            px4 = np.array([0., 0., 0., 1., 0., 0., 0.])
+-            try:
+-                with patch.object(mapping.occupancy, 'integrate_lidar_points', slow):
+-                    mapping.update(result, px4)
+-                    self.assertTrue(entered.wait(2.))
+-                    for stamp in (2., 3.):
+-                        mapping.update(dict(result, timestamp=stamp), px4)
+-                    self.assertEqual(mapping.counts['skipped_mapping_scans'], 1)
+-                    release.set()
+-                    mapping.wait_idle()
+-            finally:
+-                release.set()
+-                mapping.close()
+-            self.assertFalse(mapping._thread.is_alive())
+-            self.assertEqual(mapping.counts['integrated_scans'], 2)
+-            self.assertEqual(mapping.occupancy.snapshot().timestamp, 3.)
+-
+-    def test_worker_failure_is_reported_and_thread_stops(self):
+-        with tempfile.TemporaryDirectory() as tmp:
+-            mapping = FastLioLiveMap(tmp, 'snapshot')
+-            with patch.object(mapping.occupancy, 'integrate_lidar_points', side_effect=ValueError('bad scan')):
+-                mapping.update(dict(status='tracking', timestamp=1., pose=np.eye(4),
+-                                    points_world=np.ones((1, 3))), [0, 0, 0, 1, 0, 0, 0])
+-                with self.assertRaisesRegex(RuntimeError, 'occupancy mapping failed'):
+-                    mapping.wait_idle()
+-            with self.assertRaisesRegex(RuntimeError, 'occupancy mapping failed'):
+-                mapping.close()
+-            self.assertFalse(mapping._thread.is_alive())
+-
+-    def test_estimator_failure_is_visible_after_close(self):
+-        with tempfile.TemporaryDirectory() as tmp:
+-            mapping = FastLioLiveMap(tmp, 'snapshot_assumed')
+-            mapping.update(dict(status='tracking', timestamp=1., pose=np.eye(4),
+-                                points_world=np.ones((1, 3))), [0, 0, 0, 1, 0, 0, 0])
+-            mapping.set_estimator_error('IMU gap exceeds 100 ms')
+-            mapping.close()
+-            status = json.loads((Path(tmp)/'map_status.json').read_text())
+-            self.assertEqual(status['status'], 'failed')
+-            self.assertIn('IMU gap', status['error'])
+-
+-    def test_tracking_publishes_paired_frames_and_failure_invalidates_them(self):
+-        with tempfile.TemporaryDirectory() as tmp:
+-            mapping = FastLioLiveMap(tmp, 'snapshot')
+-            result = dict(status='tracking', timestamp=1., pose=np.eye(4),
+-                          points_world=np.array([[1., 0., 0.]]))
+-            import time
+-            mapping.update(result, [3., 4., -1., 1., 0., 0., 0.], time.time())
+-            np.testing.assert_allclose(mapping.navigation_frames.latest().map_from_body[:3, 3],
+-                                       [3., 4., -1.])
+-            mapping.set_estimator_error('IMU gap')
+-            with self.assertRaisesRegex(RuntimeError, 'failed'):
+-                mapping.navigation_frames.latest()
+-            mapping.close()
+-
+     def test_alignment_applied_once_and_exports(self):
+         with tempfile.TemporaryDirectory() as tmp:
+             mapping = FastLioLiveMap(tmp, 'snapshot_assumed')
+--- a/tests/test_fastlio_map_reconstruction.py
++++ b/tests/test_fastlio_map_reconstruction.py
+@@ -1,41 +0,0 @@
+-import json
+-from pathlib import Path
+-import tempfile
+-import unittest
+-
+-import h5py
+-import numpy as np
+-
+-from tools.build_fastlio_map import build
+-
+-
+-class MapReconstructionTests(unittest.TestCase):
+-    def test_only_matching_tracking_scans_are_mapped_and_source_failure_retained(self):
+-        with tempfile.TemporaryDirectory() as tmp:
+-            source = Path(tmp)/'source'
+-            source.mkdir()
+-            with h5py.File(source/'inputs.h5', 'w') as f:
+-                f.attrs['scan_model'] = 'snapshot_assumed'
+-                f.create_dataset('imu', data=np.array([[1., 0.], [1.2, 0.]]))
+-                scans = f.create_group('scans')
+-                for i, stamp in enumerate((1., 2.)):
+-                    scan = scans.create_group(f'{i:08d}')
+-                    scan.attrs['source_timestamp'] = stamp
+-                    scan.attrs['shared_timestamp'] = stamp+100.
+-                    scan.create_dataset('points_body', data=[[1.55, 0., 0.]])
+-                    scan.create_dataset('px4_pose', data=[0., 0., 0., 1., 0., 0., 0.])
+-            row = dict(status='tracking', timestamp=1., pose=np.eye(4).tolist())
+-            (source/'shadow_poses.jsonl').write_text(json.dumps(row)+'\n')
+-            (source/'capture_report.json').write_text(json.dumps(dict(shadow_error='IMU gap exceeds 100 ms')))
+-            output = Path(tmp)/'rebuilt'
+-            report = build(source, output)
+-            self.assertEqual(report['mapped_scans'], 1)
+-            self.assertEqual(report['scans_without_tracking'], 1)
+-            self.assertEqual(report['imu_gaps_over_100ms'], 1)
+-            self.assertFalse(report['absolute_accuracy_validated'])
+-            status = json.loads((output/'map_status.json').read_text())
+-            self.assertEqual(status['status'], 'failed')
+-            with self.assertRaises(FileExistsError):
+-                build(source, output)
+-            with h5py.File(source/'inputs.h5') as f:
+-                self.assertEqual(len(f['scans']), 2)
+--- a/tests/test_fastlio_navigation_frames.py
++++ b/tests/test_fastlio_navigation_frames.py
+@@ -1,66 +0,0 @@
+-import unittest
+-import numpy as np
+-from scipy.spatial.transform import Rotation
+-from localization.fastlio_navigation_frames import FastLioNavigationFrames
+-
+-
+-def pose(xyz, yaw=0.):
+-    result = np.eye(4)
+-    result[:3, :3] = Rotation.from_euler('z', yaw).as_matrix()
+-    result[:3, 3] = xyz
+-    return result
+-
+-
+-class FastLioNavigationFramesTests(unittest.TestCase):
+-    def test_map_pose_and_control_goal_use_paired_transform(self):
+-        clock = [4.]
+-        bridge = FastLioNavigationFrames(clock=lambda: clock[0], wall_clock=lambda: 100.)
+-        lio = pose([10., 3., -1.], np.pi / 2)
+-        px4 = pose([1., 2., -1.])
+-        bridge.add(100., lio, px4)
+-        # Goal is 2m ahead in LIO frame; corresponding PX4 goal is +x.
+-        np.testing.assert_allclose(bridge.px4_goal([10., 5., -1.]), [3., 2., -1.], atol=1e-8)
+-        target, heading = bridge.px4_position_command([10., 5., -1.], np.pi/2)
+-        np.testing.assert_allclose(target, [3., 2., -1.], atol=1e-8)
+-        self.assertAlmostEqual(heading, 0.)
+-        np.testing.assert_allclose(bridge.px4_velocity([0., 1., 0.]), [1., 0., 0.], atol=1e-8)
+-        np.testing.assert_allclose(bridge.latest().map_from_body, lio)
+-        clock[0] += 1.1
+-        with self.assertRaisesRegex(RuntimeError, 'stale'):
+-            bridge.px4_goal([10., 5., -1.])
+-
+-    def test_interpolates_pose_not_paired_correction_and_rejects_gaps(self):
+-        bridge = FastLioNavigationFrames(max_interpolation_gap=.5)
+-        bridge.add(10., pose([0., 0., 0.]), pose([1., 0., 0.]))
+-        bridge.add(10.2, pose([2., 0., 0.], np.pi/2), pose([1., 2., 0.]))
+-        middle = bridge.at(10.1)
+-        np.testing.assert_allclose(middle.map_from_body[:3, 3], [1., 0., 0.])
+-        np.testing.assert_allclose(middle.px4_from_body[:3, 3], [1., 1., 0.])
+-        np.testing.assert_allclose(middle.map_from_body[:3, :3],
+-                                   Rotation.from_euler('z', np.pi/4).as_matrix())
+-        # A camera rigidly attached to the body must have the same map pose
+-        # whether transformed directly or through the matched PX4 pose.
+-        sensor = pose([.2, .1, 0.])
+-        np.testing.assert_allclose(
+-            bridge.map_observation_pose(10.1, middle.px4_from_body @ sensor),
+-            middle.map_from_body @ sensor, atol=1e-8)
+-        bridge.add(11., pose([0, 0, 0]), pose([0, 0, 0]))
+-        with self.assertRaisesRegex(ValueError, 'gap'):
+-            bridge.at(10.5)
+-        with self.assertRaisesRegex(ValueError, 'outside'):
+-            bridge.at(11.1)
+-
+-    def test_failed_or_out_of_order_tracking_cannot_issue_goal(self):
+-        bridge = FastLioNavigationFrames(wall_clock=lambda: 1.)
+-        bridge.add(1., pose([0, 0, 0]), pose([0, 0, 0]))
+-        with self.assertRaisesRegex(ValueError, 'increase'):
+-            bridge.add(1., pose([0, 0, 0]), pose([0, 0, 0]))
+-        bridge.fail('IMU gap')
+-        with self.assertRaisesRegex(RuntimeError, 'failed'):
+-            bridge.px4_goal([1., 0., 0.])
+-
+-    def test_late_processed_old_scan_is_not_fresh(self):
+-        bridge = FastLioNavigationFrames(clock=lambda: 10., wall_clock=lambda: 103.)
+-        bridge.add(100., pose([0, 0, 0]), pose([0, 0, 0]))
+-        with self.assertRaisesRegex(RuntimeError, 'source timestamp is stale'):
+-            bridge.px4_goal([1., 0., 0.])
+--- a/tests/test_frontier_observation_watchdog.py
++++ b/tests/test_frontier_observation_watchdog.py
+@@ -8,60 +8,7 @@
+ 
+ 
+ class ObservationWatchdogTests(unittest.TestCase):
+-    def test_grid_boundary_recovery_can_use_nearby_certified_center(self):
+-        from config.semantic_navigation_config import SemanticNavigationConfig
+-        from navigation.route import NavigationGrid
+-        nav = object.__new__(FrontierExplorer)
+-        nav.config = SemanticNavigationConfig(clearance_radius=.4)
+-        nav.exploration_config = SimpleNamespace(max_radius=100.)
+-        nav.altitude = -1.49
+-        nav.exploration_origin = np.zeros(3)
+-        nav.vehicle = Mock()
+-        nav.vehicle.get_position.return_value = np.array([6.93, 28.8, -1.49])
+-        snapshot = SimpleNamespace(resolution=.2, origin_ned=np.array([6., 28., -2.5]),
+-                                   states=np.zeros((10, 10, 10), dtype=np.int8))
+-        # Only this coarse center is a global recovery destination. The local
+-        # map still has to certify the complete path and body footprint.
+-        world = NavigationGrid(set(), set(), .3, (0., 0.), nav.altitude, nav.config)
+-        world.free = {(22, 96)}
+-        path = nav._local_recovery_path(world, snapshot)
+-        self.assertIsNotNone(path)
+-        np.testing.assert_allclose(path[-1], world.point((22,96)))
+-        self.assertLess(np.linalg.norm(path[-1][:2]-path[0][:2]), .8)
+-        snapshot.states[:] = 1
+-        self.assertIsNone(nav._local_recovery_path(world, snapshot))
+ 
+-    def test_slow_semantics_do_not_stop_lidar_guarded_transit(self):
+-        nav = self.explorer(moving=True)
+-        nav._motion_progress = (np.zeros(3), 20.)
+-        nav.config.perception_timeout = 5.
+-        nav.exploration_config.perception_recovery_timeout = 20.
+-        frame = SimpleNamespace(timestamp=10., completed_at=13., inference_seconds=7.)
+-        nav.perception = Mock()
+-        nav.perception.semantic_snapshot.return_value = frame
+-        nav._latencies = {}
+-        nav.memory = Mock()
+-        nav.current_place = 'place_0000'
+-        nav.object_inspections = Mock()
+-        nav._inspection_records = Mock(return_value={})
+-        nav._recover_perception = Mock(return_value=frame)
+-        nav._check_maps = Mock()
+-        nav._check_health()
+-        nav._recover_perception.assert_not_called()
+-        nav._check_maps.assert_called_once()
+-        # Geometry freshness remains mandatory even with slower recognition.
+-        nav._check_maps.side_effect = RuntimeError('semantic_local_map_stale')
+-        with self.assertRaisesRegex(RuntimeError, 'semantic_local_map_stale'):
+-            nav._check_health()
+-        # A stationary decision retains the original semantic timeout.
+-        nav._motion_progress = None
+-        nav._frame()
+-        nav._recover_perception.assert_called_once()
+-        nav._recover_perception.reset_mock()
+-        nav._motion_progress = (np.zeros(3), 20.)
+-        frame.completed_at = -1.
+-        nav._frame()
+-        nav._recover_perception.assert_called_once()
+ 
+     def explorer(self, moving=False):
+         nav = object.__new__(FrontierExplorer)
+--- a/tools/build_fastlio_map.py
++++ b/tools/build_fastlio_map.py
+@@ -1,86 +0,0 @@
+-"""Rebuild occupancy from recorded LIO poses and matching real LiDAR scans.
+-
+-No flight interfaces are instantiated and no estimator is rerun. Missing LIO
+-tracking intervals remain unmapped rather than being filled with PX4 poses.
+-"""
+-import argparse
+-import json
+-from pathlib import Path
+-import sys
+-
+-import h5py
+-import numpy as np
+-
+-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+-from localization.fastlio_live_map import FastLioLiveMap
+-
+-
+-def build(source, output):
+-    source, output = Path(source), Path(output)
+-    if (source / 'fastlio').is_dir():
+-        source = source / 'fastlio'
+-    # Never overwrite a live run or a prior reconstruction.
+-    output.mkdir(parents=True, exist_ok=False)
+-    records = {}
+-    with (source / 'shadow_poses.jsonl').open(encoding='utf-8') as stream:
+-        for line in stream:
+-            row = json.loads(line)
+-            if row['status'] == 'tracking':
+-                stamp = float(row['timestamp'])
+-                if stamp in records:
+-                    raise ValueError('Duplicate recorded LIO timestamp')
+-                records[stamp] = row
+-    if not records:
+-        raise ValueError('No recorded tracking poses; occupancy cannot be reconstructed')
+-    capture_report = source / 'capture_report.json'
+-    capture_status = json.loads(capture_report.read_text(encoding='utf-8')) if capture_report.exists() else {}
+-    with h5py.File(source / 'inputs.h5', 'r') as capture:
+-        scan_model = str(capture.attrs['scan_model'])
+-        mapping = FastLioLiveMap(output, scan_model)
+-        scan_count = len(capture['scans'])
+-        imu = capture['imu'][:, 0]
+-        gaps = np.diff(imu)
+-        mapped = 0
+-        try:
+-            for key in sorted(capture['scans']):
+-                scan = capture['scans'][key]
+-                stamp = float(scan.attrs['source_timestamp'])
+-                if stamp not in records:
+-                    continue
+-                row = records[stamp]
+-                body = scan['points_body'][:]
+-                pose = np.asarray(row['pose'])
+-                # Native tracking JSON omits point arrays to limit log size.
+-                result = dict(row, points_world=body @ pose[:3, :3].T + pose[:3, 3])
+-                mapping.update(result, scan['px4_pose'][:],
+-                               float(scan.attrs['shared_timestamp']), points_body=body)
+-                mapping.wait_idle()
+-                mapped += 1
+-                if mapped % 50 == 0:
+-                    print(f'FAST-LIO occupancy: {mapped}/{len(records)} tracking scans', flush=True)
+-        finally:
+-            error = capture_status.get('shadow_error') or capture_status.get('error')
+-            if error:
+-                mapping.set_estimator_error('Recorded source stopped: '+str(error))
+-            mapping.close()
+-    report = dict(source=str(source.resolve()), recorded_scans=scan_count,
+-                  mapped_scans=mapped, unmatched_tracking_poses=len(records)-mapped,
+-                  scans_without_tracking=scan_count-mapped,
+-                  scan_model=scan_model, absolute_accuracy_validated=False,
+-                  imu_gaps_over_100ms=int(np.count_nonzero(gaps > .1)),
+-                  max_imu_gap_seconds=float(gaps.max()) if len(gaps) else None,
+-                  capture_error=capture_status.get('error'),
+-                  estimator_error=capture_status.get('shadow_error'),
+-                  semantic_measurements_replayed=False,
+-                  controls_navigation=False)
+-    (output / 'reconstruction_report.json').write_text(
+-        json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
+-    return report
+-
+-
+-if __name__ == '__main__':
+-    parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument('source', type=Path)
+-    parser.add_argument('--output', type=Path, required=True)
+-    args = parser.parse_args()
+-    print(json.dumps(build(args.source, args.output), indent=2, ensure_ascii=False))

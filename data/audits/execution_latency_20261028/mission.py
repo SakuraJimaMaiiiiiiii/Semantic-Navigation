@@ -1,0 +1,690 @@
+"""Bounded search -> approach -> fresh visual verification task executor."""
+
+from dataclasses import asdict, replace
+import json
+import math
+from pathlib import Path
+import time
+import uuid
+import numpy as np
+
+from .target import select_targets
+from .route import NavigationGrid
+from .path_smoothing import rounded_path
+from planner.local_avoidance_planner import LocalPlan
+
+
+class _FlightGuard:
+    """Guard EGO execution against unknown-space and off-plane proposals."""
+
+    def __init__(self, navigator):
+        self.navigator = navigator
+        self.inner = navigator.local_planner
+        self.config = self.inner.config
+        self._grid_stamp = None
+        self._grid = None
+        self.last_status = None
+        self._failure_recorder = None
+        self._diagnostic_context = None
+        self.last_plan_detail = None
+        self.last_plan_timings = {}
+
+    def _report(self, plan, rejection=None):
+        motion_limit = getattr(self.navigator, '_motion_speed_limit', None)
+        if plan.can_move and motion_limit is not None:
+            plan = replace(plan, speed_limit=min(plan.speed_limit, motion_limit))
+        attention_limit = getattr(self.navigator, 'vehicle_observation_speed_limit', None)
+        if plan.can_move and callable(attention_limit):
+            plan = replace(plan, speed_limit=min(plan.speed_limit, attention_limit()))
+        self.last_plan_detail = {
+            "status": plan.status, "speed_limit": float(plan.speed_limit),
+            "local_target_ned": None if plan.local_target_ned is None else np.asarray(plan.local_target_ned).tolist(),
+            "path_ned": np.asarray(plan.path_ned).tolist(),
+            "rejection": rejection or getattr(self.inner, "last_rejection", None),
+            "timings": dict(self.last_plan_timings),
+            "ego_timings": (dict(getattr(self.inner, 'last_plan_timings', {}))
+                            if 'local_planner_seconds' in self.last_plan_timings else {}),
+        }
+        if self.last_status != plan.status:
+            self.last_status = plan.status
+            detail = (rejection or getattr(self.inner, "last_rejection", None)) if not plan.can_move else None
+            reason = detail.get("reason") if detail else None
+            self.navigator._event("LOCAL_EXECUTION", status=plan.status, rejection=reason)
+            if not plan.can_move and self._diagnostic_context is not None:
+                self.capture_failure(plan.status, detail)
+        return plan
+
+    def capture_failure(self, status, detail=None, terminal=False, waypoint_number=None):
+        nav = self.navigator
+        if not hasattr(nav, 'output_path'):
+            return
+        from .planning_diagnostics import FailureRecorder
+        if self._failure_recorder is None:
+            phase = "returning" if getattr(nav, "phase", None) == "returning" else "exploring"
+            self._failure_recorder = FailureRecorder(
+                nav.output_path.parent / 'private' / 'diagnostics' / f"{phase}_{uuid.uuid4().hex[:12]}"
+            )
+        if terminal or self._diagnostic_context is None:
+            current = nav.vehicle.get_position()
+            context = (nav.local_map.snapshot(), nav.global_map.snapshot(), current, current)
+        else:
+            context = self._diagnostic_context
+        detail = dict(detail or {})
+        detail["planner"] = self.last_plan_detail
+        detail["controller"] = getattr(nav.vehicle, "waypoint_control_state", None)
+        get_velocity = getattr(nav.vehicle, "get_velocity", None)
+        if callable(get_velocity):
+            detail["measured_velocity_ned"] = np.asarray(get_velocity()).tolist()
+        self._failure_recorder.capture(status, *context, nav.altitude, nav.config, detail, terminal=terminal, waypoint_number=waypoint_number)
+
+    def close_diagnostics(self):
+        if self._failure_recorder is not None:
+            self._failure_recorder.close()
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+    def tracking_target(self, now=None):
+        # Advance the EGO spline only while its current target is certified.
+        revision = getattr(self.navigator.global_map, 'revision', 0)
+        if revision != getattr(self, '_planned_map_revision', revision):
+            return None
+        if self.last_status not in {"ego_clear", "ego_avoid"} or self._grid is None:
+            return None
+        getter = getattr(self.inner, "tracking_target", None)
+        target = getter(now=now) if callable(getter) else None
+        if target is not None and self._grid.segment_free(
+            self.navigator.vehicle.get_position(), target
+        ):
+            return target
+        return None
+
+    def _braking_rejection(self, grid, current):
+        vehicle = getattr(self.navigator, "vehicle", None)
+        get_velocity = getattr(vehicle, "get_velocity", None)
+        if not callable(get_velocity):
+            return None
+        velocity = np.asarray(get_velocity(), dtype=float)
+        speed = float(np.linalg.norm(velocity[:2]))
+        if speed < 0.05:
+            return None
+        vehicle_config = getattr(vehicle, "config", None)
+        deceleration = float(getattr(vehicle_config, "guided_max_horizontal_acceleration", 0.3))
+        control_rate = float(getattr(vehicle_config, "guided_update_rate", 20.0))
+        map_config = getattr(self.navigator.local_map, "config", None)
+        map_rate = float(getattr(map_config, "update_rate", 5.0))
+        latency = 1.0 / float(getattr(self.config, "replan_rate", 5.0)) + 1.0/control_rate + 1.0/map_rate
+        distance = speed*latency + speed*speed/(2.0*deceleration)
+        stop = np.asarray(current, dtype=float).copy()
+        stop[:2] += velocity[:2] * (distance/speed)
+        if not grid.segment_free(current, stop):
+            return {"reason": "insufficient_braking_corridor",
+                    "speed_mps": speed, "braking_distance_m": distance,
+                    "deceleration_mps2": deceleration,
+                    "braking_endpoint_ned": stop.tolist()}
+        return None
+
+    def revalidate_plan(self, plan, current):
+        """Recheck the tracking chord after synchronous planning, without replanning.
+
+        The map certified by plan() is retained. Re-read body position/velocity
+        and front depth, which may have changed while that call was running.
+        """
+        if not plan.can_move:
+            return plan
+        self.navigator._check_maps()
+        revision = getattr(self.navigator.global_map, 'revision', 0)
+        if revision != getattr(self, '_planned_map_revision', revision):
+            return self._report(LocalPlan('map_revision_changed', None, np.empty((0, 3)), 0.))
+        current = np.asarray(current, dtype=float)
+        target = np.asarray(plan.local_target_ned, dtype=float)
+        rejection = None
+        if self._grid is None or not self._grid.segment_free(current, target):
+            rejection = {"reason": "post_planning_tracking_chord_not_certified",
+                         "current_ned": current.tolist(), "target_ned": target.tolist()}
+            status = "semantic_unknown_or_blocked"
+        else:
+            rejection = self._braking_rejection(self._grid, current)
+            status = "braking_corridor_blocked"
+        snapshot = self.navigator.local_map.snapshot()
+        # EGO may deliberately move sideways around an already observed front
+        # obstacle. A front-only depth scalar cannot invalidate that safe detour.
+        if (rejection is None and plan.status == "route_clear"
+                and float(getattr(snapshot, "forward_clearance", math.inf)) < float(
+                    getattr(self.config, "emergency_stop_distance", .6))):
+            rejection = {"reason": "post_planning_front_depth_blocked",
+                         "forward_clearance": float(snapshot.forward_clearance)}
+            status = "transient_no_path"
+        if rejection is not None:
+            if self._diagnostic_context is not None:
+                local, global_map, _, _ = self._diagnostic_context
+                self._diagnostic_context = (local, global_map, current, target)
+            return self._report(replace(plan, status=status, local_target_ned=None, speed_limit=0.),
+                                rejection=rejection)
+        return plan
+
+    def plan(self, current, target):
+        nav = self.navigator
+        started = time.monotonic()
+        self.last_plan_timings = {}
+        nav._check_health()
+        self.last_plan_timings['health_seconds'] = time.monotonic()-started
+        nav._sample_position(current)
+        started = time.monotonic()
+        snapshot = nav.local_map.snapshot()
+        global_source = getattr(nav, "global_map", None)
+        if hasattr(global_source, 'snapshot_with_revision'):
+            global_snapshot, revision = global_source.snapshot_with_revision()
+        else:
+            global_snapshot = global_source.snapshot() if global_source is not None else None
+            revision = 0
+        self.last_plan_timings['snapshots_seconds'] = time.monotonic()-started
+        if revision != getattr(self, '_planned_map_revision', revision):
+            discard = getattr(self.inner, 'discard_trajectory', None)
+            if callable(discard):
+                discard()
+        self._planned_map_revision = revision
+        self._diagnostic_context = (snapshot, global_snapshot, current, target)
+        stamp = (
+            float(nav.altitude),
+            revision,
+            snapshot.timestamp,
+            None if global_snapshot is None else global_snapshot.timestamp,
+        )
+        started = time.monotonic()
+        if stamp != self._grid_stamp:
+            self._grid = NavigationGrid.from_local(
+                snapshot, nav.altitude, nav.config, global_snapshot
+            )
+            self._grid_stamp = stamp
+        self.last_plan_timings['grid_projection_seconds'] = time.monotonic()-started
+        grid = self._grid
+        current = np.asarray(current, dtype=float)
+        target = np.asarray(target, dtype=float)
+        braking = self._braking_rejection(grid, current)
+        if braking is not None:
+            return self._report(
+                LocalPlan("braking_corridor_blocked", None, np.empty((0, 3)), 0.0),
+                rejection=braking,
+            )
+        forward_clearance = float(getattr(snapshot, "forward_clearance", math.inf))
+        emergency_distance = float(getattr(self.config, "emergency_stop_distance", 0.6))
+        # The frontier/global planner already supplies a known-free route. Follow
+        # a clear segment directly; reserve EGO spline generation for an actual
+        # local obstruction or loss of corridor evidence.
+        if forward_clearance >= emergency_distance and grid.segment_free(
+            current, target
+        ):
+            discard = getattr(self.inner, "discard_trajectory", None)
+            if callable(discard):
+                discard()
+            speed_limit = float(getattr(self.config, "cruise_max_speed", 0.6))
+            limiter = getattr(self.inner, "_clear_speed_limit", None)
+            if callable(limiter):
+                speed_limit = float(limiter(forward_clearance))
+            return self._report(
+                LocalPlan(
+                    status="route_clear",
+                    local_target_ned=target.copy(),
+                    path_ned=np.vstack((current, target)),
+                    speed_limit=speed_limit,
+                )
+            )
+
+        configure = getattr(self.inner, "set_navigation_plane", None)
+        if callable(configure):
+            configure(nav.altitude, nav.config, nav.global_map)
+        started = time.monotonic()
+        plan = self.inner.plan(current, target)
+        self.last_plan_timings['local_planner_seconds'] = time.monotonic()-started
+        if not plan.can_move:
+            return self._report(plan)
+        # Once the direct certified route is unavailable, every executable EGO
+        # result is an avoidance-mode result, even if the final spline segment
+        # itself happens to be straight.
+        if plan.status == "ego_clear":
+            plan = replace(plan, status="ego_avoid")
+        segments = [(np.asarray(current), np.asarray(plan.local_target_ned))]
+        segments.extend(zip(plan.path_ned[:-1], plan.path_ned[1:]))
+        started = time.monotonic()
+        for index, (start, end) in enumerate(segments):
+            if not grid.segment_free(start, end):
+                return self._report(
+                    replace(plan, status="semantic_unknown_or_blocked",
+                            local_target_ned=None, speed_limit=0.0),
+                    rejection={
+                        "reason": "tracking_chord_not_certified" if index == 0 else "trajectory_segment_not_certified",
+                        "segment_start_ned": np.asarray(start).tolist(),
+                        "segment_end_ned": np.asarray(end).tolist(),
+                    },
+                )
+        self.last_plan_timings['semantic_path_validation_seconds'] = time.monotonic()-started
+        return self._report(plan)
+
+
+class SemanticNavigator:
+    def __init__(
+        self,
+        vehicle,
+        perception,
+        local_map,
+        global_map,
+        local_planner,
+        request,
+        config,
+        output_path,
+        clock=time.monotonic,
+    ):
+        self.vehicle, self.perception = vehicle, perception
+        self.local_map, self.global_map = local_map, global_map
+        self.local_planner, self.request = local_planner, request
+        self.config, self.output_path, self.clock = config, Path(output_path), clock
+        self.events, self.trajectory = [], []
+        self.failed_targets, self.visited = {}, []
+        self._map_stamps = {}
+        self._last_health_map_check = -math.inf
+        self.result = None
+        self.state = None
+        self._latencies = {}
+        self._guard = _FlightGuard(self)
+        self.allow_search = True
+
+    def _event(self, state, **details):
+        self.state = state
+        self.events.append(
+            {"elapsed": self.clock() - self.started, "state": state, **details}
+        )
+        if state in {"FRONTIER_DECISION", "COVERAGE_STATE"}:
+            return  # Keep diagnostics in the report without interrupting the bar.
+        progress = getattr(self.vehicle, '_motion_progress_display', None)
+        if progress is not None:
+            progress.finish()
+        print(f"--- Semantic navigation: {state} {details} ----")
+
+    def _sample_position(self, position=None):
+        p = np.asarray(
+            self.vehicle.get_position() if position is None else position, dtype=float
+        )
+        if not self.trajectory or np.linalg.norm(p - self.trajectory[-1]) > 0.01:
+            self.trajectory.append(p.copy())
+        return p
+
+    def _frame(self):
+        self.perception.raise_if_failed()
+        frame = self.perception.semantic_snapshot()
+        if (
+            frame is None
+            or self.clock() - frame.completed_at > self.config.perception_timeout
+        ):
+            raise RuntimeError("semantic_perception_stale")
+        self._latencies[frame.timestamp] = frame.inference_seconds
+        return frame
+
+    def _check_health(self):
+        if self.clock() >= self.deadline:
+            raise TimeoutError("semantic_mission_timeout")
+        self._frame()
+        self._check_maps()
+
+    def _check_maps(self):
+        """Check mapping independently while semantic inference recovers."""
+        if self.clock() - self._last_health_map_check < 0.2:
+            return
+        self._last_health_map_check = self.clock()
+        for name, source in (("local", self.local_map), ("global", self.global_map)):
+            heartbeat = getattr(source, "last_observation_completed_at", None)
+            if heartbeat is None:
+                heartbeat = getattr(source, "last_update_timestamp", None)
+            if heartbeat is None:
+                heartbeat = source.snapshot().timestamp
+            previous, changed = self._map_stamps.get(name, (None, self.clock()))
+            if heartbeat != previous:
+                changed = self.clock()
+            self._map_stamps[name] = (heartbeat, changed)
+            if heartbeat <= 0 or self.clock() - changed > self.config.map_timeout:
+                raise RuntimeError(f"semantic_{name}_map_stale")
+
+    def _wait(self, duration):
+        end = min(self.deadline, self.clock() + duration)
+        while self.clock() < end:
+            self._check_health()
+            remaining = end - self.clock()
+            if remaining > 0:
+                self.vehicle.wait(min(0.2, remaining))
+
+    def _align(self, yaw):
+        self._check_health()
+        self.vehicle.align_yaw(
+            yaw,
+            timeout=max(
+                0.01, min(self.config.leg_timeout, self.deadline - self.clock())
+            ),
+            health_check=self._check_health,
+        )
+
+    def _scan(self):
+        self._event("SEARCH_SCAN")
+        for angle in (0, math.pi / 2, math.pi, -math.pi / 2):
+            self._check_health()
+            self._align(angle)
+            self._wait(self.config.scan_wait)
+            frame = self._frame()
+            if select_targets(
+                frame.records,
+                self.request,
+                self.vehicle.get_position(),
+                frame.timestamp,
+            ):
+                return
+
+    def _move(self, path):
+        """Commit a certified rounded route, with live checks before each chord."""
+        self._check_health()
+        grid = NavigationGrid.from_global(self.global_map.snapshot(), self.altitude, self.config)
+        route = rounded_path(path, grid.segment_free, self.config.corner_rounding_distance)
+        revision = getattr(self.global_map, 'revision', 0)
+        try:
+            for goal, flowing, turning in route:
+                self._check_health()
+                # Replanning after a map correction must use the new frame.
+                if getattr(self.global_map, 'revision', 0) != revision:
+                    return
+                current = self.vehicle.get_position()
+                grid = NavigationGrid.from_global(self.global_map.snapshot(), self.altitude, self.config)
+                if not grid.segment_free(current, goal):
+                    return
+                self._motion_speed_limit = (0.6*self.vehicle.config.guided_max_forward_speed
+                                            if turning else None)
+                while self._move_segment([current, goal], flowing=flowing):
+                    self._check_health()
+                    current = self.vehicle.get_position()
+                    grid = NavigationGrid.from_global(self.global_map.snapshot(), self.altitude, self.config)
+                    if (getattr(self.global_map, 'revision', 0) != revision
+                            or not grid.segment_free(current, goal)):
+                        return
+        finally:
+            self._motion_speed_limit = None
+
+    def _move_segment(self, path, *, flowing=False):
+        self._check_health()
+        current = np.asarray(self.vehicle.get_position())
+        points = [np.asarray(point) for point in path[1:]
+                  if np.linalg.norm(np.asarray(point)-current) > 1e-6]
+        if not points:
+            return
+        # A distance along the complete polyline can land AFTER a bend. Sending
+        # that point directly cuts across obstacles and needlessly invokes EGO.
+        endpoint = points[0]
+        distance = float(np.linalg.norm(endpoint-current))
+        intermediate = distance > self.config.leg_length
+        goal = (current + (endpoint-current)*(self.config.leg_length/distance)
+                if intermediate else endpoint.copy())
+        self.vehicle.move_waypoint_guided(
+            goal,
+            face_direction=True,
+            local_planner=self._guard,
+            pass_through=intermediate or flowing,
+            xy_tolerance=(min(self.config.arrival_tolerance, .25*self.config.leg_length)
+                          if intermediate else min(.25 if flowing else .05, self.config.arrival_tolerance)),
+            timeout=max(
+                0.01, min(self.config.leg_timeout, self.deadline - self.clock())
+            ),
+        )
+        self._sample_position()
+        # A long straight chord is subdivided, but its interior points do not
+        # stop the vehicle or trigger a new equally-priced A* route.
+        return intermediate
+
+    def _verify(self, record, goal):
+        self._event("VERIFY", target_id=record["runtime_instance_id"])
+        delta = np.array(record["position_world"]) - self.vehicle.get_position()
+        self._align(math.atan2(delta[1], delta[0]))
+        # Require new synchronized observations after arrival AND yaw alignment.
+        baseline = self._frame().timestamp
+        seen, latest, deadline = (
+            set(),
+            record,
+            min(self.deadline, self.clock() + self.config.verification_timeout),
+        )
+        observed_frames, matched_frames = set(), set()
+        last_distance = None
+        while self.clock() < deadline:
+            self._check_health()
+            frame = self._frame()
+            observed_frames.add(frame.timestamp)
+            matches = self._verification_candidates(frame, self.vehicle.get_position())
+            match = next(
+                (
+                    r
+                    for r in matches
+                    if r["runtime_instance_id"] == record["runtime_instance_id"]
+                ),
+                None,
+            )
+            if (
+                match is not None
+                and match["last_seen"] > baseline
+                and frame.timestamp - match["last_seen"] < 1e-6
+            ):
+                matched_frames.add(frame.timestamp)
+                current = self.vehicle.get_position()
+                low, high = np.array(match["bbox_3d"]["min"]), np.array(
+                    match["bbox_3d"]["max"]
+                )
+                distance = np.linalg.norm(
+                    np.maximum(
+                        np.maximum(low[:2] - current[:2], current[:2] - high[:2]), 0
+                    )
+                )
+                last_distance = float(distance)
+                if (
+                    np.linalg.norm(current - goal) <= self.config.arrival_tolerance
+                    and self.config.standoff_distance - self.config.arrival_tolerance
+                    <= distance
+                    <= self.config.standoff_distance + self.config.arrival_tolerance
+                ):
+                    seen.add(match["last_seen"])
+                    latest = match
+                    if len(seen) >= self.config.verification_frames:
+                        return latest
+            self._wait(0.2)
+        self._event('VERIFICATION_INCOMPLETE', target_id=record['runtime_instance_id'],
+                    observed_frames=len(observed_frames), matched_frames=len(matched_frames),
+                    accepted_frames=len(seen), required_frames=self.config.verification_frames,
+                    last_surface_distance_m=last_distance,
+                    reason=('target_not_reobserved' if not matched_frames
+                            else 'verification_geometry_or_frame_count'))
+        return None
+
+    def _verification_candidates(self, frame, current):
+        return select_targets(frame.records, self.request, current, frame.timestamp)
+
+    def _query(self, frame, current):
+        return select_targets(frame.records, self.request, current, frame.timestamp)
+
+    def _on_choice(self, record, goal, path):
+        """Optional map annotation hook after a reachable goal has been selected."""
+
+    def run(self):
+        self.started = self.clock()
+        self.deadline = self.started + self.config.mission_timeout
+        origin = self._sample_position()
+        self.altitude = float(origin[2])
+        searches, attempts, scanned = 0, 0, False
+        active_id = None
+        self._event("QUERY", request=asdict(self.request))
+        success, reason, selected = False, "not_started", None
+        try:
+            # Give the detector a bounded first-frame warm-up after takeoff.
+            warmup = min(self.deadline, self.clock() + self.config.perception_timeout)
+            while self.clock() < warmup:
+                self.perception.raise_if_failed()
+                if (
+                    self.perception.semantic_snapshot() is not None
+                    and self.local_map.snapshot().timestamp > 0
+                    and self.global_map.snapshot().timestamp > 0
+                ):
+                    break
+                self.vehicle.wait(0.2)
+            while self.clock() < self.deadline:
+                self._check_health()
+                current, frame = self._sample_position(), self._frame()
+                grid = NavigationGrid.from_global(
+                    self.global_map.snapshot(), self.altitude, self.config
+                )
+                candidates = self._query(frame, current)
+                if active_id is not None:
+                    active = next(
+                        (
+                            r
+                            for r in candidates
+                            if r["runtime_instance_id"] == active_id
+                        ),
+                        None,
+                    )
+                    if active is None:
+                        self._event("TARGET_LOST", target_id=active_id)
+                        active_id = None
+                    else:
+                        candidates = [active] + [
+                            r for r in candidates if r is not active
+                        ]
+                choice = None
+                for record in candidates:
+                    if self.clock() < self.failed_targets.get(
+                        record["runtime_instance_id"], -math.inf
+                    ):
+                        continue
+                    approach = grid.approach(record, current)
+                    if approach is not None:
+                        choice = record, approach
+                        break
+                    self.failed_targets[record["runtime_instance_id"]] = (
+                        self.clock() + self.config.retry_cooldown
+                    )
+                    self._event("UNREACHABLE", target_id=record["runtime_instance_id"])
+                if choice is not None:
+                    record, (_, goal, path) = choice
+                    selected = record["runtime_instance_id"]
+                    active_id = selected
+                    self._on_choice(record, goal, path)
+                    if self.state != "APPROACH":
+                        self._event(
+                            "APPROACH", target_id=selected, goal_ned=goal.tolist()
+                        )
+                    if np.linalg.norm(current - goal) > self.config.arrival_tolerance:
+                        try:
+                            self._move(path)
+                        except TimeoutError:
+                            self.vehicle.hover()
+                            self.failed_targets[selected] = (
+                                self.clock() + self.config.retry_cooldown
+                            )
+                            active_id = None
+                            attempts += 1
+                            self._event(
+                                "RETRY", target_id=selected, reason="leg_timeout"
+                            )
+                        if attempts >= self.config.max_target_attempts:
+                            reason = "approach_attempts_exhausted"
+                            break
+                        continue
+                    confirmed = self._verify(record, goal)
+                    if confirmed is not None:
+                        success, reason = True, "visually_confirmed"
+                        self._event(
+                            "SUCCEEDED",
+                            target_id=selected,
+                            target_position_ned=confirmed["position_world"],
+                        )
+                        break
+                    attempts += 1
+                    active_id = None
+                    self.failed_targets[selected] = (
+                        self.clock() + self.config.retry_cooldown
+                    )
+                    self._event(
+                        "RETRY", target_id=selected, reason="target_not_reobserved"
+                    )
+                    if attempts >= self.config.max_target_attempts:
+                        reason = "verification_attempts_exhausted"
+                        break
+                    continue
+                if not self.allow_search:
+                    # A failed verification/leg temporarily excludes its target;
+                    # it does not make the saved target unreachable. Honour the
+                    # existing retry budget and cooldown while holding position.
+                    cooling = [self.failed_targets.get(r['runtime_instance_id'], -math.inf)
+                               for r in candidates]
+                    if attempts and any(until > self.clock() for until in cooling):
+                        self._wait(min(.2, max(0., self.deadline-self.clock())))
+                        continue
+                    reason = "no_reachable_saved_target"
+                    break
+                if not scanned:
+                    self._scan()
+                    scanned = True
+                    continue
+                if searches >= self.config.max_search_steps:
+                    reason = "search_budget_exhausted"
+                    break
+                frontier = grid.frontier(current, origin, self.visited)
+                if frontier is None:
+                    reason = "no_reachable_frontier_or_target"
+                    break
+                goal, path = frontier
+                self._event("SEARCH_MOVE", goal_ned=goal.tolist())
+                try:
+                    self._move(path)
+                except TimeoutError:
+                    self.vehicle.hover()
+                    self._event("SEARCH_BLOCKED", goal_ned=goal.tolist())
+                self.visited.append(self.vehicle.get_position().copy())
+                searches += 1
+                scanned = False
+            else:
+                reason = "mission_timeout"
+            if not success:
+                self._event("FAILED", reason=reason)
+            return success
+        except Exception as error:
+            reason = str(error)
+            self._event("FAILED", reason=reason, exception_type=type(error).__name__)
+            raise
+        finally:
+            self._sample_position()
+            self.result = {
+                "version": 1,
+                "success": success,
+                "reason": reason,
+                "request": asdict(self.request),
+                "selected_target_id": selected,
+                "elapsed_seconds": self.clock() - self.started,
+                "path_length_m": (
+                    float(
+                        np.linalg.norm(np.diff(self.trajectory, axis=0), axis=1).sum()
+                    )
+                    if len(self.trajectory) > 1
+                    else 0.0
+                ),
+                "trajectory_ned": [p.tolist() for p in self.trajectory],
+                "search_steps": searches,
+                "failed_attempts": attempts,
+                "collision": any(
+                    e.get("exception_type") == "CollisionDetectedError"
+                    for e in self.events
+                ),
+                "inference_seconds_mean": (
+                    float(np.mean(list(self._latencies.values())))
+                    if self._latencies
+                    else None
+                ),
+                "events": self.events,
+            }
+            self.output_path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = self.output_path.with_suffix(".tmp")
+            temporary.write_text(
+                json.dumps(self.result, ensure_ascii=False, indent=2, allow_nan=False),
+                encoding="utf-8",
+            )
+            temporary.replace(self.output_path)

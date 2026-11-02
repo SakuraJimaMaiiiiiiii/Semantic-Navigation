@@ -47,7 +47,10 @@ EXIT_SIGN_CLASS_ALIASES = ("exit sign", "exit signage", "emergency exit sign", "
 EXIT_DOOR_CLASS_ALIASES = ("exit door", "emergency exit door", "fire exit door", "emergency escape door")
 FIRE_CABINET_CLASS_ALIASES = ("fire cabinet", "fire hose cabinet", "fire equipment cabinet", "fire hydrant cabinet")
 
+FIRE_EXTINGUISHER_ALIASES = ("fire extinguisher", "portable fire extinguisher", "wall mounted fire extinguisher")
+
 SEMANTIC_CLASS_PROPERTIES = {
+    "fire extinguisher": {"aliases": FIRE_EXTINGUISHER_ALIASES, "is_static": True, "is_obstacle": True},
     "exit door": {"aliases": EXIT_DOOR_CLASS_ALIASES, "is_static": True, "is_obstacle": True},
     "exit sign": {"aliases": EXIT_SIGN_CLASS_ALIASES, "is_static": True, "is_obstacle": True},
     "signboard": {"aliases": SIGNBOARD_CLASS_ALIASES, "is_static": True, "is_obstacle": True},
@@ -71,6 +74,8 @@ def canonical_semantic_class_name(class_name: str) -> str:
         return "exit sign"
     if normalized in SIGNBOARD_CLASS_ALIASES:
         return "signboard"
+    if normalized in FIRE_EXTINGUISHER_ALIASES:
+        return "fire extinguisher"
     if normalized in FIRE_CABINET_CLASS_ALIASES:
         return "fire cabinet"
     if normalized in COLUMN_CLASS_ALIASES:
@@ -142,7 +147,7 @@ class SemanticInstanceMapper:
 
     def __init__(
         self,
-        landmark_classes=("column", "signboard", "exit sign", "exit door", "fire cabinet", *VEHICLE_CLASSES),
+        landmark_classes=("column", "signboard", "exit sign", "exit door", "fire cabinet", "fire extinguisher", *VEHICLE_CLASSES),
         mahalanobis_gate=7.815,                  #三维卡方分布95%置信度阈值
         process_noise_std=0.05,                  # 卡尔曼预测过程噪声标准差
         duplicate_merge_distance_xy=1.5,
@@ -243,7 +248,7 @@ class SemanticInstanceMapper:
             for name, score, item in zip(canonical_names, confidences, observations_3d)
         ]
         for index, name in enumerate(canonical_names):
-            if name in {'exit door', 'fire cabinet'} and (
+            if name in {'exit door', 'fire cabinet', 'fire extinguisher'} and (
                     not np.isfinite(confidences[index])
                     or confidences[index] < self.safety_landmark_min_confidence):
                 observations[index] = None
@@ -493,7 +498,7 @@ class SemanticInstanceMapper:
         if landmark is None:
             return None
         required = max(int(min_observations), self.sign_min_observations) if canonical in {"signboard", "exit sign"} else int(min_observations)
-        if canonical in {'exit door', 'fire cabinet'}:
+        if canonical in {'exit door', 'fire cabinet', 'fire extinguisher'}:
             required = max(required, self.safety_landmark_min_observations)
         if landmark.observation_count < required:
             return None
@@ -514,7 +519,7 @@ class SemanticInstanceMapper:
                 continue
             required = (max(int(min_observations), self.sign_min_observations)
                         if memory.class_name in {"signboard", "exit sign"} else int(min_observations))
-            if memory.class_name in {'exit door', 'fire cabinet'}:
+            if memory.class_name in {'exit door', 'fire cabinet', 'fire extinguisher'}:
                 required = max(required, self.safety_landmark_min_observations)
             if memory.observation_count < required:
                 continue
@@ -561,9 +566,11 @@ class SemanticInstanceMapper:
             if identity_class == "vehicle":
                 track = self._vehicles.tracks[memory.instance_id]
                 records[-1].update(
+                    **track.surface.vehicle_geometry(),
                     geometry_representation="observed_surface_union",
                     anchor_position_world=track.state.tolist(),
                     supported_surface_voxels=len(track.surface.supported_points()),
+                    connected_fragment_count=track.connected_fragment_count,
                 )
             elif runtime_key in self._category_aliases:
                 other = self._category_aliases[runtime_key]
@@ -578,6 +585,35 @@ class SemanticInstanceMapper:
     def vehicle_color(self, instance_id):
         track = self._vehicles.tracks.get(instance_id)
         return ("unknown", 0.0) if track is None else track.color_semantics
+
+    def object_inspection_records(self, published_records):
+        """Confirmed geometric hypotheses for re-observation, NOT map objects.
+
+        Low-confidence tracks can request a better view without lowering the
+        publication threshold or labelling occupancy voxels as a vehicle.
+        """
+        records = []
+        connections = self._vehicles.connection_hypotheses()
+        for identity, track in self._vehicles.tracks.items():
+            if track.observation_count < self._vehicles.confirmation_observations:
+                continue
+            records.append({
+                "runtime_instance_id": f"vehicle_{identity:02d}",
+                "class_name": track.class_name,
+                "position_world": track.map_position.tolist(),
+                "bbox_3d": {"min": track.bbox_3d_min.tolist(), "max": track.bbox_3d_max.tolist()},
+                "last_seen": track.last_seen, "observation_count": track.observation_count,
+                "confidence": track.confidence,
+                "connection_targets": connections.get(identity, []),
+                "connected_fragment_count": getattr(track, "connected_fragment_count", 0),
+                "position_status": track.surface.vehicle_geometry()['position_status'],
+                "position_covariance": track.covariance.tolist(),
+                "merged_from": [f"vehicle_{old:02d}" for old in self._vehicles.redirects
+                                if self._vehicles.canonical_id(old) == identity],
+            })
+        records.extend(r for r in published_records
+                       if r["class_name"] in {"fire extinguisher", "fire cabinet", "exit door", "exit sign", "signboard"})
+        return records
 
     def navigation_records(self, min_observations=3):
         """Navigation, video, JSON and HTML share the same canonical IDs."""
@@ -744,7 +780,7 @@ class SemanticInstanceMapper:
             duplicate_pair = None
             landmark_keys = sorted(self._landmarks)
             for first_index, first_key in enumerate(landmark_keys):
-                if first_key[0] not in {"column", "signboard", "exit sign", "exit door", "fire cabinet"}:
+                if first_key[0] not in {"column", "signboard", "exit sign", "exit door", "fire cabinet", "fire extinguisher"}:
                     continue
                 first = self._landmarks[first_key]
                 for second_key in landmark_keys[first_index + 1:]:

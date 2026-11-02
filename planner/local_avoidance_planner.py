@@ -105,6 +105,25 @@ class LocalAvoidancePlanner:
             )
         return result
 
+    def revalidate_plan(self, plan, current, *, certificate=None):
+        """Check the current chord on published geometry without taking a map lock."""
+        if not plan.can_move:
+            return plan
+        snapshot = self.grid.execution_snapshot
+        if snapshot is None:
+            return self._stop_plan('waiting_for_map')
+        if time.monotonic()-self.grid.last_observation_completed_at > self.config.map_timeout:
+            return self._stop_plan('stale_map')
+        if self.grid.forward_clearance < self.config.emergency_stop_distance:
+            return self._stop_plan('emergency_stop')
+        blocked = self._project_blocked(snapshot, float(np.asarray(current)[2]))
+        first = self.world_to_grid(snapshot, current)[:2]
+        last = self.world_to_grid(snapshot, plan.local_target_ned)[:2]
+        if (not self._inside_2d(blocked, first) or not self._inside_2d(blocked, last)
+                or not self._line_is_free(blocked, first, last)):
+            return self._stop_plan('transient_no_path')
+        return plan
+
     def _make_plan(
         self,
         current_position_ned,

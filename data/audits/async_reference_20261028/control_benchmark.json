@@ -1,0 +1,8 @@
+{
+  "commands": 25,
+  "moving_commands": 16,
+  "control_interval_median_s": 0.062000000034458935,
+  "control_interval_p95_s": 0.06300000008195639,
+  "control_interval_max_s": 0.06300000008195639,
+  "solver_was_blocked": true
+}

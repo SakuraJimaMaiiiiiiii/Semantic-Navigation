@@ -1,0 +1,7 @@
+{
+  "lidar_points": 3000,
+  "integration_seconds": 0.011563999927602708,
+  "first_snapshot_seconds": 0.00044950004667043686,
+  "cached_snapshot_seconds": 4.249997437000274e-06,
+  "scope": "Single recorded scan, no UE or competing inference/loop reconstruction; not a live latency guarantee."
+}

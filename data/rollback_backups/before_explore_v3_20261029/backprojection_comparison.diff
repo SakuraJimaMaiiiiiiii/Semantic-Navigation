@@ -1,0 +1,13 @@
+--- 
++++ 
+@@ -66,8 +66,8 @@
+             core_lidar = core_lidar[(core_lidar[:, 2] >= self.config.instance_depth_min) & (core_lidar[:, 2] <= self.config.instance_depth_max)]
+             if len(core_lidar) >= lidar_alignment.min_points:
+                 center_camera = core_lidar
+-            self.lidar_fused_objects = getattr(self, 'lidar_fused_objects', 0) + 1
+-            self.lidar_fused_points = getattr(self, 'lidar_fused_points', 0) + len(lidar_points)
++            self.lidar_fused_objects += 1
++            self.lidar_fused_points += len(lidar_points)
+     point_cloud_world = point_cloud_camera @ pose[:3, :3].T + pose[:3, 3]
+     if not np.all(np.isfinite(point_cloud_world)):
+         return None

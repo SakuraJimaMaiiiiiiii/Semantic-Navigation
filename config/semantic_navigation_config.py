@@ -20,6 +20,7 @@ class SemanticNavigationConfig:
     vertical_half_extent: float = 0.25
     approach_samples: int = 24
     leg_length: float = 1.2
+    corner_rounding_distance: float = 1.0  # A* 拐角两侧最多裁取的距离（m）；需通过净空检查
     leg_timeout: float = 30.0
     max_search_steps: int = 30
     max_target_attempts: int = 3

@@ -85,7 +85,7 @@ class SessionServer:
         command = message.get("command")
         if command == "status":
             return self.status(message.get("job_id"))
-        if command not in ("navigate", "shutdown"):
+        if command not in ("navigate", "return_home", "shutdown"):
             raise ValueError("Unknown command")
         request = (
             SemanticTargetRequest(**message["target"])
@@ -97,10 +97,10 @@ class SessionServer:
                 command == "shutdown" and self.state == "ERROR"
             ):
                 raise ValueError(
-                    f"Session is {self.state}; commands require READY after landing"
+                    f"Session is {self.state}; commands require READY (landed or holding)"
                 )
             identity = uuid.uuid4().hex
-            self.state = "NAVIGATING" if command == "navigate" else "STOPPING"
+            self.state = {"navigate": "NAVIGATING", "return_home": "RETURNING", "shutdown": "STOPPING"}[command]
             self.job = {
                 "id": identity,
                 "state": "accepted",

@@ -1,0 +1,97 @@
+"""局部主动避障配置。"""
+
+from dataclasses import dataclass, fields
+
+
+@dataclass(frozen=True)
+class PlannerConfig:
+    """EGO/二维 A* 局部规划及独立安全停车参数。"""
+
+    # ego_native=C++ 核心（不可用则报错）；ego=纯 Python 三维 B 样条。
+    navigation_mode: str = "ego_native"
+    # 返航航段的局部规划模式：
+    # ego_native/ego=畅通航段直行、受阻时B样条绕障；astar=二维栅格；depth_guard=仅深度保护。
+    return_navigation_mode: str = "ego_native"
+    replan_rate: float = 5.0  # 局部路径重规划频率，Hz
+    map_timeout: float = 0.6  # 地图连续多久未更新后悬停，s
+    planning_lookahead: float = 3.0  # 每次规划朝最终目标看的距离，m
+    local_target_distance: float = 1.2  # 跟踪路径上的短期航点距离，m
+    minimum_forward_progress: float = 0.1  # 绕障航点沿目标方向的最小推进量，m
+    map_boundary_margin: float = 0.1  # 局部航点距当前地图边界的最小余量，m
+    reachable_goal_tolerance: float = 1.2  # 可达替代终点距期望终点上限，m
+    emergency_stop_distance: float = 0.6  # 前向深度小于此距离立即悬停，m
+    map_emergency_stop_distance: float = 0.35  # 保留近距离地图障碍的硬急停保护
+    slowdown_distance: float = 1.0  # 障碍进入此距离后限制速度，m
+    cruise_max_speed: float = 0.35  # 视觉采集优先的巡航规划上限，m/s
+    avoidance_max_speed: float = 0.25  # 避障期间最大前向速度，m/s
+    vertical_target_step: float = 0.5  # 每次局部目标允许调整的最大高度，m
+    no_path_confirmation_count: int = 3  # 连续失败多少次才确认无路
+    clear_path_confirmation_count: int = 3  # 绕障后连续直线安全多少帧才恢复直飞
+    avoidance_reuse_min_distance: float = 0.35  # 旧绕障航点距机体大于此值才复用，m
+    unknown_is_occupied: bool = False  # 初期允许穿过未观测格；严格模式可设True
+    vertical_band: float = 0.2  # 投影到二维规划面时检查的上下半高，m
+    safety_corridor_half_width: float = 0.25  # 目标方向窄走廊半宽，m
+    allow_diagonal: bool = True
+    max_search_nodes: int = 60_000  # 本地二维/三维种子搜索共用的节点上限
+    global_return_inflation_radius: float = 0.3  # 全局返航障碍膨胀半径，m
+    global_return_trace_radius: float = 0.45  # 实际去程轨迹形成的已知安全走廊半径，m
+    # NED 的 Down 轴向下为正；缩小上方范围可过滤天花板钢筋的二维投影。
+    global_return_above_height: float = 0.25  # 全局返航检查飞行平面上方高度，m
+    global_return_below_height: float = 0.9  # 向下聚合多层体素，补全柱墙轮廓，m
+    global_return_max_search_nodes: int = 300_000
+
+    # C++/Python EGO 风格局部规划共用参数。这里不依赖 ROS；A* 只负责为
+    # 碰撞段提供拓扑种子并优化为B样条；已验证畅通航段直接跟随航点。
+    ego_control_point_spacing: float = 0.35
+    ego_trajectory_lookahead_time: float = 0.8
+    ego_clearance: float = 0.45
+    ego_knot_interval: float = 0.35
+    ego_max_acceleration: float = 1.2
+    ego_feasibility_tolerance: float = 0.05
+    ego_optimization_iterations: int = 200
+    ego_lbfgs_memory: int = 16
+    ego_rebound_max_restarts: int = 6
+    # 仅供显式选择 ego 模式时的 Python 梯度下降实现使用。
+    ego_optimization_step: float = 0.035
+    ego_smoothness_weight: float = 1.0
+    ego_collision_weight: float = 5.0
+    ego_feasibility_weight: float = 0.2
+    ego_fitness_weight: float = 0.15
+    ego_collision_check_step: float = 0.08
+
+    def __post_init__(self) -> None:
+        valid_navigation_modes = {
+            "depth_guard",
+            "astar",
+            "ego",
+            "ego_native",
+        }
+        for name in ("navigation_mode", "return_navigation_mode"):
+            value = getattr(self, name)
+            if value not in valid_navigation_modes:
+                raise ValueError(
+                    f"{name} must be 'depth_guard', 'astar', 'ego', "
+                    "or 'ego_native'."
+                )
+        # String modes, flags and confirmation counts have separate rules.
+        excluded = {"navigation_mode", "return_navigation_mode", "unknown_is_occupied",
+                    "allow_diagonal", "no_path_confirmation_count", "clear_path_confirmation_count"}
+        for item in fields(self):
+            if item.name not in excluded and float(getattr(self, item.name)) <= 0.0:
+                raise ValueError(f"{item.name} must be greater than zero.")
+        if self.slowdown_distance <= self.emergency_stop_distance:
+            raise ValueError(
+                "slowdown_distance must exceed emergency_stop_distance."
+            )
+        if self.avoidance_max_speed > self.cruise_max_speed:
+            raise ValueError(
+                "avoidance_max_speed must not exceed cruise_max_speed."
+            )
+        if int(self.no_path_confirmation_count) < 1:
+            raise ValueError(
+                "no_path_confirmation_count must be at least one."
+            )
+        if int(self.clear_path_confirmation_count) < 1:
+            raise ValueError(
+                "clear_path_confirmation_count must be at least one."
+            )

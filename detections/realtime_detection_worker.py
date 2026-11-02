@@ -1,4 +1,4 @@
-"""Run YOLO-World detection and SAM2 segmentation on the latest RGB frame."""
+"""Run the selected perception backend on the latest synchronized RGB frame."""
 
 from navigation.perception import SemanticFrameStore
 
@@ -11,7 +11,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .object_detect import DetectorConfig, SAM2Segmenter, TiledVehicleDetector
+from .object_detect import DetectorConfig, SAM2Segmenter, SemanticMaskProcessor, TiledVehicleDetector
 
 
 class RealtimeDetectionWorker:
@@ -19,11 +19,18 @@ class RealtimeDetectionWorker:
 
     PREVIEW_PANEL_WIDTH = 480
 
-    def __init__(self, observation_source, config=None, *, semantic_voxels=None) -> None:
+    def __init__(self, observation_source, config=None, *, semantic_voxels=None, mapper_type=None) -> None:
         self.observation_source = observation_source
         self.config = config or DetectorConfig()
-        self.detector = TiledVehicleDetector(self.config)
-        self.segmenter = SAM2Segmenter(self.config)
+        mapper_options = {} if mapper_type is None else {"mapper_type": mapper_type}
+        if self.config.backend == "sam3":
+            from .sam3_client import SAM3Detector
+            self.detector = SAM3Detector(self.config)
+            self.segmenter = SemanticMaskProcessor(self.config, **mapper_options)
+        else:
+            self.detector = TiledVehicleDetector(self.config)
+            self.segmenter = SAM2Segmenter(self.config, **mapper_options)
+        self.backend_label = "SAM3" if self.config.backend == "sam3" else "YOLO-World + SAM2"
         self.segmenter.mapper.semantic_voxels = semantic_voxels
         self.semantic_frames = SemanticFrameStore()
         self._semantic_history = None
@@ -49,8 +56,14 @@ class RealtimeDetectionWorker:
         self._performance = {}
         self._last_performance_report = 0.0
         output_dir = Path(self.config.video_output_dir)
-        self.world_video_path = output_dir / "yolo_world_detection.mp4"
-        self.sam_video_path = output_dir / "sam2_segmentation.mp4"
+        self.world_video_path = output_dir / ("sam3_detection.mp4" if self.config.backend == "sam3" else "yolo_world_detection.mp4")
+        self.sam_video_path = output_dir / ("sam3_segmentation.mp4" if self.config.backend == "sam3" else "sam2_segmentation.mp4")
+        if self.config.save_videos or self.config.save_semantic_map:
+            from dataclasses import asdict
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "perception_backend.json").write_text(json.dumps(
+                {"config": asdict(self.config), "service": getattr(self.detector, "metadata", None)},
+                ensure_ascii=False, indent=2, default=str), encoding="utf-8")
 
     @property
     def video_output_paths(self) -> tuple[Path, ...]:
@@ -98,8 +111,10 @@ class RealtimeDetectionWorker:
             if self.config.prediction_quantization == 16
             else "FP32"
         )
+        if self.config.backend == "sam3":
+            precision = "official service precision"
         print(
-            "--- Real-time YOLO-World + SAM2 enabled: combined window "
+            f"--- Real-time {self.backend_label} enabled: combined window "
             f"'{self.config.window_name}' is active; {precision}, "
             f"target <= {self.config.inference_fps:.0f} FPS ----"
         )
@@ -139,7 +154,7 @@ class RealtimeDetectionWorker:
         error = self._error or self._video_error or self._semantic_map_error
         if error is not None:
             raise RuntimeError(
-                "Real-time YOLO-World/SAM2 perception failed: "
+                f"Real-time {self.backend_label} perception failed: "
                 f"{error!r}"
             ) from error
 
@@ -171,10 +186,10 @@ class RealtimeDetectionWorker:
 
         preview = np.zeros_like(fallback_image)
         if self._error is None:
-            message = "YOLO-World + SAM2: waiting for first inference..."
+            message = f"{self.backend_label}: waiting for first inference..."
             color = (0, 255, 255)
         else:
-            message = f"YOLO-WORLD ERROR: {type(self._error).__name__}"
+            message = f"{self.backend_label} ERROR: {type(self._error).__name__}"
             color = (0, 0, 255)
         cv2.putText(
             preview,
@@ -230,6 +245,7 @@ class RealtimeDetectionWorker:
                     camera_pose_covariance=getattr(
                         observation, "camera_pose_covariance", None
                     ),
+                    **({"masks": self.detector.masks} if self.config.backend == "sam3" else {}),
                     **lidar_options,
                 )
                 segmentation_elapsed = max(
@@ -250,7 +266,8 @@ class RealtimeDetectionWorker:
                         and VehicleInstanceTracker._usable_vehicle_surface(measurement)
                         for name, score, measurement, identity in zip(batch[0], batch[1], batch[2], batch[4]))
                 self.semantic_frames.publish(sensor_frame.timestamp, records, elapsed, voxel_snapshot,
-                    vehicle_observation_pending=pending_vehicle)
+                    vehicle_observation_pending=pending_vehicle,
+                    object_inspection_candidates=self.segmenter.mapper.object_inspection_records(records))
                 if self._recording_enabled and getattr(self.segmenter.mapper, "last_observation_batch", None) is not None:
                     if self._semantic_history is None:
                         history_path = Path(self.config.semantic_map_path).with_name("semantic_observations.jsonl")
@@ -271,9 +288,13 @@ class RealtimeDetectionWorker:
                             item["surface_points_world"] = points[np.linspace(0, len(points)-1, 512, dtype=int)]
                         samples.append(dict(class_name=name, confidence=float(score),
                                             source_instance_id=identity, measurement=item))
-                    self._semantic_history.write(json.dumps({
+                    packet_json = json.dumps({
                         "timestamp": float(stamp), "samples": samples,
-                    }, ensure_ascii=False, allow_nan=False, default=_numpy_json) + "\n")
+                    }, ensure_ascii=False, allow_nan=False, default=_numpy_json)
+                    self._semantic_history.write(packet_json + "\n")
+                    sink = getattr(self, "fastlio_semantic_sink", None)
+                    if sink is not None:
+                        sink(json.loads(packet_json))
                 self.processed_frames += 1
 
                 completed_at = time.monotonic()
@@ -311,7 +332,7 @@ class RealtimeDetectionWorker:
                 rendered = self.detector.draw(rgb_bgr, detections)
                 cv2.putText(
                     rendered,
-                    "YOLO-World "
+                    f"{self.backend_label} detection "
                     f"{self._world_fps:.1f} infer FPS | "
                     f"{world_elapsed * 1000.0:.0f} ms | "
                     f"pipeline {self._display_fps:.1f} FPS | "
@@ -330,7 +351,7 @@ class RealtimeDetectionWorker:
                 )
                 cv2.putText(
                     segmentation,
-                    "SAM2 "
+                    f"{self.backend_label} masks+mapping "
                     f"{self._segmentation_fps:.1f} infer FPS | "
                     f"{segmentation_elapsed * 1000.0:.0f} ms | "
                     f"pipeline {self._display_fps:.1f} FPS | "
@@ -354,11 +375,14 @@ class RealtimeDetectionWorker:
 
                 total = time.monotonic() - started
                 self._performance = {
+                    "backend": self.config.backend,
+                    "class_prompts": list(self.config.class_prompts),
                     "processed_frames": self.processed_frames,
                     "acquisition_wait_ms": acquisition_wait * 1000.,
                     "alignment_ms": (world_started-started) * 1000.,
-                    "yolo_ms": world_elapsed * 1000.,
-                    "sam_geometry_association_ms": segmentation_elapsed * 1000.,
+                    "detector_ms": world_elapsed * 1000.,
+                    "sam3_model_seconds": getattr(self.detector, "last_inference_seconds", None),
+                    "mask_geometry_association_ms": segmentation_elapsed * 1000.,
                     "publish_draw_enqueue_ms": (total-elapsed) * 1000.,
                     "processing_ms": total * 1000.,
                     "pipeline_fps": self._display_fps,
@@ -379,7 +403,7 @@ class RealtimeDetectionWorker:
             if not self._stop.is_set():
                 self._error = error
                 print(
-                    "--- WARNING: real-time YOLO-World/SAM2 stopped: "
+                    f"--- WARNING: real-time {self.backend_label} stopped: "
                     f"{error} ----"
                 )
 

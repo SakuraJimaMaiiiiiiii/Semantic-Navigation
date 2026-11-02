@@ -85,6 +85,7 @@ class SceneMemory:
                     "merged_from": record.get("merged_from", []),
                     "classification_status": record.get("classification_status", "single_category"),
                     "category_evidence": record.get("category_evidence", {}),
+                    "position_status": record.get("position_status", "unassessed"),
                     "confidence": record["confidence"],
                     "observation_count": record["observation_count"],
                     "color": record.get("color", "unknown"),
@@ -180,6 +181,19 @@ class SceneMemory:
 
     def checkpoint(self, directory):
         write_json(Path(directory) / "semantic_graph.partial.json", self.graph())
+
+    def number_final_instances(self):
+        """Finalize public IDs after recording stops; retain source provenance."""
+        from mapping.semantic_numbering import number_exported_instances
+        records, self.semantic_voxels, mapping = number_exported_instances(
+            self.records.values(), self.semantic_voxels)
+        self.records = {record['runtime_instance_id']: record for record in records}
+        self.observed_at = defaultdict(set, {
+            mapping.get(identity, identity): places for identity, places in self.observed_at.items()})
+        self.coobserved = Counter({
+            tuple(sorted(mapping.get(identity, identity) for identity in pair)): count
+            for pair, count in self.coobserved.items()})
+        return mapping
 
     def save_bundle(self, directory, snapshot, navigation_config=None):
         """Commit matching semantics and binary geometry; manifest is written last."""

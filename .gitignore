@@ -1,5 +1,7 @@
 # 大型模型文件
 detections/Yolomode/sam2.1_t.pt
+detections/Yolomode/sam3.pt
+detections/Yolomode/.cache/huggingface/
 detections/Yolomode/yolo26x.pt
 detections/weights/clip/ViT-B-32.pt
 detections/Yolomode/mobileclip_blt.ts
@@ -10,3 +12,16 @@ localization/native_vins/vcpkg_installed/
 localization/_native_vins*.pyd
 localization/_native_vins*.so
 localization/*.dll
+
+# Pinned SAM3 source is recreated by tools/setup_sam3_image.py
+.tools/sam3/
+
+# Reproducible FAST-LIO upstream sources and native output
+localization/native_fastlio/third_party/
+localization/native_fastlio/generated/
+localization/native_fastlio/build*/
+localization/_native_fastlio*.pyd
+localization/_native_fastlio*.so
+echo data/uts.h5 >> .gitignore
+git add .gitignore
+git commit -m Stop tracking large HDF5 data file

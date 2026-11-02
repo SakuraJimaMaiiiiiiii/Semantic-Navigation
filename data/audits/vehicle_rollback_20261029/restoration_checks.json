@@ -1,0 +1,11 @@
+{
+  "runtime_instance_id": true,
+  "position_world": true,
+  "bbox_3d": true,
+  "position_status": true,
+  "observed_oriented_box": true,
+  "connected_fragment_count": true,
+  "merged_from": true,
+  "frozen_v3_sources_unchanged": true,
+  "vehicle_count_equal": true
+}

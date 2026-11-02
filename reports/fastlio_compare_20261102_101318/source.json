@@ -1,0 +1,7 @@
+{
+  "run": "E:\\files\\Semantic Navigation\\data\\runs\\run_20261102_101318_188880",
+  "available_poses": 331,
+  "sampled_scans": 100,
+  "original_data_modified": false,
+  "note": "Identical uniformly sampled scans; PX4 is not ground truth."
+}

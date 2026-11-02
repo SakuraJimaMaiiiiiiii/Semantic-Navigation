@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import time
 
 import numpy as np
 
@@ -16,25 +17,15 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
         super().__init__(*args, **kwargs)
         self._native_backend = native_backend
         if self._native_backend is None:
-            self._load_native_backend()
-
-    @property
-    def native_available(self) -> bool:
-        """当前实例是否正在使用已编译的 C++ 扩展。"""
-        return self._native_backend is not None
+            try:
+                module = importlib.import_module("._native_ego", package=__package__)
+            except ImportError as error:
+                raise RuntimeError("C++ EGO 扩展加载失败，请检查或编译 planner/native_ego") from error
+            self._native_backend = module.NativeEgoPlanner(self._native_config())
 
     @property
     def backend_name(self) -> str:
         return "cpp"
-
-    def _load_native_backend(self) -> None:
-        try:
-            module = importlib.import_module("._native_ego", package=__package__)
-            self._native_backend = module.NativeEgoPlanner(
-                self._native_config()
-            )
-        except Exception as error:
-            raise RuntimeError("C++ EGO 初始化失败，请检查或编译 planner/native_ego") from error
 
     def _native_config(self) -> dict[str, float | int]:
         config = self.config
@@ -99,34 +90,36 @@ class NativeEgoLocalPlanner(EgoLocalPlanner):
 
     def _build_trajectory(self, snapshot, blocked, seed_path):
         backend = self._native_backend
-        try:
-            result = backend.rebound_replan(
-                np.ascontiguousarray(seed_path, dtype=np.float64),
-                np.ascontiguousarray(blocked, dtype=np.uint8),
-                np.ascontiguousarray(snapshot.origin_ned, dtype=np.float64),
-                float(snapshot.resolution),
-                np.ascontiguousarray(
-                    self._planning_start_velocity,
-                    dtype=np.float64,
-                ),
-                np.ascontiguousarray(
-                    self._planning_start_acceleration,
-                    dtype=np.float64,
-                ),
-                np.zeros(3, dtype=np.float64),
-            )
-            if not bool(result["success"]):
-                return None
-            points = np.asarray(result["control_points"], dtype=np.float64)
-            interval = float(result["knot_interval"])
-            if self.navigation_altitude is not None:
-                points = points.copy()
-                points[:, 2] = self.navigation_altitude
-                interval = max(interval, self._feasible_knot_interval(points))
-            trajectory = UniformCubicBSpline(points, interval)
-            # C++ 已做密集碰撞检测；这里保留 Python 边界的独立复核。
-            if self._trajectory_is_free(snapshot, blocked, trajectory):
-                return trajectory
-        except Exception as error:
-            raise RuntimeError("C++ EGO 轨迹规划失败") from error
+        started = time.monotonic()
+        result = backend.rebound_replan(
+            np.ascontiguousarray(seed_path, dtype=np.float64),
+            np.ascontiguousarray(blocked, dtype=np.uint8),
+            np.ascontiguousarray(snapshot.origin_ned, dtype=np.float64),
+            float(snapshot.resolution),
+            np.ascontiguousarray(
+                self._planning_start_velocity,
+                dtype=np.float64,
+            ),
+            np.ascontiguousarray(
+                self._planning_start_acceleration,
+                dtype=np.float64,
+            ),
+            np.zeros(3, dtype=np.float64),
+        )
+        self.last_plan_timings['native_solver_seconds'] = time.monotonic()-started
+        if not bool(result["success"]):
+            return None
+        points = np.asarray(result["control_points"], dtype=np.float64)
+        interval = float(result["knot_interval"])
+        if self.navigation_altitude is not None:
+            points = points.copy()
+            points[:, 2] = self.navigation_altitude
+            interval = max(interval, self._feasible_knot_interval(points))
+        trajectory = UniformCubicBSpline(points, interval)
+        # C++ 已做密集碰撞检测；这里保留 Python 边界的独立复核。
+        started = time.monotonic()
+        free = self._trajectory_is_free(snapshot, blocked, trajectory)
+        self.last_plan_timings['trajectory_clearance_seconds'] = time.monotonic()-started
+        if free:
+            return trajectory
         return None

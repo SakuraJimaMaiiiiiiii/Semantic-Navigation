@@ -1,0 +1,13 @@
+{
+  "run": "run_20261029_103116_758936",
+  "reason": "exploration_no_motion_progress",
+  "seconds_since_progress": 8.10999999998603,
+  "displacement_m": 0.03072320826035755,
+  "snapshot_segment_free": true,
+  "detail_segment_free": true,
+  "command_lead_xy_m": 0.03456259794233732,
+  "waiting_event_elapsed": 108.95299999997951,
+  "clear_event_elapsed": 111.07799999997951,
+  "failure_event_elapsed": 114.09399999992456,
+  "clear_to_failure_seconds": 3.015999999945052
+}

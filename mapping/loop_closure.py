@@ -404,7 +404,6 @@ class PointCloudLoopClosure:
         gradient = np.zeros((node_count, 4), dtype=np.float64)
         diagonal = np.full((node_count, 4), 1e-3, dtype=np.float64)
         linearized = []
-        epsilon = np.asarray([1e-4, 1e-4, 1e-4, 1e-5])
 
         for edge in self.edges:
             i, j = edge.source_index, edge.target_index
@@ -413,30 +412,17 @@ class PointCloudLoopClosure:
                 poses[j],
                 edge.measurement,
             )
-            jacobian_i = np.empty((4, 4), dtype=np.float64)
-            jacobian_j = np.empty((4, 4), dtype=np.float64)
-            for column in range(4):
-                perturbed = poses[i].copy()
-                perturbed[column] += epsilon[column]
-                jacobian_i[:, column] = (
-                    _edge_residual(
-                        perturbed,
-                        poses[j],
-                        edge.measurement,
-                    )
-                    - residual
-                ) / epsilon[column]
-
-                perturbed = poses[j].copy()
-                perturbed[column] += epsilon[column]
-                jacobian_j[:, column] = (
-                    _edge_residual(
-                        poses[i],
-                        perturbed,
-                        edge.measurement,
-                    )
-                    - residual
-                ) / epsilon[column]
+            # Relative translation is R(yaw_i).T @ (p_j - p_i).
+            c, s = math.cos(poses[i, 3]), math.sin(poses[i, 3])
+            rotation = np.array([[c, s, 0.], [-s, c, 0.], [0., 0., 1.]])
+            relative = rotation @ (poses[j, :3]-poses[i, :3])
+            jacobian_i = np.zeros((4, 4))
+            jacobian_j = np.zeros((4, 4))
+            jacobian_i[:3, :3] = -rotation
+            jacobian_j[:3, :3] = rotation
+            jacobian_i[:3, 3] = [relative[1], -relative[0], 0.]
+            jacobian_i[3, 3] = -1.
+            jacobian_j[3, 3] = 1.
 
             weight = float(edge.weight)
             linearized.append(
@@ -541,11 +527,11 @@ def _edge_residual(
     target_pose: np.ndarray,
     measurement: np.ndarray,
 ) -> np.ndarray:
-    predicted = (
-        np.linalg.inv(_pose_matrix(source_pose))
-        @ _pose_matrix(target_pose)
-    )
-    predicted_vector = _pose_vector(predicted)
+    c, s = math.cos(source_pose[3]), math.sin(source_pose[3])
+    delta = target_pose[:3]-source_pose[:3]
+    predicted_vector = np.array([c*delta[0]+s*delta[1],
+                                 -s*delta[0]+c*delta[1], delta[2],
+                                 target_pose[3]-source_pose[3]])
     residual = predicted_vector - measurement
     residual[3] = _wrap_angle(residual[3])
     return residual

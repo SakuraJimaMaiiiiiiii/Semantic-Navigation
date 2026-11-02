@@ -39,6 +39,8 @@ class FrontierExplorationConfig:
     return_time_reserve: float = 120.0
     relation_radius: float = 6.0
     near_distance: float = 3.0
+    vehicle_inspection_views: int = 2  # 每辆车最多补充观察点数
+    vehicle_inspection_timeout: float = 45.0  # 每辆车补充观察总预算，秒
     home_tolerance: float = 0.6
     server_port: int = 8877
 
@@ -58,6 +60,7 @@ class FrontierExplorationConfig:
             or not isinstance(self.frontier_empty_confirmations, int)
             or not isinstance(self.recovery_observations, int)
             or not isinstance(self.gain_window_viewpoints, int)
+            or not isinstance(self.vehicle_inspection_views, int)
         ):
             raise ValueError(
                 "viewpoint, retry, confirmation, recovery, gain-window, "

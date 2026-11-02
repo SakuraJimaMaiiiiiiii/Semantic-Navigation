@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import bisect
 import math
+import queue
 import threading
 import time
 from collections import deque
@@ -119,9 +120,21 @@ class SynchronizedRGBDStream:
         if self._thread is not None and self._thread.is_alive():
             return
         self._stop.clear()
+        self._pose_packets = queue.Queue(maxsize=10000)
+        self._pose_connection = None
+        self.pose_statistics = dict(received=0, overflow=0, accepted=0, source_skew_rejected=0)
         mav = getattr(self.vehicle, "mav", None)
         if mav is not None:
-            # 仅请求遥测，不修改飞控参数/固件。与 SDK 共用连接，不另开接收端口。
+            connection = getattr(mav, 'the_connection', None)
+            if connection is not None and hasattr(connection, 'message_hooks'):
+                self._pose_connection = connection
+                connection.message_hooks.append(self._capture_pose)
+            # Request the pose messages used by get_drone_state at a rate
+            # compatible with the 30 ms pairing gate. Polling faster alone
+            # cannot create new MAVLink measurements.
+            interval_us = int(round(1_000_000. / min(self.sample_rate, 50.)))
+            mav.SendMavCmdLong(511, 30, interval_us)  # ATTITUDE
+            mav.SendMavCmdLong(511, 32, interval_us)  # LOCAL_POSITION_NED
             mav.SendMavCmdLong(511, 331, 100000)  # ODOMETRY, 10 Hz
         self._sampler_error = None
         self._thread = threading.Thread(
@@ -134,6 +147,10 @@ class SynchronizedRGBDStream:
     def close(self) -> None:
         """停止状态采样；重复调用也是安全的。"""
         self._stop.set()
+        connection = getattr(self, '_pose_connection', None)
+        if connection is not None:
+            connection.message_hooks.remove(self._capture_pose)
+            self._pose_connection = None
         with self._condition:
             self._condition.notify_all()
         thread = self._thread
@@ -142,6 +159,8 @@ class SynchronizedRGBDStream:
             thread.join(timeout=2.0)
         mav = getattr(self.vehicle, "mav", None)
         if thread is not None and mav is not None:
+            mav.SendMavCmdLong(511, 30, 0)
+            mav.SendMavCmdLong(511, 32, 0)
             mav.SendMavCmdLong(511, 331, 0)  # 恢复默认遥测速率
 
     def get_observation(self, timeout: float = 1.0) -> SynchronizedObservation:
@@ -231,13 +250,35 @@ class SynchronizedRGBDStream:
             f"No synchronized RGB-D observation within {timeout:.1f} s."
         )
 
+    def _capture_pose(self, connection, message):
+        if message.get_type() not in ('ATTITUDE', 'LOCAL_POSITION_NED') or self._stop.is_set():
+            return
+        # pymavlink publishes immutable message objects before invoking hooks.
+        # Keep both updates: position can arrive just after its matching attitude.
+        messages = connection.messages
+        if 'ATTITUDE' not in messages or 'LOCAL_POSITION_NED' not in messages:
+            return
+        packet = {name: messages.get(name) for name in ('ATTITUDE', 'LOCAL_POSITION_NED', 'ODOMETRY')}
+        self.pose_statistics['received'] += 1
+        try:
+            self._pose_packets.put_nowait(packet)
+        except queue.Full:
+            self.pose_statistics['overflow'] += 1
+
     def _sample_loop(self) -> None:
         period = 1.0 / self.sample_rate
         next_sample = time.monotonic()
         last_px4_boot_timestamp = None
         try:
             while not self._stop.is_set():
-                state = self.vehicle.get_drone_state()
+                if self._pose_connection is not None:
+                    try:
+                        packet = self._pose_packets.get(timeout=.1)
+                    except queue.Empty:
+                        continue
+                    state = self.vehicle.get_drone_state(pose_messages=packet)
+                else:
+                    state = self.vehicle.get_drone_state()
                 boot_timestamp = state.px4_boot_timestamp
                 # MAVLink ATTITUDE 的 time_boot_ms 变化时才保存新状态，避免
                 # 100 Hz轮询把同一条旧飞控数据伪装成多个“新”时间样本。
@@ -252,7 +293,13 @@ class SynchronizedRGBDStream:
                     with self._condition:
                         if not self._states or state.timestamp > self._states[-1].timestamp:
                             self._states.append(state)
+                            self.pose_statistics['accepted'] += 1
                             self._condition.notify_all()
+                elif is_new_px4_state and state.pose_sync_error > self.max_sync_error:
+                    self.pose_statistics['source_skew_rejected'] += 1
+
+                if self._pose_connection is not None:
+                    continue  # Drain every captured packet, without polling sleeps.
 
                 next_sample += period
                 wait_time = next_sample - time.monotonic()
