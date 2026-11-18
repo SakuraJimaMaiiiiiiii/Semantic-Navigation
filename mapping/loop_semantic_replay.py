@@ -112,7 +112,9 @@ def replay(path, timestamps, corrections, resolution, max_voxels, *, live=False,
 def export_bundle(run, output, snapshot, timestamps, corrections, *, source=None, live=False, number_ids=False, on_publish=None, check_cancelled=None, mapper_type=SemanticInstanceMapper):
     """Publish one complete geometry/semantics/HTML revision by directory rename."""
     from pathlib import Path
+    import tempfile
     import uuid
+    from config.output_retention import prune_generated_bundles
     from config.exploration_config import FrontierExplorationConfig
     from navigation.scene_memory import SceneMemory, write_json
     from navigation.map_view import render_map
@@ -133,7 +135,6 @@ def export_bundle(run, output, snapshot, timestamps, corrections, *, source=None
                 record['source_replay_instance_id'] = record.pop('source_runtime_instance_id')
     revision = 'revision_' + uuid.uuid4().hex[:12]
     root = Path(output)
-    stage = root / ('.'+revision+'.tmp')
     scene = SceneMemory(revision, source['home_ned'], source['initial_yaw_rad'], FrontierExplorationConfig())
     scene.records = {r['runtime_instance_id']:r for r in records}
     scene.semantic_voxels = evidence
@@ -144,32 +145,46 @@ def export_bundle(run, output, snapshot, timestamps, corrections, *, source=None
         scene.add_place(f'keyframe_{i:04}', position)
     if check_cancelled is not None:
         check_cancelled()
-    scene.save_bundle(stage, snapshot)
-    write_json(stage/'instance_id_mapping.json', {
-        'source_namespace':'semantic_replay_before_numbering',
-        'target_namespace':revision, 'old_to_new':instance_ids})
-    write_json(stage/'source_identity_mapping.json', {
-        'source_namespace': 'live_detection', 'target_namespace': revision,
-        'replay_to_source': {r['runtime_instance_id']:r['source_identity_observations'] for r in records},
-    })
-    descriptor = json.loads((stage/'semantic_map.json').read_text())
-    descriptor['coordinate_frame'] = 'loop_corrected_ned'
-    descriptor['observation_replay_count'] = count
-    descriptor['source_run'] = Path(run).name
-    write_json(stage/'semantic_map.json', descriptor)
-    manifest = json.loads((stage/'bundle.json').read_text())
-    manifest['coordinate_frame'] = 'loop_corrected_ned'
-    manifest['navigation_enabled'] = False
-    write_json(stage/'bundle.json', manifest)
-    if not live:
-        render_map(stage/'map.html', snapshot, scene,
-                   state='OFFLINE: loop corrected geometry + semantics; PX4 navigation separate')
-    destination = root / revision
-    if check_cancelled is not None:
-        check_cancelled()
-    stage.replace(destination)
-    write_json(root/'latest.json', {'revision':revision, 'directory':revision,
-                                  'coordinate_frame':'loop_corrected_ned'})
+    root.mkdir(parents=True, exist_ok=True)
+    # A failed/cancelled export must not accumulate partial multi-MB archives.
+    with tempfile.TemporaryDirectory(prefix='.'+revision+'-', dir=root) as temporary:
+        stage = Path(temporary) / 'bundle'
+        scene.save_bundle(stage, snapshot)
+        write_json(stage/'instance_id_mapping.json', {
+            'source_namespace':'semantic_replay_before_numbering',
+            'target_namespace':revision, 'old_to_new':instance_ids})
+        write_json(stage/'source_identity_mapping.json', {
+            'source_namespace': 'live_detection', 'target_namespace': revision,
+            'replay_to_source': {r['runtime_instance_id']:r['source_identity_observations'] for r in records},
+        })
+        descriptor = json.loads((stage/'semantic_map.json').read_text(encoding='utf-8'))
+        descriptor['coordinate_frame'] = 'loop_corrected_ned'
+        descriptor['observation_replay_count'] = count
+        descriptor['source_run'] = Path(run).name
+        write_json(stage/'semantic_map.json', descriptor)
+        manifest = json.loads((stage/'bundle.json').read_text(encoding='utf-8'))
+        manifest['coordinate_frame'] = 'loop_corrected_ned'
+        manifest['navigation_enabled'] = False
+        write_json(stage/'bundle.json', manifest)
+        if not live:
+            render_map(stage/'map.html', snapshot, scene,
+                       state='OFFLINE: loop corrected geometry + semantics; PX4 navigation separate')
+        destination = root / revision
+        if check_cancelled is not None:
+            check_cancelled()
+        stage.replace(destination)
+        try:
+            write_json(root/'latest.json', {'revision':revision, 'directory':revision,
+                                          'coordinate_frame':'loop_corrected_ned'})
+        except BaseException:
+            # Do not leave a new orphan on every retry of a failed publication.
+            destination.rename(stage)
+            raise
+    if live:
+        prune_generated_bundles(root, destination, pattern=r'revision_[0-9a-f]{12}', files={
+            'private/navigation_cache.npz', 'semantic_graph.json', 'occupancy_2d.npz',
+            'semantic_map.json', 'bundle.json', 'instance_id_mapping.json', 'source_identity_mapping.json',
+        })
     if on_publish is not None:
         on_publish(snapshot, scene)
     return destination, count

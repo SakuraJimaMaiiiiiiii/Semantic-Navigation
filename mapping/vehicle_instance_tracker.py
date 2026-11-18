@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from itertools import combinations
 
 import numpy as np
-from .instance_surface import InstanceSurface
+from .instance_surface import InstanceSurface, measured_patch_overlap
 
 
 VEHICLE_CLASSES = ("car", "truck", "bus", "van")
@@ -31,6 +31,7 @@ class VehicleTrack:
     bridge_counts: dict[int, int] = field(default_factory=dict)
     separate_counts: dict[int, int] = field(default_factory=dict)
     connected_fragment_count: int = 0
+    hypothesis_id: int = 0
 
     @property
     def map_position(self):
@@ -54,6 +55,7 @@ class VehicleInstanceTracker:
     """一辆车一个全程不复用的ID；不确定的观测不更新历史身份。"""
 
     _merge_window_seconds = 2.0
+    _max_pending_tracks = 32
 
     def __init__(self, mahalanobis_gate=7.815, max_distance=2.5,
                  appearance_gate=0.55, ambiguity_margin=0.12,
@@ -86,8 +88,10 @@ class VehicleInstanceTracker:
         self.replay_source_votes = {}
         self._replay_supported_pairs = set()
         self._next_id = 1
+        self._next_hypothesis_id = 1
         self._last_timestamp = None
         self._last_vehicle_timestamp = None
+        self._fresh_shared_pairs = set()
         self._confirmation_window = 2.0
         self._identity = np.eye(3)
         self._viewpoint_covariance = self._identity * viewpoint_noise_std**2
@@ -99,6 +103,7 @@ class VehicleInstanceTracker:
         if self._last_timestamp is not None and timestamp <= self._last_timestamp:
             return ids
         self._last_timestamp = timestamp
+        self._fresh_shared_pairs = set()
         indices = [i for i, obs in enumerate(observations)
                    if obs is not None and self._usable_vehicle_surface(obs)]
         # Adapt to slow positive observations, not to missed/invalid detections.
@@ -111,7 +116,8 @@ class VehicleInstanceTracker:
         self._merge_window_seconds = confirmation_window
         self._expire_merge_evidence(timestamp)
         self._pending = [track for track in self._pending
-                         if timestamp-track.last_seen <= (max(90., confirmation_window)
+                         if (track.possible_parents and track.observation_count >= self.confirmation_observations)
+                         or timestamp-track.last_seen <= (max(90., confirmation_window)
                              if track.observation_count >= self.confirmation_observations else confirmation_window)]
         for track in self._pending:
             track.possible_parents = {self.canonical_id(i) for i in track.possible_parents}
@@ -312,7 +318,9 @@ class VehicleInstanceTracker:
                     confidence=float(confidences[index]),
                     observation_count=1,
                     last_seen=timestamp,
+                    hypothesis_id=self._next_hypothesis_id,
                 )
+                self._next_hypothesis_id += 1
                 track.surface.update(obs.surface_points_world)
                 self._remember_visuals(track, obs)
                 track.possible_parents = self._partial_parent_candidates(obs)
@@ -322,17 +330,32 @@ class VehicleInstanceTracker:
             # 有候选但分配不唯一时保持 None，不造新ID也不污染已有轨迹。
         # Repeated separate, one-to-one detections provide independence evidence.
         # Merely revisiting an isolated face must never release its hypothesis.
-        observed_ids = {track.instance_id for track in assigned_tracks.values() if track.instance_id}
+        observed_tracks = {track.instance_id: track for track in assigned_tracks.values() if track.instance_id}
         for index, track in assigned_tracks.items():
             if track.instance_id or not track.possible_parents:
                 continue
             for parent in list(track.possible_parents):
+                other = observed_tracks.get(parent)
+                # Two masks in one image can be fragments of one car. Release
+                # a deferred identity only after repeated disjoint, independently
+                # supported body models, not repeated sightings of two patches.
+                independent = (other is not None
+                    and track.surface.vehicle_geometry()['position_status'] == 'multi_surface_estimate'
+                    and other.surface.vehicle_geometry()['position_status'] == 'multi_surface_estimate'
+                    and self._shared_footprint(track, other)[0] == 0.)
                 track.separate_counts[parent] = (track.separate_counts.get(parent, 0)+1
-                                                  if parent in observed_ids else 0)
+                                                  if independent else 0)
                 if track.separate_counts[parent] >= self.confirmation_observations:
                     track.possible_parents.remove(parent)
             ids[index] = self._confirm(track)
         self._distinct_pairs.update(combinations(sorted(set(i for i in ids if i is not None)), 2))
+        # Two proposals may cover the same bodywork. A simultaneous assignment
+        # is independent evidence only when their measured surfaces differ.
+        for (i, a), (j, b) in combinations(assigned_tracks.items(), 2):
+            if (a.instance_id and b.instance_id and a.instance_id != b.instance_id
+                    and measured_patch_overlap(observations[i].surface_points_world,
+                                               observations[j].surface_points_world)):
+                self._fresh_shared_pairs.add(tuple(sorted((a.instance_id, b.instance_id))))
         # Ambiguous observations do not update tracks, but can confirm that two
         # previously split IDs repeatedly explain the same measured surface.
         observed_pairs = set()
@@ -341,6 +364,9 @@ class VehicleInstanceTracker:
                                 if track.instance_id and shared_views[row, col])
             observed_pairs.update(combinations(candidates, 2))
         self._merge_duplicates(timestamp, observed_pairs)
+        # Remember mature unresolved static fragments across revisits, with a
+        # fixed capacity rather than retaining an unlimited observation history.
+        self._pending = sorted(self._pending, key=lambda track: track.last_seen)[-self._max_pending_tracks:]
         return [None if identity is None else self.canonical_id(identity) for identity in ids]
 
     def canonical_id(self, identity):
@@ -366,6 +392,9 @@ class VehicleInstanceTracker:
             appearance_distance = min(self._appearance_distance(a, observation.appearance)
                                       for a in track.appearance_gallery or [track.appearance])
             if appearance_distance > self.appearance_gate:
+                continue
+            if self._complementary_body_fragment(track, observation):
+                result.add(identity)
                 continue
             # An oblique bumper/corner is not necessarily a thin plane. If it
             # partially overlaps a much fuller measured car, keep its identity
@@ -393,6 +422,69 @@ class VehicleInstanceTracker:
                 result.add(identity)
         return result
 
+    def _complementary_body_fragment(self, track, observation):
+        """Defer complementary side/end surfaces; this never merges IDs.
+
+        Opposite side portions or an end corner may have no measured overlap.
+        Require compatible height and a single plausible car-sized extent.
+        Similar paint alone, or a neighboring parallel car, is insufficient.
+        """
+        parent = track.surface.supported_points() if hasattr(track, 'surface') else np.empty((0, 3))
+        points = getattr(observation, 'surface_points_world', None)
+        if points is None or len(points) < 12 or len(parent) < 12:
+            return False
+        points = np.asarray(points)
+        low = max(track.bbox_3d_min[2], observation.bbox_3d_min[2])
+        high = min(track.bbox_3d_max[2], observation.bbox_3d_max[2])
+        height = min(track.bbox_3d_max[2]-track.bbox_3d_min[2],
+                     observation.bbox_3d_max[2]-observation.bbox_3d_min[2])
+        if height < .4 or high-low < .5*height:
+            return False
+        # Use the measured face direction, including cars parked at an angle.
+        _, vectors = np.linalg.eigh(np.cov(points[:, :2].T))
+        axes = [vectors[:, -1]]
+        model = track.surface.vehicle_geometry().get('observed_oriented_box')
+        if model is not None and model['size'][0] >= 1.5*model['size'][1]:
+            # A tiny oblique patch has a noisy PCA direction. An elongated,
+            # repeatedly measured parent can also supply the candidate axis.
+            axes.append(np.array([np.cos(model['yaw']), np.sin(model['yaw'])]))
+        for axis in axes:
+            basis = np.column_stack((axis, [-axis[1], axis[0]]))
+            a0, a1 = np.percentile(parent[:, :2] @ basis, [2.5, 97.5], axis=0)
+            b0, b1 = np.percentile(points[:, :2] @ basis, [2.5, 97.5], axis=0)
+            combined = np.maximum(a1, b1)-np.minimum(a0, b0)
+            tolerance = 1.5*InstanceSurface.resolution
+            lateral_center = (b0[1]+b1[1])*.5
+            gap = max(0., max(a0[0], b0[0])-min(a1[0], b1[0]))
+            extension = max(a0[0]-b0[0], b1[0]-a1[0])
+            if (b1[1]-b0[1] <= .6 and b1[0]-b0[0] >= .3
+                    and 2.5 <= combined[0] <= 6.0 and combined[1] <= 3.0
+                    and combined[0] >= 1.5*combined[1]
+                    and a0[1]-tolerance <= lateral_center <= a1[1]+tolerance
+                    and gap <= self.max_distance and extension >= 2*InstanceSurface.resolution):
+                return True
+            # A square end/corner patch is not a thin continuation. Relative to
+            # a measured long side it must lie near an end, mostly within its
+            # length, and extend across the width of a single car. Check both
+            # observation orders. Appearance/geometry only defer publication;
+            # a connecting view is still required to import these surfaces.
+            for side0, side1, end0, end1 in ((a0, a1, b0, b1), (b0, b1, a0, a1)):
+                side_size, end_size = side1-side0, end1-end0
+                overlap = max(0., min(side1[0], end1[0])-max(side0[0], end0[0]))
+                end_center = (end0[0]+end1[0])*.5
+                end_offset = min(abs(end_center-side0[0]), abs(side1[0]-end_center))
+                width_gap = max(0., max(side0[1], end0[1])-min(side1[1], end1[1]))
+                if (2.5 <= side_size[0] <= 6.0 and side_size[1] <= .6
+                        and .3 <= end_size[0] <= min(2.5, .5*side_size[0])
+                        and end_size[1] >= max(.5, 1.5*side_size[1])
+                        and overlap >= .75*end_size[0]
+                        and end_offset <= .35*side_size[0]
+                        and combined[0] <= 6.0 and 1.0 <= combined[1] <= 3.0
+                        and combined[0] >= 1.5*combined[1]
+                        and width_gap <= min(1.0, .5*combined[1])):
+                    return True
+        return False
+
     def connection_hypotheses(self):
         """Suggest inspection only: proximity does not authorize identity fusion."""
         result = {}
@@ -406,13 +498,16 @@ class VehicleInstanceTracker:
                 gap = np.maximum(0., np.maximum(track.bbox_3d_min, fragment.bbox_3d_min)
                                  - np.minimum(track.bbox_3d_max, fragment.bbox_3d_max))
                 if (np.linalg.norm(gap[:2]) <= self.max_distance and gap[2] == 0
-                        and max((high-low)[:2]) <= 6.0 and min((high-low)[:2]) <= 3.0
+                        and (identity in getattr(fragment, 'possible_parents', ())
+                             or (max((high-low)[:2]) <= 6.0 and min((high-low)[:2]) <= 3.0))
                         and fragment.separate_counts.get(identity, 0) < self.confirmation_observations):
                     parents.append(identity)
             if len(parents) == 1:
                 result.setdefault(parents[0], []).append({
                     "min": fragment.bbox_3d_min.tolist(), "max": fragment.bbox_3d_max.tolist(),
-                    "last_seen": fragment.last_seen})
+                    "last_seen": fragment.last_seen,
+                    "hypothesis_key": (f"vehicle_fragment:{fragment.hypothesis_id}"
+                                       if getattr(fragment, 'hypothesis_id', 0) else None)})
         return result
 
     @staticmethod
@@ -511,7 +606,8 @@ class VehicleInstanceTracker:
             shared_patch = (common_appearance and iou > 0.
                             and distance <= self.max_distance and a.surface.shares_patch(b.surface))
             overturn_split = (shared_patch and a.surface.shares_patch(b.surface, minimum_fraction=.5)
-                              and not (a.last_seen == timestamp and b.last_seen == timestamp))
+                              and (pair in self._fresh_shared_pairs
+                                   or not (a.last_seen == timestamp and b.last_seen == timestamp)))
             # A split mask can create two IDs in one frame. Only repeated fresh
             # views with >=50% reciprocal stable patch support can overturn it;
             # a new same-frame independent assignment still vetoes merging.
@@ -609,7 +705,7 @@ class VehicleInstanceTracker:
             if bounds is not None:
                 a.bbox_3d_min, a.bbox_3d_max = bounds
             a.observation_count = total
-            a.last_seen = max(a.last_seen,b.last_seen)
+            a.last_seen = timestamp
             a.appearance_gallery = (a.appearance_gallery+b.appearance_gallery)[-8:]
             for color, value in b.color_votes.items():
                 a.color_votes[color] = a.color_votes.get(color,0.)+value

@@ -201,7 +201,6 @@ class InputTests(unittest.TestCase):
     def test_cli_uses_startup_file_and_allows_override(self):
         from navigation.target_navigation_config import parse_config
         _,args=parse_config([],include_perception=True)
-        self.assertEqual(args.fastlio, 'live')
-        _,args=parse_config(['--fastlio','record','--sam3'],include_perception=True)
-        self.assertEqual(args.fastlio,'record')
+        self.assertFalse(hasattr(args, 'fastlio'))
+        _,args=parse_config(['--sam3'],include_perception=True)
         self.assertEqual(args.perception_backend,'sam3')

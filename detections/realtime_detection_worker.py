@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 
 from .object_detect import DetectorConfig, SAM2Segmenter, SemanticMaskProcessor, TiledVehicleDetector
+from .sam3_transport import SAM3TransportError
 
 
 class RealtimeDetectionWorker:
@@ -35,6 +36,7 @@ class RealtimeDetectionWorker:
         self.semantic_frames = SemanticFrameStore()
         self._semantic_history = None
         self._recording_enabled = True
+        self._idle_mode = False
         self.processed_frames = 0
         self._stop = threading.Event()
         self._thread = None
@@ -50,6 +52,9 @@ class RealtimeDetectionWorker:
         self._video_thread = None
         self._video_error = None
         self._semantic_map_error = None
+        self._sam3_consecutive_failures = 0
+        self._sam3_transport_failures = 0
+        self._sam3_failure_phases = {}
         self._video_queue = queue.Queue(maxsize=3)
         self._recording_started_at = None
         self._recorded_frames = 0
@@ -81,6 +86,18 @@ class RealtimeDetectionWorker:
     def semantic_snapshot(self):
         """Thread-safe complete frame for navigation; never exposes the live mapper."""
         return self.semantic_frames.snapshot()
+
+    @property
+    def target_inference_fps(self):
+        return (min(self.config.inference_fps, self.config.idle_inference_fps)
+                if self._idle_mode else self.config.inference_fps)
+
+    def set_idle_mode(self, idle):
+        idle = bool(idle)
+        if idle != self._idle_mode:
+            self._idle_mode = idle
+            state = '待命' if idle else '导航'
+            print(f'--- {self.backend_label} {state}感知：目标 <= {self.target_inference_fps:g} FPS ----')
 
     def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
@@ -116,11 +133,14 @@ class RealtimeDetectionWorker:
         print(
             f"--- Real-time {self.backend_label} enabled: combined window "
             f"'{self.config.window_name}' is active; {precision}, "
-            f"target <= {self.config.inference_fps:.0f} FPS ----"
+            f"target <= {self.target_inference_fps:g} FPS ----"
         )
 
     def close(self) -> None:
         self._stop.set()
+        cancel_pending = getattr(self.detector,'cancel_pending',None)
+        if callable(cancel_pending):
+            cancel_pending()
         thread = self._thread
         self._thread = None
         if thread is not None and thread is not threading.current_thread():
@@ -128,6 +148,9 @@ class RealtimeDetectionWorker:
             if thread.is_alive():
                 self._thread = thread
                 raise TimeoutError("Perception did not stop; recording is still active")
+        close_detector = getattr(self.detector, 'close', None)
+        if callable(close_detector):
+            close_detector()
         self._stop_video_thread()
         if self._semantic_history is not None and (thread is None or not thread.is_alive()):
             self._semantic_history.close()
@@ -139,8 +162,8 @@ class RealtimeDetectionWorker:
                 self._semantic_map_error = error
                 print(f"--- WARNING: semantic map save failed: {error} ----")
 
-    def finish_recording(self) -> None:
-        """Flush files at the flight boundary, then resume memory-only perception."""
+    def finish_recording(self, *, resume=False) -> None:
+        """Flush and stop perception; persistent sessions explicitly opt into resume."""
         if not self._recording_enabled:
             return
         from dataclasses import replace
@@ -148,7 +171,9 @@ class RealtimeDetectionWorker:
         self.raise_if_failed()
         self._recording_enabled = False
         self.config = replace(self.config, save_videos=False, save_semantic_map=False)
-        self.start()
+        if resume:
+            self.set_idle_mode(True)
+            self.start()
 
     def raise_if_failed(self) -> None:
         error = self._error or self._video_error or self._semantic_map_error
@@ -204,7 +229,6 @@ class RealtimeDetectionWorker:
         return self._combine_previews(preview, preview)
 
     def _detection_loop(self) -> None:
-        period = 1.0 / float(self.config.inference_fps)
         try:
             while not self._stop.is_set():
                 acquisition_started = time.monotonic()
@@ -228,7 +252,25 @@ class RealtimeDetectionWorker:
                 lidar_options = ({"lidar_alignment": alignment_provider(observation)}
                                  if alignment_provider is not None else {})
                 world_started = time.monotonic()
-                detections = self.detector.detect(rgb_bgr)
+                try:
+                    detections = self.detector.detect(rgb_bgr)
+                except SAM3TransportError as error:
+                    if self._stop.is_set():
+                        break
+                    self._sam3_consecutive_failures += 1
+                    self._sam3_transport_failures += 1
+                    phase = error.phase or 'unknown'
+                    self._sam3_failure_phases[phase] = self._sam3_failure_phases.get(phase, 0)+1
+                    retries = self.config.sam3_max_retries
+                    if self._sam3_consecutive_failures > retries:
+                        raise RuntimeError(f'SAM3 unavailable after {retries+1} consecutive requests') from error
+                    print(f'--- SAM3 请求暂时失败，等待后读取最新帧重试 '
+                          f'({self._sam3_consecutive_failures}/{retries})：{error} ----')
+                    self._stop.wait(self.config.sam3_retry_delay)
+                    continue  # Publish neither an empty result nor the failed/stale frame.
+                if self._sam3_consecutive_failures:
+                    print('--- SAM3 连接已恢复，继续发布新观测 ----')
+                    self._sam3_consecutive_failures = 0
                 world_elapsed = max(
                     time.monotonic() - world_started,
                     1e-6,
@@ -382,6 +424,10 @@ class RealtimeDetectionWorker:
                     "alignment_ms": (world_started-started) * 1000.,
                     "detector_ms": world_elapsed * 1000.,
                     "sam3_model_seconds": getattr(self.detector, "last_inference_seconds", None),
+                    "sam3_transport_failures": self._sam3_transport_failures,
+                    "sam3_failure_phases": dict(self._sam3_failure_phases),
+                    "sam3_transport": getattr(self.detector, 'last_transport_timings', {}),
+                    "idle_mode": self._idle_mode,
                     "mask_geometry_association_ms": segmentation_elapsed * 1000.,
                     "publish_draw_enqueue_ms": (total-elapsed) * 1000.,
                     "processing_ms": total * 1000.,
@@ -396,7 +442,7 @@ class RealtimeDetectionWorker:
                         write_json(Path(self.config.video_output_dir) / "perception_performance.json", self._performance)
                     except OSError as error:
                         print(f"--- 感知耗时报告写入失败：{error} ----")
-                remaining = period - (time.monotonic() - started)
+                remaining = 1.0 / self.target_inference_fps - (time.monotonic() - started)
                 if remaining > 0:
                     self._stop.wait(remaining)
         except Exception as error:

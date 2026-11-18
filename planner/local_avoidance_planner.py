@@ -35,6 +35,7 @@ class LocalPlan:
             "ego_clear",
             "ego_avoid",
             "depth_guard_clear",
+            "height_recovery",
         }
 
 

@@ -133,10 +133,7 @@ class LiveMapTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Bad IMU'):
             recorder.wait_ready(.5)
 
-    def test_cli_live_assumption_is_explicit(self):
+    def test_saved_map_cli_rejects_unused_fastlio_options(self):
         from navigation.target_navigation_config import parse_config
-        _, args = parse_config(['--fastlio', 'live', '--lidar-scan-model',
-                                'snapshot_assumed'], include_perception=True)
-        self.assertEqual(args.fastlio, 'live')
         with self.assertRaises(SystemExit):
-            parse_config(['--fastlio', 'live', '--lidar-scan-model', 'unverified'], include_perception=True)
+            parse_config(['--fastlio', 'live', '--lidar-scan-model', 'snapshot_assumed'], include_perception=True)

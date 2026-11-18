@@ -1,0 +1,108 @@
+{
+  "source": "data/runs/run_20261109_195423_213014/exploration/navigation_graph/update_000327/planning_grid.npz",
+  "note": "Latest saved grid replay only; not contemporaneous flight evidence. Original run files unchanged.",
+  "waypoints": [
+    {
+      "waypoint": 15,
+      "first_connector_distance": 0.17822277278262671,
+      "skipped": [
+        [
+          13.977021334032948,
+          30.817692922519193,
+          -1.4968721866607666
+        ]
+      ],
+      "next_point": [
+        12.879355758785747,
+        29.63730429584354,
+        -1.4968721866607666
+      ],
+      "next_chord_certified": true
+    },
+    {
+      "waypoint": 18,
+      "first_connector_distance": 0.17688929436855558,
+      "skipped": [
+        [
+          13.977021334032948,
+          30.817692922519193,
+          -1.4968721866607666
+        ]
+      ],
+      "next_point": [
+        12.879355758785747,
+        29.63730429584354,
+        -1.4968721866607666
+      ],
+      "next_chord_certified": true
+    },
+    {
+      "waypoint": 21,
+      "first_connector_distance": 0.16207463823825052,
+      "skipped": [
+        [
+          13.977021334032948,
+          30.817692922519193,
+          -1.4968721866607666
+        ]
+      ],
+      "next_point": [
+        12.879355758785747,
+        29.63730429584354,
+        -1.4968721866607666
+      ],
+      "next_chord_certified": true
+    },
+    {
+      "waypoint": 25,
+      "first_connector_distance": 0.17853360606499738,
+      "skipped": [
+        [
+          13.977021334032948,
+          30.817692922519193,
+          -1.4968721866607666
+        ]
+      ],
+      "next_point": [
+        12.879355758785747,
+        29.63730429584354,
+        -1.4968721866607666
+      ],
+      "next_chord_certified": true
+    },
+    {
+      "waypoint": 29,
+      "first_connector_distance": 0.20424854499465173,
+      "skipped": [
+        [
+          13.977021334032948,
+          30.817692922519193,
+          -1.4968721866607666
+        ]
+      ],
+      "next_point": [
+        12.879355758785747,
+        29.63730429584354,
+        -1.4968721866607666
+      ],
+      "next_chord_certified": true
+    },
+    {
+      "waypoint": 30,
+      "first_connector_distance": 0.18068391565921038,
+      "skipped": [
+        [
+          13.977021334032948,
+          30.817692922519193,
+          -1.4968721866607666
+        ]
+      ],
+      "next_point": [
+        12.879355758785747,
+        29.63730429584354,
+        -1.4968721866607666
+      ],
+      "next_chord_certified": true
+    }
+  ]
+}

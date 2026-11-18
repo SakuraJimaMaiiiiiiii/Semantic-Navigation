@@ -9,7 +9,7 @@ import uuid
 import numpy as np
 
 from .target import select_targets
-from .route import NavigationGrid, execution_segment_free, observed_body_segment_free
+from .route import NavigationGrid, execution_segment_free, observed_body_segment_rejection
 from .path_smoothing import rounded_path
 from planner.local_avoidance_planner import LocalPlan
 
@@ -33,6 +33,7 @@ class _FlightGuard:
         self._execution_rejection = None
         self._latest_execution_snapshot = None
         self._recovering_height = False
+        self._front_depth_cache = {}
 
     def _report(self, plan, rejection=None):
         motion_limit = getattr(self.navigator, '_motion_speed_limit', None)
@@ -69,7 +70,19 @@ class _FlightGuard:
             self.last_status = plan.status
             detail = self._execution_plan_detail.get('rejection') if not plan.can_move else None
             reason = detail.get("reason") if detail else None
-            self.navigator._event("LOCAL_EXECUTION", status=plan.status, rejection=reason)
+            event_details = dict(status=plan.status,rejection=reason)
+            if plan.status in {'height_recovery','height_recovery_blocked'}:
+                reader = getattr(self.navigator.vehicle,'height_tracking_diagnostics',None)
+                try:
+                    evidence = reader() if callable(reader) else None
+                except Exception as error:
+                    evidence = None
+                    event_details['height_tracking_error'] = str(error)
+                if isinstance(evidence,dict):
+                    event_details['height_tracking'] = evidence
+                    if not plan.can_move:
+                        detail = dict(detail or {},height_tracking=evidence)
+            self.navigator._event("LOCAL_EXECUTION", **event_details)
             # An asynchronous solve has not produced a certificate yet. This
             # is a scheduling wait, not a rejected route; capturing it with
             # the previous certificate mislabels clear corridors as failures
@@ -87,7 +100,9 @@ class _FlightGuard:
         if self._failure_recorder is None:
             phase = "returning" if getattr(nav, "phase", None) == "returning" else "exploring"
             self._failure_recorder = FailureRecorder(
-                nav.output_path.parent / 'private' / 'diagnostics' / f"{phase}_{uuid.uuid4().hex[:12]}"
+                (nav.output_path.parent if nav.output_path.parent.name == 'private'
+                 else nav.output_path.parent / 'private')
+                / 'diagnostics' / f"{phase}_{uuid.uuid4().hex[:12]}"
             )
         if terminal or self._execution_context is None:
             current = nav.vehicle.get_position()
@@ -110,14 +125,14 @@ class _FlightGuard:
         return getattr(self.inner, name)
 
 
-    def _braking_rejection(self, grid, current):
+    def _braking_evidence(self, current):
         vehicle = getattr(self.navigator, "vehicle", None)
         get_velocity = getattr(vehicle, "get_velocity", None)
         if not callable(get_velocity):
             return None
         velocity = np.asarray(get_velocity(), dtype=float)
         speed = float(np.linalg.norm(velocity[:2]))
-        if speed < 0.05:
+        if not np.isfinite(velocity).all():
             return None
         vehicle_config = getattr(vehicle, "config", None)
         deceleration = float(getattr(vehicle_config, "guided_max_horizontal_acceleration", 0.3))
@@ -127,13 +142,34 @@ class _FlightGuard:
         latency = 1.0 / float(getattr(self.config, "replan_rate", 5.0)) + 1.0/control_rate + 1.0/map_rate
         distance = speed*latency + speed*speed/(2.0*deceleration)
         stop = np.asarray(current, dtype=float).copy()
-        stop[:2] += velocity[:2] * (distance/speed)
-        if not grid.segment_free(current, stop):
+        if speed > 1e-9:
+            stop[:2] += velocity[:2] * (distance/speed)
+        stop[2] += velocity[2]*(latency+speed/(2.*deceleration))
+        return dict(speed_mps=speed,braking_distance_m=distance,
+                    deceleration_mps2=deceleration,braking_endpoint_ned=stop.tolist())
+
+    def _braking_rejection(self, grid, current):
+        evidence = self._braking_evidence(current)
+        if evidence is not None and evidence['speed_mps'] >= .05 and not grid.segment_free(
+                current,evidence['braking_endpoint_ned']):
             return {"reason": "insufficient_braking_corridor",
-                    "speed_mps": speed, "braking_distance_m": distance,
-                    "deceleration_mps2": deceleration,
-                    "braking_endpoint_ned": stop.tolist()}
+                    **evidence}
         return None
+
+    def _forward_clearance(self, snapshot, current, target):
+        from planner.directional_clearance import motion_forward_clearance
+        if snapshot is None:
+            return float(self.navigator.local_map.forward_clearance)
+        velocity = self.navigator.vehicle.get_velocity()
+        clearance = motion_forward_clearance(snapshot,current,target,velocity)
+        if clearance < float(self.config.emergency_stop_distance):
+            evidence = self._braking_evidence(current)
+            if evidence is not None:
+                from planner.certified_depth import refine_front_clearance
+                clearance = refine_front_clearance(snapshot,current,target,evidence['braking_endpoint_ned'],
+                    clearance,self.navigator.config,self.config,getattr(self.navigator.local_map,'config',None),
+                    cache=self._front_depth_cache)
+        return clearance
 
     def revalidate_plan(self, plan, current, *, certificate=None):
         """Validate a published result on the flight thread without running a solver.
@@ -154,7 +190,7 @@ class _FlightGuard:
             return LocalPlan('map_revision_changed', None, np.empty((0, 3)), 0.)
         current = np.asarray(current, dtype=float)
         if grid is not None and (plan.status == 'height_recovery'
-                                 or abs(current[2]-grid.altitude) > grid.resolution):
+                                 or self._height_needs_recovery(current, grid)):
             return self._height_recovery(current, self.navigator.local_map.execution_snapshot)
         target = np.asarray(plan.local_target_ned, dtype=float)
         rejection = None
@@ -173,11 +209,8 @@ class _FlightGuard:
             if not execution_segment_free(local, current, target, self.navigator.config, grid):
                 rejection = {"reason": "latest_local_chord_blocked"}
                 status = "semantic_unknown_or_blocked"
-        from planner.directional_clearance import motion_forward_clearance
         depth_snapshot = self.navigator.local_map.execution_snapshot
-        forward_clearance = (float(self.navigator.local_map.forward_clearance)
-                             if depth_snapshot is None else motion_forward_clearance(
-                                 depth_snapshot, current, target, self.navigator.vehicle.get_velocity()))
+        forward_clearance = self._forward_clearance(depth_snapshot,current,target)
         # EGO detours are validated by their curve; the front scalar applies
         # only to a direct route segment.
         if (rejection is None and plan.status == "route_clear"
@@ -188,16 +221,29 @@ class _FlightGuard:
         if rejection is not None:
             self._execution_rejection = rejection
             return replace(plan, status=status, local_target_ned=None, speed_limit=0.)
+        if forward_clearance == float(self.config.emergency_stop_distance):
+            plan = replace(plan,speed_limit=min(plan.speed_limit,.1))
         return plan
 
     def check_execution_health(self):
         self.navigator._check_health()
 
+    def _height_needs_recovery(self, current, grid):
+        # Correct before a full voxel of drift consumes the certified body band.
+        threshold = min(.03, .15*grid.resolution)
+        if self._recovering_height:
+            threshold = min(.02, .1*grid.resolution)
+        return abs(current[2]-grid.altitude) > threshold
+
     def _height_recovery(self, current, snapshot):
         self._recovering_height = True
+        self._latest_execution_snapshot = snapshot
         target = np.asarray(current, dtype=float).copy()
         target[2] = self.navigator.altitude
-        if snapshot is None or not observed_body_segment_free(snapshot, current, target, self.navigator.config):
+        rejection = observed_body_segment_rejection(snapshot, current, target, self.navigator.config)
+        if rejection is not None:
+            self._execution_rejection = dict(reason=rejection, current_ned=np.asarray(current).tolist(),
+                                             target_ned=target.tolist())
             return LocalPlan('height_recovery_blocked', None, np.empty((0, 3)), 0.)
         return LocalPlan('height_recovery', target, np.vstack((current, target)),
                          min(.15, float(self.config.cruise_max_speed)))
@@ -256,10 +302,9 @@ class _FlightGuard:
         grid = self._grid
         current = np.asarray(current, dtype=float)
         target = np.asarray(target, dtype=float)
-        height_error = abs(current[2]-grid.altitude)
-        if (height_error > grid.resolution or
-                (self._recovering_height and height_error > min(.05, .25*grid.resolution))):
-            return self._report(self._height_recovery(current, snapshot))
+        if self._height_needs_recovery(current, grid):
+            plan = self._height_recovery(current, snapshot)
+            return self._report(plan, rejection=self._execution_rejection)
         self._recovering_height = False
         braking = self._braking_rejection(grid, current)
         if braking is not None:
@@ -267,8 +312,7 @@ class _FlightGuard:
                 LocalPlan("braking_corridor_blocked", None, np.empty((0, 3)), 0.0),
                 rejection=braking,
             )
-        from planner.directional_clearance import motion_forward_clearance
-        forward_clearance = motion_forward_clearance(snapshot, current, target, nav.vehicle.get_velocity())
+        forward_clearance = self._forward_clearance(snapshot,current,target)
         emergency_distance = float(getattr(self.config, "emergency_stop_distance", 0.6))
         # The frontier/global planner already supplies a known-free route. Follow
         # a clear segment directly; reserve EGO spline generation for an actual
@@ -283,6 +327,8 @@ class _FlightGuard:
             limiter = getattr(self.inner, "_clear_speed_limit", None)
             if callable(limiter):
                 speed_limit = float(limiter(forward_clearance))
+            if forward_clearance == emergency_distance:
+                speed_limit = min(speed_limit,.1)
             return self._report(
                 LocalPlan(
                     status="route_clear",
@@ -429,12 +475,13 @@ class SemanticNavigator:
             if remaining > 0:
                 self.vehicle.wait(min(0.2, remaining))
 
-    def _align(self, yaw):
+    def _align(self, yaw, *, deadline=None):
         self._check_health()
         self.vehicle.align_yaw(
             yaw,
             timeout=max(
-                0.01, min(self.config.leg_timeout, self.deadline - self.clock())
+                0.01, min(self.config.leg_timeout,
+                          min(self.deadline,self.deadline if deadline is None else deadline) - self.clock())
             ),
             health_check=self._check_health,
         )

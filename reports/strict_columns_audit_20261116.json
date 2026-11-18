@@ -1,0 +1,2150 @@
+{
+  "current": {
+    "history": "E:\\files\\Semantic Navigation\\data\\runs\\run_20261116_155130_884347\\maps\\semantic_observations.jsonl",
+    "backend": "mapping.semantic_instance_mapper",
+    "manual_overrides_used": false,
+    "recorded_ids_used_for_association": false,
+    "packets": 587,
+    "measurements": 2076,
+    "category_counts": {
+      "column": 8,
+      "vehicle": 6
+    },
+    "records": [
+      {
+        "instance_id": "column_01",
+        "runtime_instance_id": "column_01",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_15"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.8432296579060736,
+          7.544259664815302,
+          -1.2764409561067445
+        ],
+        "position_covariance": [
+          [
+            0.03848006251440482,
+            -0.02380892441250424,
+            0.0007304084118222234
+          ],
+          [
+            -0.02380892441250424,
+            0.0592104864525982,
+            -0.001546053255283794
+          ],
+          [
+            0.0007304084118222231,
+            -0.001546053255283795,
+            0.06664301533520577
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.44248591140403,
+            6.972004826905768,
+            -2.617365062876444
+          ],
+          "max": [
+            -3.243973404408117,
+            8.116514502724836,
+            0.06448315066295499
+          ]
+        },
+        "confidence": 0.9181431361607143,
+        "observation_count": 112,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_01": 101,
+          "column_15": 11
+        }
+      },
+      {
+        "instance_id": "column_02",
+        "runtime_instance_id": "column_02",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          3.954041467942674,
+          7.652150993964779,
+          -1.2585074757717538
+        ],
+        "position_covariance": [
+          [
+            0.036872421648218884,
+            0.024698736075959505,
+            -0.000672381891965736
+          ],
+          [
+            0.024698736075959505,
+            0.06889806173074702,
+            -0.0015971613706526595
+          ],
+          [
+            -0.0006723818919657352,
+            -0.0015971613706526587,
+            0.07189989400619812
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.382658709333721,
+            7.077859734995512,
+            -2.621777566193986
+          ],
+          "max": [
+            4.525424226551627,
+            8.226442252934046,
+            0.10476261465047873
+          ]
+        },
+        "confidence": 0.9227846746575342,
+        "observation_count": 73,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_02": 73
+        }
+      },
+      {
+        "instance_id": "column_03",
+        "runtime_instance_id": "column_03",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.874267334695392,
+          15.598921582153814,
+          -1.2820345275218032
+        ],
+        "position_covariance": [
+          [
+            0.04000938819056034,
+            -0.013689150486092604,
+            0.00021306075591429527
+          ],
+          [
+            -0.013689150486092603,
+            0.07811476229003378,
+            -0.001103989721044712
+          ],
+          [
+            0.00021306075591429437,
+            -0.001103989721044713,
+            0.07584092283550324
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.416198141744591,
+            15.082285151283354,
+            -2.621244433347089
+          ],
+          "max": [
+            -3.332336527646193,
+            16.115558013024273,
+            0.05717537830348229
+          ]
+        },
+        "confidence": 0.8993972252155172,
+        "observation_count": 116,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_03": 116
+        }
+      },
+      {
+        "instance_id": "column_04",
+        "runtime_instance_id": "column_04",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.018679499721213,
+          15.554570142692912,
+          -1.2789944011870287
+        ],
+        "position_covariance": [
+          [
+            0.03529098859486303,
+            0.014985739006586127,
+            -0.000275731109747372
+          ],
+          [
+            0.014985739006586129,
+            0.10106755875951909,
+            -0.0014454110902964335
+          ],
+          [
+            -0.000275731109747372,
+            -0.0014454110902964333,
+            0.07213112852124424
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.486819731399611,
+            14.961411989045072,
+            -2.619688798423845
+          ],
+          "max": [
+            4.550539268042815,
+            16.147728296340752,
+            0.061699996049787466
+          ]
+        },
+        "confidence": 0.9197048611111112,
+        "observation_count": 99,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_04": 99
+        }
+      },
+      {
+        "instance_id": "column_12",
+        "runtime_instance_id": "column_12",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_19"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.83204606020881,
+          23.54291713697002,
+          -1.2840742478067977
+        ],
+        "position_covariance": [
+          [
+            0.08045840856502834,
+            0.01557462449473053,
+            -0.000745724480919146
+          ],
+          [
+            0.01557462449473053,
+            0.035013157797472175,
+            -0.00028005601949817525
+          ],
+          [
+            -0.0007457244809191463,
+            -0.00028005601949817525,
+            0.07669361200379232
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.411257401452227,
+            23.01545698685502,
+            -2.625753063370719
+          ],
+          "max": [
+            -3.252834718965393,
+            24.070377287085016,
+            0.05760456775712339
+          ]
+        },
+        "confidence": 0.8830202792553191,
+        "observation_count": 94,
+        "last_seen": 1794817238.4149408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_12": 90,
+          "column_19": 4
+        }
+      },
+      {
+        "instance_id": "column_13",
+        "runtime_instance_id": "column_13",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_58"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.028527637857113,
+          23.74605706108087,
+          -1.278271548238023
+        ],
+        "position_covariance": [
+          [
+            0.07340481542275068,
+            0.012716091489475972,
+            -0.001390823633543975
+          ],
+          [
+            0.01271609148947597,
+            0.017673277476293072,
+            -0.00037921506468775425
+          ],
+          [
+            -0.0013908236335439745,
+            -0.0003792150646877541,
+            0.06984288801047295
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.4818973871326118,
+            23.064717110402324,
+            -2.611565632743119
+          ],
+          "max": [
+            4.575157888581615,
+            24.42739701175941,
+            0.05502253626707311
+          ]
+        },
+        "confidence": 0.6800661670918368,
+        "observation_count": 98,
+        "last_seen": 1794817251.7509408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_13": 65,
+          "column_58": 33
+        }
+      },
+      {
+        "instance_id": "column_20",
+        "runtime_instance_id": "column_20",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_66"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.027638477599705,
+          32.49326924442928,
+          -1.2866183110957798
+        ],
+        "position_covariance": [
+          [
+            0.07031576218900422,
+            -0.024783862788784663,
+            0.003498963826483372
+          ],
+          [
+            -0.024783862788784663,
+            0.04295967428333942,
+            -0.001647792791343218
+          ],
+          [
+            0.0034989638264833717,
+            -0.0016477927913432183,
+            0.03140464304520673
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.443361227492053,
+            31.94782896927054,
+            -2.6213675043849887
+          ],
+          "max": [
+            4.611915727707356,
+            33.03870951958802,
+            0.048130882193428794
+          ]
+        },
+        "confidence": 0.9173719618055556,
+        "observation_count": 72,
+        "last_seen": 1794817215.9799407,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_20": 67,
+          "column_66": 5
+        }
+      },
+      {
+        "instance_id": "column_57",
+        "runtime_instance_id": "column_57",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.917685900963575,
+          32.537189306979066,
+          -1.2984225687972142
+        ],
+        "position_covariance": [
+          [
+            0.05066194426013724,
+            -0.016918584631547065,
+            -0.000247961165023655
+          ],
+          [
+            -0.016918584631547065,
+            0.05048219107377882,
+            0.00016412764970999684
+          ],
+          [
+            -0.0002479611650236545,
+            0.00016412764970999706,
+            0.06481349514504385
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.4601349032532145,
+            32.04206029105176,
+            -2.6316892566512196
+          ],
+          "max": [
+            -3.3752368986739354,
+            33.03231832290637,
+            0.03484411905679109
+          ]
+        },
+        "confidence": 0.8649088541666666,
+        "observation_count": 66,
+        "last_seen": 1794817227.5159407,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_57": 66
+        }
+      },
+      {
+        "instance_id": "vehicle_01",
+        "runtime_instance_id": "vehicle_01",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "black",
+        "color_confidence": 0.6109733653301871,
+        "aliases": [],
+        "position_world": [
+          -8.744785865104275,
+          13.264627858447346,
+          -0.5499867342752601
+        ],
+        "position_covariance": [
+          [
+            0.07821523305978989,
+            0.009051155358585024,
+            -0.00230386739839208
+          ],
+          [
+            0.009051155358585024,
+            0.07129954330602363,
+            -0.0007825403746003726
+          ],
+          [
+            -0.00230386739839208,
+            -0.0007825403746003726,
+            0.0488793724676929
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.933154494587198,
+            12.365479343934176,
+            -1.1145839569205507
+          ],
+          "max": [
+            -6.5564172356213515,
+            14.163776372960518,
+            0.014610488370030471
+          ]
+        },
+        "confidence": 0.8853179431352459,
+        "observation_count": 61,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_min",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.744785865104275,
+            13.264627858447346,
+            -0.5499867342752601
+          ],
+          "size": [
+            4.376737258965847,
+            1.7982970290263427,
+            1.129194445290581
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.581797585697835,
+          13.153773687606225,
+          -0.46777843886133075
+        ],
+        "supported_surface_voxels": 918,
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_01": 59
+        }
+      },
+      {
+        "instance_id": "vehicle_02",
+        "runtime_instance_id": "vehicle_02",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.8282147179963246,
+        "aliases": [],
+        "position_world": [
+          8.781267191988903,
+          20.4466303874173,
+          -0.5716456580510197
+        ],
+        "position_covariance": [
+          [
+            0.06514155316897763,
+            0.006658986869442307,
+            0.0009653173235398619
+          ],
+          [
+            0.006658986869442307,
+            0.07515046188261454,
+            -0.0027193177854715096
+          ],
+          [
+            0.0009653173235398619,
+            -0.0027193177854715096,
+            0.04686018808262071
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.419353512487983,
+            19.535901925135033,
+            -1.1372211571519515
+          ],
+          "max": [
+            11.143180871489824,
+            21.35735884969957,
+            -0.006070158950087945
+          ]
+        },
+        "confidence": 0.9197328629032258,
+        "observation_count": 62,
+        "last_seen": 1794817251.7509408,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.781267191988903,
+            20.4466303874173,
+            -0.5716456580510197
+          ],
+          "size": [
+            4.723827359001841,
+            1.8214569245645342,
+            1.1311509982018635
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          8.445590089240115,
+          20.403979327402887,
+          -0.3896224248001139
+        ],
+        "supported_surface_voxels": 1305,
+        "connected_fragment_count": 1,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_02": 60
+        }
+      },
+      {
+        "instance_id": "vehicle_03",
+        "runtime_instance_id": "vehicle_03",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.7979498515424422,
+        "aliases": [],
+        "position_world": [
+          8.094782711383509,
+          2.525437733774622,
+          -0.6109853386091427
+        ],
+        "position_covariance": [
+          [
+            0.08024746424122906,
+            0.00793571557388156,
+            0.006027215233757993
+          ],
+          [
+            0.00793571557388156,
+            0.05220839589997249,
+            0.0008579268044690157
+          ],
+          [
+            0.006027215233757993,
+            0.0008579268044690157,
+            0.04492928645055638
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.329159200504711,
+            1.5551556804838425,
+            -1.2127737834643466
+          ],
+          "max": [
+            9.883490554708018,
+            3.363656397202998,
+            -0.009196893753938782
+          ]
+        },
+        "confidence": 0.9180640243902439,
+        "observation_count": 41,
+        "last_seen": 1794817604.6709406,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.094782711383509,
+            2.525437733774622,
+            -0.6109853386091427
+          ],
+          "size": [
+            3.5580418463622454,
+            1.8229090575102944,
+            1.2035768897104078
+          ],
+          "yaw": 0.06981317007977318
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          7.093666443952216,
+          2.1969394779224722,
+          -0.5923631182376834
+        ],
+        "supported_surface_voxels": 747,
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              7.608455857873303,
+              3.084016798750767,
+              -0.9360898966506611
+            ],
+            "max": [
+              10.930467525783614,
+              3.284724146761743,
+              -0.002381757036437313
+            ],
+            "last_seen": 1794817331.5409408,
+            "hypothesis_key": "vehicle_fragment:10"
+          }
+        ],
+        "source_observations": {
+          "vehicle_03": 37
+        }
+      },
+      {
+        "instance_id": "vehicle_04",
+        "runtime_instance_id": "vehicle_04",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.6763454226415243,
+        "aliases": [],
+        "position_world": [
+          -8.9100829495973,
+          5.393504542121834,
+          -0.7558564569072571
+        ],
+        "position_covariance": [
+          [
+            0.07300422117419995,
+            -0.007687192433312722,
+            -0.005464417700420797
+          ],
+          [
+            -0.007687192433312722,
+            0.049265658073466286,
+            0.0014872366085827969
+          ],
+          [
+            -0.005464417700420797,
+            0.0014872366085827969,
+            0.04262972988166129
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.154096148019068,
+            4.475470368453937,
+            -1.4786742496994592
+          ],
+          "max": [
+            -6.674399319462103,
+            6.2629341536025205,
+            -0.033038664115055155
+          ]
+        },
+        "confidence": 0.94921875,
+        "observation_count": 53,
+        "last_seen": 1794817655.0009408,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_min",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.9100829495973,
+            5.393504542121834,
+            -0.7558564569072571
+          ],
+          "size": [
+            4.460911914100238,
+            1.8083945766540275,
+            1.445635585584404
+          ],
+          "yaw": 3.12413936106985
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -7.571711010822688,
+          5.042095350618807,
+          -0.8098289143552178
+        ],
+        "supported_surface_voxels": 1479,
+        "connected_fragment_count": 1,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_04": 42
+        }
+      },
+      {
+        "instance_id": "vehicle_05",
+        "runtime_instance_id": "vehicle_05",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [],
+        "position_world": [
+          7.7757681358414485,
+          29.844716063034785,
+          -0.6519147748357036
+        ],
+        "position_covariance": [
+          [
+            0.060330065237046135,
+            0.005481380720664161,
+            0.001103783231271221
+          ],
+          [
+            0.005481380720664161,
+            0.07964929589600231,
+            0.004281029692170241
+          ],
+          [
+            0.001103783231271221,
+            0.004281029692170241,
+            0.0451733737780928
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            5.876412468962734,
+            28.942101735533335,
+            -1.2707750885317395
+          ],
+          "max": [
+            9.658477595899623,
+            30.76763627583941,
+            -0.03305446113966766
+          ]
+        },
+        "confidence": 0.8915070564516129,
+        "observation_count": 31,
+        "last_seen": 1794817221.6809406,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            7.7757681358414485,
+            29.844716063034785,
+            -0.6519147748357036
+          ],
+          "size": [
+            3.7949709705224013,
+            1.7933422692015535,
+            1.2377206273920718
+          ],
+          "yaw": 3.12413936106985
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          6.997010707808116,
+          29.037370601952222,
+          -0.5570825610492248
+        ],
+        "supported_surface_voxels": 769,
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              7.409867863488239,
+              30.5567800308349,
+              -1.4333109417510672
+            ],
+            "max": [
+              8.748762900054906,
+              30.84536082748478,
+              -0.25144255644054525
+            ],
+            "last_seen": 1794816752.1989408,
+            "hypothesis_key": "vehicle_fragment:24"
+          }
+        ],
+        "source_observations": {
+          "vehicle_05": 29
+        }
+      },
+      {
+        "instance_id": "vehicle_06",
+        "runtime_instance_id": "vehicle_06",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "red",
+        "color_confidence": 0.6653773434263166,
+        "aliases": [],
+        "position_world": [
+          -8.567808417599325,
+          38.9693339388425,
+          -0.5839826488958226
+        ],
+        "position_covariance": [
+          [
+            0.03310446982897528,
+            0.0016287828663455435,
+            0.0005316684522891624
+          ],
+          [
+            0.0016287828663455435,
+            0.06322480769186725,
+            0.009118606579236837
+          ],
+          [
+            0.0005316684522891624,
+            0.009118606579236837,
+            0.034675251301816076
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.842827775392639,
+            38.134795892076355,
+            -1.1532241755668813
+          ],
+          "max": [
+            -6.292789059806011,
+            39.80387198560865,
+            -0.014741122224763916
+          ]
+        },
+        "confidence": 0.9524515086206896,
+        "observation_count": 58,
+        "last_seen": 1794816993.3059406,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.567808417599325,
+            38.9693339388425,
+            -0.5839826488958226
+          ],
+          "size": [
+            4.550038715586628,
+            1.6690760935322912,
+            1.1384830533421173
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.886940392612354,
+          38.23401402123148,
+          -0.6122779456826277
+        ],
+        "supported_surface_voxels": 1274,
+        "connected_fragment_count": 2,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_06": 56
+        }
+      }
+    ],
+    "deferred_column_connections": [],
+    "deferred_vehicle_fragments": [
+      {
+        "observation_count": 7,
+        "possible_parents": [
+          "vehicle_05"
+        ]
+      },
+      {
+        "observation_count": 8,
+        "possible_parents": [
+          "vehicle_03"
+        ]
+      }
+    ],
+    "duration_seconds": 23.75
+  },
+  "v3": {
+    "history": "E:\\files\\Semantic Navigation\\data\\runs\\run_20261116_155130_884347\\maps\\semantic_observations.jsonl",
+    "backend": "mapping.explore_v3.adapters",
+    "manual_overrides_used": false,
+    "recorded_ids_used_for_association": false,
+    "packets": 587,
+    "measurements": 2076,
+    "category_counts": {
+      "column": 8,
+      "vehicle": 6
+    },
+    "records": [
+      {
+        "instance_id": "column_01",
+        "runtime_instance_id": "column_01",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_15"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.8432296579060736,
+          7.544259664815302,
+          -1.2764409561067445
+        ],
+        "position_covariance": [
+          [
+            0.03848006251440482,
+            -0.02380892441250424,
+            0.0007304084118222234
+          ],
+          [
+            -0.02380892441250424,
+            0.0592104864525982,
+            -0.001546053255283794
+          ],
+          [
+            0.0007304084118222231,
+            -0.001546053255283795,
+            0.06664301533520577
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.44248591140403,
+            6.972004826905768,
+            -2.617365062876444
+          ],
+          "max": [
+            -3.243973404408117,
+            8.116514502724836,
+            0.06448315066295499
+          ]
+        },
+        "confidence": 0.9181431361607143,
+        "observation_count": 112,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_01": 101,
+          "column_15": 11
+        }
+      },
+      {
+        "instance_id": "column_02",
+        "runtime_instance_id": "column_02",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          3.954041467942674,
+          7.652150993964779,
+          -1.2585074757717538
+        ],
+        "position_covariance": [
+          [
+            0.036872421648218884,
+            0.024698736075959505,
+            -0.000672381891965736
+          ],
+          [
+            0.024698736075959505,
+            0.06889806173074702,
+            -0.0015971613706526595
+          ],
+          [
+            -0.0006723818919657352,
+            -0.0015971613706526587,
+            0.07189989400619812
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.382658709333721,
+            7.077859734995512,
+            -2.621777566193986
+          ],
+          "max": [
+            4.525424226551627,
+            8.226442252934046,
+            0.10476261465047873
+          ]
+        },
+        "confidence": 0.9227846746575342,
+        "observation_count": 73,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_02": 73
+        }
+      },
+      {
+        "instance_id": "column_03",
+        "runtime_instance_id": "column_03",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.874267334695392,
+          15.598921582153814,
+          -1.2820345275218032
+        ],
+        "position_covariance": [
+          [
+            0.04000938819056034,
+            -0.013689150486092604,
+            0.00021306075591429527
+          ],
+          [
+            -0.013689150486092603,
+            0.07811476229003378,
+            -0.001103989721044712
+          ],
+          [
+            0.00021306075591429437,
+            -0.001103989721044713,
+            0.07584092283550324
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.416198141744591,
+            15.082285151283354,
+            -2.621244433347089
+          ],
+          "max": [
+            -3.332336527646193,
+            16.115558013024273,
+            0.05717537830348229
+          ]
+        },
+        "confidence": 0.8993972252155172,
+        "observation_count": 116,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_03": 116
+        }
+      },
+      {
+        "instance_id": "column_04",
+        "runtime_instance_id": "column_04",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.018679499721213,
+          15.554570142692912,
+          -1.2789944011870287
+        ],
+        "position_covariance": [
+          [
+            0.03529098859486303,
+            0.014985739006586127,
+            -0.000275731109747372
+          ],
+          [
+            0.014985739006586129,
+            0.10106755875951909,
+            -0.0014454110902964335
+          ],
+          [
+            -0.000275731109747372,
+            -0.0014454110902964333,
+            0.07213112852124424
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.486819731399611,
+            14.961411989045072,
+            -2.619688798423845
+          ],
+          "max": [
+            4.550539268042815,
+            16.147728296340752,
+            0.061699996049787466
+          ]
+        },
+        "confidence": 0.9197048611111112,
+        "observation_count": 99,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_04": 99
+        }
+      },
+      {
+        "instance_id": "column_12",
+        "runtime_instance_id": "column_12",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_19"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.83204606020881,
+          23.54291713697002,
+          -1.2840742478067977
+        ],
+        "position_covariance": [
+          [
+            0.08045840856502834,
+            0.01557462449473053,
+            -0.000745724480919146
+          ],
+          [
+            0.01557462449473053,
+            0.035013157797472175,
+            -0.00028005601949817525
+          ],
+          [
+            -0.0007457244809191463,
+            -0.00028005601949817525,
+            0.07669361200379232
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.411257401452227,
+            23.01545698685502,
+            -2.625753063370719
+          ],
+          "max": [
+            -3.252834718965393,
+            24.070377287085016,
+            0.05760456775712339
+          ]
+        },
+        "confidence": 0.8830202792553191,
+        "observation_count": 94,
+        "last_seen": 1794817238.4149408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_12": 90,
+          "column_19": 4
+        }
+      },
+      {
+        "instance_id": "column_13",
+        "runtime_instance_id": "column_13",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_58"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.028527637857113,
+          23.74605706108087,
+          -1.278271548238023
+        ],
+        "position_covariance": [
+          [
+            0.07340481542275068,
+            0.012716091489475972,
+            -0.001390823633543975
+          ],
+          [
+            0.01271609148947597,
+            0.017673277476293072,
+            -0.00037921506468775425
+          ],
+          [
+            -0.0013908236335439745,
+            -0.0003792150646877541,
+            0.06984288801047295
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.4818973871326118,
+            23.064717110402324,
+            -2.611565632743119
+          ],
+          "max": [
+            4.575157888581615,
+            24.42739701175941,
+            0.05502253626707311
+          ]
+        },
+        "confidence": 0.6800661670918368,
+        "observation_count": 98,
+        "last_seen": 1794817251.7509408,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_13": 65,
+          "column_58": 33
+        }
+      },
+      {
+        "instance_id": "column_20",
+        "runtime_instance_id": "column_20",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_66"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.027638477599705,
+          32.49326924442928,
+          -1.2866183110957798
+        ],
+        "position_covariance": [
+          [
+            0.07031576218900422,
+            -0.024783862788784663,
+            0.003498963826483372
+          ],
+          [
+            -0.024783862788784663,
+            0.04295967428333942,
+            -0.001647792791343218
+          ],
+          [
+            0.0034989638264833717,
+            -0.0016477927913432183,
+            0.03140464304520673
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.443361227492053,
+            31.94782896927054,
+            -2.6213675043849887
+          ],
+          "max": [
+            4.611915727707356,
+            33.03870951958802,
+            0.048130882193428794
+          ]
+        },
+        "confidence": 0.9173719618055556,
+        "observation_count": 72,
+        "last_seen": 1794817215.9799407,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_20": 67,
+          "column_66": 5
+        }
+      },
+      {
+        "instance_id": "column_57",
+        "runtime_instance_id": "column_57",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.917685900963575,
+          32.537189306979066,
+          -1.2984225687972142
+        ],
+        "position_covariance": [
+          [
+            0.05066194426013724,
+            -0.016918584631547065,
+            -0.000247961165023655
+          ],
+          [
+            -0.016918584631547065,
+            0.05048219107377882,
+            0.00016412764970999684
+          ],
+          [
+            -0.0002479611650236545,
+            0.00016412764970999706,
+            0.06481349514504385
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.4601349032532145,
+            32.04206029105176,
+            -2.6316892566512196
+          ],
+          "max": [
+            -3.3752368986739354,
+            33.03231832290637,
+            0.03484411905679109
+          ]
+        },
+        "confidence": 0.8649088541666666,
+        "observation_count": 66,
+        "last_seen": 1794817227.5159407,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_57": 66
+        }
+      },
+      {
+        "instance_id": "vehicle_01",
+        "runtime_instance_id": "vehicle_01",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "black",
+        "color_confidence": 0.6109733653301871,
+        "aliases": [],
+        "position_world": [
+          -8.744785865104275,
+          13.264627858447346,
+          -0.5499867342752601
+        ],
+        "position_covariance": [
+          [
+            0.07821523305978989,
+            0.009051155358585024,
+            -0.00230386739839208
+          ],
+          [
+            0.009051155358585024,
+            0.07129954330602363,
+            -0.0007825403746003726
+          ],
+          [
+            -0.00230386739839208,
+            -0.0007825403746003726,
+            0.0488793724676929
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.933154494587198,
+            12.365479343934176,
+            -1.1145839569205507
+          ],
+          "max": [
+            -6.5564172356213515,
+            14.163776372960518,
+            0.014610488370030471
+          ]
+        },
+        "confidence": 0.8853179431352459,
+        "observation_count": 61,
+        "last_seen": 1794817663.0339408,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.581797585697835,
+          13.153773687606225,
+          -0.46777843886133075
+        ],
+        "supported_surface_voxels": 918,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_min",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.744785865104275,
+            13.264627858447346,
+            -0.5499867342752601
+          ],
+          "size": [
+            4.376737258965847,
+            1.7982970290263427,
+            1.129194445290581
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_01": 59
+        }
+      },
+      {
+        "instance_id": "vehicle_02",
+        "runtime_instance_id": "vehicle_02",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.8282147179963246,
+        "aliases": [],
+        "position_world": [
+          8.781267191988903,
+          20.4466303874173,
+          -0.5716456580510197
+        ],
+        "position_covariance": [
+          [
+            0.06514155316897763,
+            0.006658986869442307,
+            0.0009653173235398619
+          ],
+          [
+            0.006658986869442307,
+            0.07515046188261454,
+            -0.0027193177854715096
+          ],
+          [
+            0.0009653173235398619,
+            -0.0027193177854715096,
+            0.04686018808262071
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.419353512487983,
+            19.535901925135033,
+            -1.1372211571519515
+          ],
+          "max": [
+            11.143180871489824,
+            21.35735884969957,
+            -0.006070158950087945
+          ]
+        },
+        "confidence": 0.9197328629032258,
+        "observation_count": 62,
+        "last_seen": 1794817251.7509408,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          8.445590089240115,
+          20.403979327402887,
+          -0.3896224248001139
+        ],
+        "supported_surface_voxels": 1305,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.781267191988903,
+            20.4466303874173,
+            -0.5716456580510197
+          ],
+          "size": [
+            4.723827359001841,
+            1.8214569245645342,
+            1.1311509982018635
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 1,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_02": 60
+        }
+      },
+      {
+        "instance_id": "vehicle_03",
+        "runtime_instance_id": "vehicle_03",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.7979498515424422,
+        "aliases": [],
+        "position_world": [
+          8.094782711383509,
+          2.525437733774622,
+          -0.6109853386091427
+        ],
+        "position_covariance": [
+          [
+            0.08024746424122906,
+            0.00793571557388156,
+            0.006027215233757993
+          ],
+          [
+            0.00793571557388156,
+            0.05220839589997249,
+            0.0008579268044690157
+          ],
+          [
+            0.006027215233757993,
+            0.0008579268044690157,
+            0.04492928645055638
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.329159200504711,
+            1.5551556804838425,
+            -1.2127737834643466
+          ],
+          "max": [
+            9.883490554708018,
+            3.363656397202998,
+            -0.009196893753938782
+          ]
+        },
+        "confidence": 0.9180640243902439,
+        "observation_count": 41,
+        "last_seen": 1794817604.6709406,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          7.093666443952216,
+          2.1969394779224722,
+          -0.5923631182376834
+        ],
+        "supported_surface_voxels": 747,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.094782711383509,
+            2.525437733774622,
+            -0.6109853386091427
+          ],
+          "size": [
+            3.5580418463622454,
+            1.8229090575102944,
+            1.2035768897104078
+          ],
+          "yaw": 0.06981317007977318
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              7.608455857873303,
+              3.084016798750767,
+              -0.9360898966506611
+            ],
+            "max": [
+              10.930467525783614,
+              3.284724146761743,
+              -0.002381757036437313
+            ],
+            "last_seen": 1794817331.5409408,
+            "hypothesis_key": "vehicle_fragment:10"
+          }
+        ],
+        "source_observations": {
+          "vehicle_03": 37
+        }
+      },
+      {
+        "instance_id": "vehicle_04",
+        "runtime_instance_id": "vehicle_04",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.6763454226415243,
+        "aliases": [],
+        "position_world": [
+          -8.9100829495973,
+          5.393504542121834,
+          -0.7558564569072571
+        ],
+        "position_covariance": [
+          [
+            0.07300422117419995,
+            -0.007687192433312722,
+            -0.005464417700420797
+          ],
+          [
+            -0.007687192433312722,
+            0.049265658073466286,
+            0.0014872366085827969
+          ],
+          [
+            -0.005464417700420797,
+            0.0014872366085827969,
+            0.04262972988166129
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.154096148019068,
+            4.475470368453937,
+            -1.4786742496994592
+          ],
+          "max": [
+            -6.674399319462103,
+            6.2629341536025205,
+            -0.033038664115055155
+          ]
+        },
+        "confidence": 0.94921875,
+        "observation_count": 53,
+        "last_seen": 1794817655.0009408,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -7.571711010822688,
+          5.042095350618807,
+          -0.8098289143552178
+        ],
+        "supported_surface_voxels": 1479,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_min",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.9100829495973,
+            5.393504542121834,
+            -0.7558564569072571
+          ],
+          "size": [
+            4.460911914100238,
+            1.8083945766540275,
+            1.445635585584404
+          ],
+          "yaw": 3.12413936106985
+        },
+        "connected_fragment_count": 1,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_04": 42
+        }
+      },
+      {
+        "instance_id": "vehicle_05",
+        "runtime_instance_id": "vehicle_05",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [],
+        "position_world": [
+          7.7757681358414485,
+          29.844716063034785,
+          -0.6519147748357036
+        ],
+        "position_covariance": [
+          [
+            0.060330065237046135,
+            0.005481380720664161,
+            0.001103783231271221
+          ],
+          [
+            0.005481380720664161,
+            0.07964929589600231,
+            0.004281029692170241
+          ],
+          [
+            0.001103783231271221,
+            0.004281029692170241,
+            0.0451733737780928
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            5.876412468962734,
+            28.942101735533335,
+            -1.2707750885317395
+          ],
+          "max": [
+            9.658477595899623,
+            30.76763627583941,
+            -0.03305446113966766
+          ]
+        },
+        "confidence": 0.8915070564516129,
+        "observation_count": 31,
+        "last_seen": 1794817221.6809406,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          6.997010707808116,
+          29.037370601952222,
+          -0.5570825610492248
+        ],
+        "supported_surface_voxels": 769,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            7.7757681358414485,
+            29.844716063034785,
+            -0.6519147748357036
+          ],
+          "size": [
+            3.7949709705224013,
+            1.7933422692015535,
+            1.2377206273920718
+          ],
+          "yaw": 3.12413936106985
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              7.409867863488239,
+              30.5567800308349,
+              -1.4333109417510672
+            ],
+            "max": [
+              8.748762900054906,
+              30.84536082748478,
+              -0.25144255644054525
+            ],
+            "last_seen": 1794816752.1989408,
+            "hypothesis_key": "vehicle_fragment:24"
+          }
+        ],
+        "source_observations": {
+          "vehicle_05": 29
+        }
+      },
+      {
+        "instance_id": "vehicle_06",
+        "runtime_instance_id": "vehicle_06",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "red",
+        "color_confidence": 0.6653773434263166,
+        "aliases": [],
+        "position_world": [
+          -8.567808417599325,
+          38.9693339388425,
+          -0.5839826488958226
+        ],
+        "position_covariance": [
+          [
+            0.03310446982897528,
+            0.0016287828663455435,
+            0.0005316684522891624
+          ],
+          [
+            0.0016287828663455435,
+            0.06322480769186725,
+            0.009118606579236837
+          ],
+          [
+            0.0005316684522891624,
+            0.009118606579236837,
+            0.034675251301816076
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.842827775392639,
+            38.134795892076355,
+            -1.1532241755668813
+          ],
+          "max": [
+            -6.292789059806011,
+            39.80387198560865,
+            -0.014741122224763916
+          ]
+        },
+        "confidence": 0.9524515086206896,
+        "observation_count": 58,
+        "last_seen": 1794816993.3059406,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.886940392612354,
+          38.23401402123148,
+          -0.6122779456826277
+        ],
+        "supported_surface_voxels": 1274,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.567808417599325,
+            38.9693339388425,
+            -0.5839826488958226
+          ],
+          "size": [
+            4.550038715586628,
+            1.6690760935322912,
+            1.1384830533421173
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 2,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_06": 56
+        }
+      }
+    ],
+    "deferred_column_connections": [],
+    "deferred_vehicle_fragments": [
+      {
+        "observation_count": 7,
+        "possible_parents": [
+          "vehicle_05"
+        ]
+      },
+      {
+        "observation_count": 8,
+        "possible_parents": [
+          "vehicle_03"
+        ]
+      }
+    ],
+    "duration_seconds": 26.391
+  }
+}

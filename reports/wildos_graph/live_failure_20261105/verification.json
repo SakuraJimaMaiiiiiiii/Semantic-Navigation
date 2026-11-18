@@ -1,0 +1,30 @@
+{
+  "tests_passed": 78,
+  "subtests_passed": 7,
+  "flight_started": false,
+  "source_run": "run_20261105_135547_309094",
+  "fixes": [
+    "spawn-isolated graph builder",
+    "128 online samples per update",
+    "30 second build limit",
+    "terminate and join worker on completion or failure"
+  ],
+  "unchanged_files": {
+    "run_explore.py": {
+      "no_git_diff": true,
+      "sha256": "2e5b75fc92b9b2cf90aaf16f1fed6b23c5a2db0af6766bfe5c812611b252a06d"
+    },
+    "navigation/frontier_explorer.py": {
+      "no_git_diff": true,
+      "sha256": "ab1b324b9bf0cec87d4e90f4e353f7e3fa523b4de20f4d0f6e03121f803b86b1"
+    },
+    "navigation/mission.py": {
+      "no_git_diff": true,
+      "sha256": "067161f13076117ede1a134792232f06a03526636f2c2cfd9a90a0ff3233346c"
+    },
+    "mapping/explore_v3/lidar_mapping_worker.py": {
+      "no_git_diff": true,
+      "sha256": "90d5759b1b72fc4edef8f5968da8049e8ee48d6d4f3c0cffc345e687cde5b8fc"
+    }
+  }
+}

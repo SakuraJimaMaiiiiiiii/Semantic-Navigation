@@ -451,7 +451,7 @@ class DemoRuntime:
         self.vehicle.land()
 
     def finish_exploration_recording(self) -> None:
-        """Finalize exploration files while keeping live navigation sensors running."""
+        """Finalize landed exploration files; stop perception unless a session is requested."""
         if getattr(self, "_exploration_recording_finished", False):
             return
         if self.fastlio_recorder is not None:
@@ -466,7 +466,7 @@ class DemoRuntime:
             lidar._preview_saved = True
             lidar._alignment_sample_saved = True
         if self.detection_started:
-            self.detection_worker.finish_recording()
+            self.detection_worker.finish_recording(resume=getattr(self, 'keep_session', False))
         if lidar is not None:
             if lidar.loop_detector is not None:
                 lidar.loop_detector.close()

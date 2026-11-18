@@ -72,6 +72,5 @@ class V3ReplayTests(unittest.TestCase):
                                                mapper_type=factory)
         factory.assert_called_once_with(sign_min_observations=10)
         self.assertEqual(count, 3)
-        self.assertEqual(len(records), 1)
-        self.assertEqual(records[0]['runtime_instance_id'], 'column_01')
+        self.assertEqual(len(records), 0)  # A box without measured faces cannot confirm a column.
 

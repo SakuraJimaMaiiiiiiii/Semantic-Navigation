@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "host": "127.0.0.1",
+  "port": 8877,
+  "session_id": "9a5a3bf18ee04fbfa047dbeb5811d27d",
+  "token": "Lq9AANWRY5Nkpr8nLf9jy_yH6FhKQEBWhDbFHd-vmmE",
+  "navigation_backend": "wildos_graph_dijkstra",
+  "live_map_url": "http://127.0.0.1:49308/map.html"
+}

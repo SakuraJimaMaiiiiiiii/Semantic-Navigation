@@ -20,6 +20,7 @@ from mapping.semantic_instance_mapper import (
     SemanticObservation3D,
     canonical_semantic_class_name as canonical_class_name,
     instance_class_name,
+    STRUCTURAL_COLUMN_PROMPTS,
 )
 from mapping.vehicle_instance_tracker import VEHICLE_CLASSES
 from .vehicle_color import vehicle_color_scores
@@ -67,13 +68,16 @@ class DetectorConfig:
 
     backend: str = "yolo_sam2"
     sam3_url: str = "http://127.0.0.1:8878"
+    sam3_request_timeout: float = 30.0
+    sam3_max_retries: int = 2
+    sam3_retry_delay: float = 0.5
 
     weights: str | Path = (
         BASE_DIR / "Yolomode" / "yolov8s-worldv2.pt"
     )
     sam_weights: str | Path = BASE_DIR / "Yolomode" / "sam2.1_t.pt"
-    # 当前阶段仅识别车辆；其他类别的实现保留，暂不参与推理。
-    class_prompts: tuple[str, ...] = VEHICLE_CLASSES
+    # Exploration reads these defaults directly, not config/explore.json.
+    class_prompts: tuple[str, ...] = (*VEHICLE_CLASSES, STRUCTURAL_COLUMN_PROMPTS[0])
     tile_size: int = 640
     overlap: float = 0.25
     confidence: float = 0.12
@@ -89,9 +93,10 @@ class DetectorConfig:
     use_fp16: bool = True
     enabled: bool = True
     inference_fps: float = 30.0
+    idle_inference_fps: float = 0.5
     window_name: str = "YOLO-World Detection / SAM2 Segmentation"
     hidden_box_classes: tuple[str, ...] = ("floor", "ceiling", "wall")
-    semantic_landmark_classes: tuple[str, ...] = VEHICLE_CLASSES
+    semantic_landmark_classes: tuple[str, ...] = (*VEHICLE_CLASSES, 'column')
     instance_duplicate_merge_distance_xy: float = 1.5
     instance_mahalanobis_gate: float = 7.815
     instance_kalman_process_noise_std: float = 0.05
@@ -115,7 +120,7 @@ class DetectorConfig:
     instance_display_min_observations: int = 10
     save_semantic_map: bool = True
     show_instance_ids: bool = True
-    save_videos: bool = True
+    save_videos: bool = False  # Enable explicitly when detection video is needed.
     video_output_dir: Path = BASE_DIR / "output"
     video_fps: float = 15.0
     video_codec: str = "mp4v"
@@ -134,6 +139,13 @@ class DetectorConfig:
     def __post_init__(self) -> None:
         if self.backend not in {"yolo_sam2", "sam3"}:
             raise ValueError("Unknown perception backend")
+        if not np.isfinite(self.sam3_request_timeout) or self.sam3_request_timeout <= 0:
+            raise ValueError('sam3_request_timeout must be finite and positive')
+        if not np.isfinite(self.sam3_retry_delay) or self.sam3_retry_delay < 0:
+            raise ValueError('sam3_retry_delay must be finite and non-negative')
+        if (not isinstance(self.sam3_max_retries, int) or isinstance(self.sam3_max_retries, bool)
+                or self.sam3_max_retries < 0):
+            raise ValueError('sam3_max_retries must be a non-negative integer')
         if not 0 < self.vehicle_map_min_confidence <= 1:
             raise ValueError("vehicle_map_min_confidence must be in (0, 1]")
         if not 0 < self.sign_min_confidence <= 1:
@@ -201,6 +213,8 @@ class DetectorConfig:
             raise ValueError("instance_display_min_observations 必须大于 0")
         if self.inference_fps <= 0:
             raise ValueError("inference_fps must be greater than zero")
+        if not np.isfinite(self.idle_inference_fps) or self.idle_inference_fps <= 0:
+            raise ValueError('idle_inference_fps must be finite and positive')
         if self.video_fps <= 0:
             raise ValueError("video_fps must be greater than zero")
         if len(self.video_codec) != 4:

@@ -189,6 +189,9 @@ def render_map(
             f" · 距起点高度={height:.2f} m · 观测次数={record.get('observation_count', 0)}{band_note}"
             + (" · 位置待完善（局部车面）" if record.get('position_status') == 'partial_surface'
                else " · 多表面位置估计" if record.get('position_status') == 'multi_surface_estimate' else "")
+            + ((" · 柱子片段身份仍待连接视角确认" if record['class_name'] == 'column'
+                else " · 相邻车面是否同车仍待连接视角确认")
+               if record.get('identity_status') == 'needs_connection_view' else "")
             + (" · 原始识别ID=" + ", ".join(record['source_runtime_instance_ids'])
                if record.get('source_runtime_instance_ids') else "")
             + (" · 包围框为已观测车面范围，非完整车体尺寸"
@@ -198,8 +201,8 @@ def render_map(
         )
         if len(footprint):
             coordinates = " ".join(f"{px},{py}" for px, py in footprint)
-            is_vehicle = record['class_name'] in {'car', 'truck', 'bus', 'van'}
-            footprint_style = (f'fill="#3b82f6" fill-opacity=".55" stroke="{"#e53935" if chosen else "#2563eb"}"'
+            is_vehicle = record['class_name'] in {'car', 'truck', 'bus', 'van', 'vehicle'}
+            footprint_style = (f'fill="#f97316" fill-opacity=".45" stroke="{"#e53935" if chosen else "#2563eb"}"'
                                if is_vehicle else
                                f'fill="none" stroke="{color}" stroke-opacity=".4" stroke-dasharray=".15 .12"')
             parts.append(

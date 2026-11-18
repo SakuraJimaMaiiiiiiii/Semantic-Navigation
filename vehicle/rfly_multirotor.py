@@ -331,6 +331,7 @@ class RflyMultirotorInterface:
     def move_waypoint_guided(
         self, waypoint, yaw=None, face_direction=False, timeout=None,
         local_planner=None, pass_through=False, control_horizon=None, xy_tolerance=None,
+        z_tolerance=None,
     ):
         """Execute certified NED position waypoints using the PX4 position loop.
 
@@ -344,10 +345,11 @@ class RflyMultirotorInterface:
         target = self._vector3(waypoint, "waypoint")
         timeout = float(self.config.guided_timeout if timeout is None else timeout)
         tolerance = float(self.config.guided_xy_tolerance if xy_tolerance is None else xy_tolerance)
+        z_tolerance = float(self.config.guided_z_tolerance if z_tolerance is None else z_tolerance)
         period = 1.0 / float(self.config.guided_update_rate)
-        if not np.isfinite(target).all() or timeout <= 0 or tolerance <= 0:
+        if not np.isfinite(target).all() or timeout <= 0 or tolerance <= 0 or z_tolerance <= 0:
             raise ValueError("Waypoint and tolerances must be finite and valid")
-        if not math.isfinite(timeout) or not math.isfinite(tolerance):
+        if not math.isfinite(timeout) or not math.isfinite(tolerance) or not math.isfinite(z_tolerance):
             raise ValueError("Waypoint timeout and tolerance must be finite")
         if control_horizon is not None and (not math.isfinite(control_horizon) or control_horizon <= 0):
             raise ValueError("control_horizon must be positive and finite")
@@ -396,7 +398,7 @@ class RflyMultirotorInterface:
                 current = self.get_position()
                 delta = target-current
                 reached = (np.linalg.norm(delta[:2]) <= tolerance
-                           and abs(delta[2]) <= self.config.guided_z_tolerance)
+                           and abs(delta[2]) <= z_tolerance)
                 if not pass_through and reached and np.linalg.norm(self.get_velocity()) <= .05:
                     # Arrival is measured, not conditional on a new moving plan.
                     # Hold where we are rather than chasing the last centimetres
@@ -777,6 +779,32 @@ class RflyMultirotorInterface:
         )
         print(f"--- 碰撞前控制证据：{context} ----")
         raise CollisionDetectedError(target_id, position, object_name, context)
+
+    def height_tracking_diagnostics(self):
+        """Read current command/SDK/PX4/UE evidence without changing control."""
+        result = dict(position_ned=self.get_position().tolist(),velocity_ned=self.get_velocity().tolist(),
+                      monotonic_time=time.monotonic(),
+                      last_position_command=deepcopy(getattr(self,'_last_position_command',None)))
+        mav = getattr(self,'mav',None)
+        if mav is None:
+            return result
+        result['height_sources'] = self._landing_height_diagnostics()
+        result['sdk_point_mode'] = bool(getattr(mav,'isInPointMode',False))
+        setpoint = np.asarray(getattr(mav,'pos',[]),dtype=float)
+        result['sdk_position_setpoint_ned'] = (setpoint.tolist() if setpoint.shape == (3,)
+                                              and np.isfinite(setpoint).all() else None)
+        messages = getattr(getattr(mav,'the_connection',None),'messages',{})
+        for name,fields in (('LOCAL_POSITION_NED',('x','y','z','vx','vy','vz')),
+                            ('POSITION_TARGET_LOCAL_NED',('x','y','z','vx','vy','vz','type_mask','coordinate_frame'))):
+            packet = messages.get(name)
+            if packet is None:
+                continue
+            values = {}
+            for field in (*fields,'time_boot_ms','_timestamp'):
+                value = getattr(packet,field,None)
+                values[field] = float(value) if value is not None and math.isfinite(float(value)) else None
+            result[name.lower()] = values
+        return result
 
     def _flight_status(self):
         """Read available SDK/MAVLink state; do not infer actual mode from our flag."""

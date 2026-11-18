@@ -210,7 +210,8 @@ def run_standalone(directory, request, *, config_path, open_map=False):
         result = {'success': True}
         if request is not None:
             result = session.navigate(request, uuid.uuid4().hex)
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+            from .console_output import navigation_result_text
+            print(navigation_result_text(result, request.instance_id))
         from .exploration_session import serve_target_commands
         print('--- 保持本终端运行，接下来可直接输入目标 ID 或 home 返航 ----')
         serve_target_commands(session, server)

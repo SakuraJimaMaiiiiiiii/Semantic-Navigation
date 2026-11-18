@@ -61,7 +61,7 @@ class SAM3ServiceProcess:
         # Download before the model startup timer; large weights may take minutes.
         checkpoint = ensure_checkpoint(root)
         print(f'--- SAM3 使用本地权重：{checkpoint} ----', flush=True)
-        print('--- 正在自动启动 SAM3，等待模型加载和预热 ----', flush=True)
+        print('--- 正在自动启动 SAM3，等待模型加载（默认不预热） ----', flush=True)
         self.process = subprocess.Popen(
             [sys.executable, '-u', str(root / 'tools' / 'sam3_service.py'),
              '--checkpoint', str(checkpoint),

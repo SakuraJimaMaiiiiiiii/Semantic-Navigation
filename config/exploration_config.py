@@ -39,8 +39,8 @@ class FrontierExplorationConfig:
     return_time_reserve: float = 120.0
     relation_radius: float = 6.0
     near_distance: float = 3.0
-    vehicle_inspection_views: int = 2  # 每辆车最多补充观察点数
-    vehicle_inspection_timeout: float = 45.0  # 每辆车补充观察总预算，秒
+    vehicle_inspection_views: int = 2  # 单次补拍点数、每个对象不同连接片段的复查机会均以此为上限
+    vehicle_inspection_timeout: float = 45.0  # 单次补拍预算；车辆/柱子的多片段连接复查累计共享此预算（秒）
     home_tolerance: float = 0.6
     server_port: int = 8877
 

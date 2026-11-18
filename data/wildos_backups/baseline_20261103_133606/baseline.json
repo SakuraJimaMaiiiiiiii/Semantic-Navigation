@@ -1,0 +1,11 @@
+{
+  "head": "9f7dd0a0b419d88a2cb9aeadb141c02541994ca7",
+  "created_at": "2026-11-03T13:36:19.199137+08:00",
+  "scope": "Tracked HEAD-to-worktree patch, staged patch, untracked non-ignored files. Ignored sensor archives are not copied.",
+  "source_hashes": {
+    "navigation/route.py": "71b96236cd5d9601b27f42465ea82f04ebcacec72f054d7b30a5cdf7afdbe07e",
+    "config/semantic_navigation_config.py": "bc9defb8b0a4a69bfb77320ff1292646b569c4568bbb9ca55a41273cc4c97c96",
+    "config/exploration_config.py": "2226e4bb5647c27a1c01d79e2bd6e71ce1a34d740bdf8c944eaaccb253174dce",
+    "run_explore.py": "2e5b75fc92b9b2cf90aaf16f1fed6b23c5a2db0af6766bfe5c812611b252a06d"
+  }
+}

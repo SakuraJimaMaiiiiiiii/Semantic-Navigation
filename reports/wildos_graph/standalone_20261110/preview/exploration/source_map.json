@@ -1,0 +1,17 @@
+{
+  "source": "/mnt/e/files/semantic navigation/data/runs/run_20261110_134324_720694/exploration",
+  "source_session_id": "cc8a285aa0054359be0c67c0e21c4d63",
+  "graph_source": "/mnt/e/files/semantic navigation/data/runs/run_20261110_134324_720694/exploration/navigation_graph/update_000173/graph.json",
+  "source_frame": "cc8a285aa0054359be0c67c0e21c4d63:PX4-raw:0",
+  "sha256": {
+    "navigation_graph/update_000173/graph.json": "b74e80c8eba4128a3368b6790317ae452d1fe328dc4d9a4844a557e7f8fb793d",
+    "navigation_graph/update_000173/planning_grid.npz": "4e631fe9e1ed6f86568612988f6351a694d43be1edf68439e7dffa0b60d1c543",
+    "navigation_graph/update_000173/incremental_state.json": "2e468c04ea6f95359c6e7612e7e28cdbeebabad0b6cde0be15a5804f650bd803",
+    "bundle.json": "f7639909d1b6afdb7cb27366da5acde87c650f630423786a85dba3c2c0332273"
+  },
+  "same_origin_consistency_passed": true,
+  "note": "Synthetic gate for offline preview only; no live registration or flight",
+  "active_session_id": "offline-preview",
+  "active_revision": 0,
+  "binding": "verified same-origin identity transform; old node IDs retained"
+}

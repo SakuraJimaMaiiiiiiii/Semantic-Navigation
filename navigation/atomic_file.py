@@ -7,6 +7,12 @@ import time
 
 def atomic_write_text(path, text):
     path = Path(path)
+    # Compare on disk instead of retaining copies of growing maps in memory.
+    try:
+        if path.read_text(encoding='utf-8') == text:
+            return
+    except (OSError, UnicodeError):
+        pass
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:

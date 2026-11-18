@@ -1,0 +1,102 @@
+{
+  "source": "/mnt/e/files/semantic navigation/data/runs/run_20261110_134324_720694/exploration",
+  "nodes": 218,
+  "edges": 609,
+  "targets": [
+    {
+      "id": "vehicle_01",
+      "reachable": true,
+      "nodes": [
+        "nav:52",
+        "nav:16",
+        "nav:10",
+        "nav:43",
+        "nav:32",
+        "nav:62",
+        "nav:80"
+      ],
+      "all_segments_valid": true
+    },
+    {
+      "id": "vehicle_02",
+      "reachable": true,
+      "nodes": [
+        "nav:52",
+        "nav:16",
+        "nav:10",
+        "nav:43"
+      ],
+      "all_segments_valid": true
+    },
+    {
+      "id": "vehicle_03",
+      "reachable": true,
+      "nodes": [
+        "nav:52",
+        "nav:305",
+        "nav:74"
+      ],
+      "all_segments_valid": true
+    },
+    {
+      "id": "vehicle_04",
+      "reachable": true,
+      "nodes": [
+        "nav:52",
+        "nav:1",
+        "nav:47",
+        "nav:8",
+        "nav:39",
+        "nav:113",
+        "nav:302",
+        "nav:212"
+      ],
+      "all_segments_valid": true
+    },
+    {
+      "id": "vehicle_05",
+      "reachable": true,
+      "nodes": [
+        "nav:52",
+        "nav:16",
+        "nav:10",
+        "nav:9",
+        "nav:90",
+        "nav:117",
+        "nav:83",
+        "nav:119",
+        "nav:122",
+        "nav:129",
+        "nav:147",
+        "nav:152",
+        "nav:160",
+        "nav:179",
+        "nav:174",
+        "nav:288"
+      ],
+      "all_segments_valid": true
+    },
+    {
+      "id": "vehicle_06",
+      "reachable": true,
+      "nodes": [
+        "nav:52",
+        "nav:1",
+        "nav:47",
+        "nav:8",
+        "nav:39",
+        "nav:113",
+        "nav:302",
+        "nav:146",
+        "nav:143",
+        "nav:265",
+        "nav:208",
+        "nav:189",
+        "nav:192"
+      ],
+      "all_segments_valid": true
+    }
+  ],
+  "source_files_unchanged": true,
+  "note": "Offline saved geometry replay; not live sensor/frame or flight validation"
+}

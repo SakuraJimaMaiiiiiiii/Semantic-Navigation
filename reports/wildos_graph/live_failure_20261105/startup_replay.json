@@ -1,0 +1,78 @@
+{
+  "source_run": "run_20261105_135547_309094",
+  "offline_only": true,
+  "max_samples": 128,
+  "build_including_spawn_seconds": 1.3897102440241724,
+  "selection_seconds": 0.016341048991307616,
+  "monitor_polls": 28,
+  "max_monitor_poll_gap_seconds": 0.05031155911274254,
+  "nodes": 36,
+  "edges": 103,
+  "candidates": 17,
+  "goal_ned": [
+    -0.6545637087087269,
+    8.587951938725926,
+    -1.4917317628860474
+  ],
+  "target_distance_m": 8.670461174296973,
+  "validation": {
+    "passed": true,
+    "checked_nodes": 36,
+    "checked_edges": 103,
+    "invalid_nodes": [],
+    "invalid_edges": [],
+    "certificate": "Existing NavigationGrid same-height free-space checks; not real-flight validation",
+    "vehicles": {
+      "passed": true,
+      "checked_nodes": 36,
+      "checked_edges": 103,
+      "invalid_nodes": [],
+      "invalid_edges": [],
+      "invalid_robot_attachment": false
+    }
+  },
+  "route": {
+    "target": "nav:42",
+    "node_path": [
+      "nav:31",
+      "nav:84",
+      "nav:23",
+      "nav:36",
+      "nav:42"
+    ],
+    "length_m": 8.95579021277488,
+    "points_ned": [
+      [
+        0.07597915828227997,
+        -0.051677919924259186,
+        -1.4917317628860474
+      ],
+      [
+        -0.02294095206495914,
+        0.07983908168768777,
+        -1.4917317628860474
+      ],
+      [
+        0.1428441215906259,
+        2.0591358723291253,
+        -1.4917317628860474
+      ],
+      [
+        0.27814636592036024,
+        5.532113146414734,
+        -1.4917317628860474
+      ],
+      [
+        0.25239518388371496,
+        7.22000700263013,
+        -1.4917317628860474
+      ],
+      [
+        -0.6545637087087269,
+        8.587951938725926,
+        -1.4917317628860474
+      ]
+    ],
+    "epoch": 0
+  }
+}

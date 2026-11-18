@@ -3,7 +3,7 @@ import threading
 import time
 import unittest
 from types import SimpleNamespace as NS
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import numpy as np
 from config.drone_config import Config
 from config.planner_config import PlannerConfig
@@ -17,6 +17,67 @@ def clear_plan(current, target):
 
 
 class AsyncWaypointReferenceTests(unittest.TestCase):
+    def test_certified_height_recovery_reaches_position_commands(self):
+        from navigation.mission import _FlightGuard
+        from config.semantic_navigation_config import SemanticNavigationConfig
+        import vehicle.rfly_multirotor as module
+        clock = [0.]
+        current = np.array([0.,0.,-1.54])
+        commands = []
+        vehicle = RflyMultirotorInterface.__new__(RflyMultirotorInterface)
+        vehicle.config = Config()
+        vehicle._require_offboard = lambda: None
+        vehicle.raise_if_collision = lambda **kw: None
+        vehicle.get_position = lambda: current.copy()
+        vehicle.get_velocity = lambda: np.zeros(3)
+        vehicle.get_euler = lambda: np.zeros(3)
+        vehicle._flight_status = lambda: {}
+        vehicle.hover = Mock()
+        def send(point,yaw):
+            commands.append(np.array(point))
+            current[:] = point
+        vehicle.send_position = send
+        snapshot = NS(states=np.zeros((20,20,20),dtype=np.int8),resolution=.2,
+                      origin_ned=np.array([-2.,-2.,-3.]),timestamp=1.)
+        nav = NS(altitude=-1.5, config=SemanticNavigationConfig(), vehicle=vehicle,
+                 local_map=NS(snapshot=lambda:snapshot,execution_snapshot=snapshot),
+                 global_map=None,local_planner=NS(config=PlannerConfig()),
+                 _sample_position=Mock(),_check_maps=Mock(),_check_health=Mock(),_event=Mock())
+        guard = _FlightGuard(nav)
+        guard.capture_failure = Mock()
+        class ImmediateWorker:
+            def __init__(self,planner): self.planner=planner
+            def poll(self,position,target,velocity):
+                plan=self.planner.compute_plan(position,target)
+                return WaypointPlanUpdate(plan,self.planner.execution_certificate(),0.,target)
+            def tracking_plan(self,update,position): return update.plan
+        def sleep(duration): clock[0] += max(0.,duration)
+        with patch.object(module,'time',NS(monotonic=lambda:clock[0],sleep=sleep)), patch(
+                'planner.waypoint_planning_worker.WaypointPlanningWorker',ImmediateWorker):
+            vehicle.move_waypoint_guided([1.,0.,-1.5],local_planner=guard,control_horizon=.15)
+        self.assertTrue(commands)
+        self.assertGreater(current[2],-1.54)
+        self.assertTrue(all(np.array_equal(point[:2],[0.,0.]) for point in commands))
+        guard.capture_failure.assert_not_called()
+        self.assertEqual(vehicle.waypoint_control_state['status'],'height_recovery')
+
+    def test_vertical_recovery_uses_strict_arrival_tolerance(self):
+        vehicle = RflyMultirotorInterface.__new__(RflyMultirotorInterface)
+        vehicle.config = Config(guided_stable_time=.05)
+        vehicle._require_offboard = lambda: None
+        vehicle.raise_if_collision = lambda **kw: None
+        current = np.array([0.,0.,-.1])
+        vehicle.get_position = lambda: current.copy()
+        vehicle.get_velocity = lambda: np.zeros(3)
+        vehicle.get_euler = lambda: np.zeros(3)
+        vehicle._flight_status = lambda: {}
+        vehicle.hover = Mock()
+        commands = []
+        vehicle.send_position = lambda point,yaw: commands.append(np.array(point))
+        vehicle.move_waypoint_guided([0.,0.,0.],control_horizon=.2,z_tolerance=.02)
+        self.assertTrue(any(point[2] > current[2] for point in commands))
+        self.assertTrue(all(np.array_equal(point[:2],current[:2]) for point in commands))
+
     def test_stopped_arrival_does_not_wait_for_another_moving_plan(self):
         vehicle = RflyMultirotorInterface.__new__(RflyMultirotorInterface)
         vehicle.config = Config(guided_stable_time=.1)
@@ -148,6 +209,29 @@ class AsyncWaypointReferenceTests(unittest.TestCase):
         self.assertFalse(execution_segment_free(snapshot,start,end,cfg,grid))
         observed[14,10,6]=False
         self.assertTrue(execution_segment_free(snapshot,start,end,cfg,grid))
+
+    def test_actual_height_cannot_borrow_clearance_from_nominal_plane(self):
+        from navigation.route import NavigationGrid, execution_segment_free
+        from config.semantic_navigation_config import SemanticNavigationConfig
+        cfg=SemanticNavigationConfig(clearance_radius=.1,vertical_half_extent=.1)
+        grid=NavigationGrid({(x,y) for x in range(20) for y in range(20)},set(),
+                            .1,(-1.,-1.),0.,cfg)
+        states=np.zeros((20,20,20),dtype=np.int8)
+        observed=np.ones_like(states,dtype=bool)
+        snapshot=NS(states=states,observed=observed,resolution=.1,origin_ned=np.array([-1.,-1.,-1.]))
+        start,end=np.array([0.,0.,-.06]),np.array([.5,0.,0.])
+        self.assertTrue(execution_segment_free(snapshot,start,end,cfg,grid))
+        # This layer is above the nominal body band, but intersects the UAV.
+        states[10,10,8]=1
+        self.assertTrue(grid.segment_free(start,end))
+        self.assertFalse(execution_segment_free(snapshot,start,end,cfg,grid))
+        states[10,10,8]=-1
+        observed[10,10,8]=False
+        self.assertFalse(execution_segment_free(snapshot,start,end,cfg,grid))
+        states[10,10,8]=0
+        states[14,10,11]=1  # The descending connector also sweeps its far end.
+        end[2]=.06
+        self.assertFalse(execution_segment_free(snapshot,start,end,cfg,grid))
 
     def test_horizon_handoff_retains_completed_certificate_until_new_plan(self):
         ready,release=threading.Event(),threading.Event()

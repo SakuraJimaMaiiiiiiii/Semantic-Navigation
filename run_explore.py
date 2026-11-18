@@ -1,4 +1,4 @@
-"""Terminal 1: Utility frontier decisions + existing A* paths + EGO local avoidance, return/land, target service."""
+"""Utility exploration, save after confirmed landing, then release background processes."""
 
 import argparse
 from dataclasses import replace
@@ -17,13 +17,14 @@ DEFAULT_SESSION_FILE = (
 
 def shutdown_session(server, runtime, primary_error=None, sam3_service=None):
     """Attempt every cleanup step without hiding the fault that ended flight."""
-    steps = [("session state", lambda: server.set_state("STOPPING")),
-             ("session server", server.close)]
+    steps = [("session state", lambda: server.set_state("STOPPING"))]
     if runtime is not None:
         steps.extend([("landing request", lambda: runtime.land_if_armed(hover_first=True)),
                       ("runtime shutdown", runtime.close)])
     if sam3_service is not None:
         steps.append(("SAM3 service", sam3_service.close))
+    # Reserve the single-owner port until SDK, sensors and model cleanup finish.
+    steps.append(("session server", server.close))
     errors = []
     for name, stop in steps:
         try:
@@ -81,6 +82,8 @@ def parse_config(argv=None, *, include_perception=False):
     parser.set_defaults(perception_backend="sam3")
     parser.add_argument("--fastlio", action="store_true",
                         help="Experimental FAST-LIO point/semantic map alongside PX4 navigation (assumed snapshot scans)")
+    parser.add_argument('--keep-session', action='store_true',
+                        help='Keep the live target server and sensors after landing (default: save and exit)')
     args = parser.parse_args(argv)
     config = replace(
         defaults,
@@ -125,6 +128,7 @@ def main():
         runtime = DemoRuntime(exploration=True, exploration_config=config, detector_config=detector,
                               fastlio_mode='live' if args.fastlio else None,
                               lidar_scan_model='snapshot_assumed' if args.fastlio else 'unverified')
+        runtime.keep_session = args.keep_session
         runtime.start()
         session = ExplorationSession(runtime, config, session_id=server.session_id)
         server.map_path = str(session.map_path.resolve())
@@ -139,6 +143,11 @@ def main():
         except Exception as error:
             print(f"--- 打开地图失败：{error}；可手动打开：{session.map_path} ----")
         session.explore()
+        if not args.keep_session:
+            print(f'--- 已确认落地并保存探索地图：{session.map_path} ----')
+            print('--- 正在关闭感知、SAM3 和建图后台，释放本次运行资源 ----')
+            print('--- 后续导航可独立加载保存地图：python navigate_target.py ----')
+            return
         server.set_state("READY")
         print("--- 探索结果已保存，后台录像、语义日志和回环重建已停止写入；等待目标导航 ----")
         print(f"--- 已返航并确认落地。保持本终端运行。地图：{session.map_path} ----")

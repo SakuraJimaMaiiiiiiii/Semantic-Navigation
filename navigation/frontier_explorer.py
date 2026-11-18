@@ -459,13 +459,29 @@ class FrontierExplorer(SemanticNavigator):
         self._inspect_nearby_vehicle()
 
     def _inspect_nearby_vehicle(self):
-        from .vehicle_inspection import needs_inspection, observation_route
+        from .vehicle_inspection import needs_inspection, observation_route, connection_key
         frame = self._frame()
         current = self.vehicle.get_position()
+        tokens = getattr(self, '_connection_review_tokens', {})
+        self._connection_review_tokens = tokens
+        usage = getattr(self, '_connection_review_usage', {})
+        self._connection_review_usage = usage
+        def ids(record):
+            return {record['runtime_instance_id'], *record.get('merged_from', [])}
+        def seen(record):
+            return set().union(*(tokens.get(i, set()) for i in ids(record)))
+        def spent(record):
+            return sum(usage.get(i, 0.) for i in ids(record))
+        def new_connection(record):
+            previous = seen(record)
+            return (len(previous) < self.exploration_config.vehicle_inspection_views
+                    and spent(record) < self.exploration_config.vehicle_inspection_timeout
+                    and any(connection_key(t) not in previous for t in record.get('connection_targets', [])))
         records = [r for r in frame.object_inspection_candidates
-                   if r['runtime_instance_id'] not in self._inspected_vehicle_ids
-                   and not self._inspected_vehicle_ids.intersection(r.get('merged_from', []))
-                   and frame.timestamp-r['last_seen'] <= self.config.perception_timeout
+                   if (not {r['runtime_instance_id'], *r.get('merged_from', [])}.intersection(self._inspected_vehicle_ids)
+                       or new_connection(r))
+                   and frame.timestamp-max([r['last_seen'], *[target['last_seen']
+                       for target in r.get('connection_targets', [])]]) <= self.config.perception_timeout
                    and needs_inspection(r, self.config.clearance_radius)
                    and np.linalg.norm(np.asarray(r['position_world'])[:2]-current[:2])
                    <= self.exploration_config.information_radius + self.exploration_config.candidate_radius_max]
@@ -473,9 +489,21 @@ class FrontierExplorer(SemanticNavigator):
             return
         record = min(records, key=lambda r: np.linalg.norm(np.asarray(r['position_world'])-current))
         identity = record['runtime_instance_id']
+        selected_connection = None
+        remaining_budget = self.exploration_config.vehicle_inspection_timeout
+        if record.get('connection_targets'):
+            remaining_budget -= spent(record)
+            targets = [t for t in record['connection_targets'] if connection_key(t) not in seen(record)]
+            if remaining_budget <= 0 or not targets:
+                return
+            target = max(targets, key=lambda t: t['last_seen'])
+            selected_connection = connection_key(target)
+            tokens.setdefault(identity, set()).add(selected_connection)
+            record = dict(record, connection_targets=[target])
         self._inspected_vehicle_ids.add(identity)
         original_deadline, previous_progress = self.deadline, self._motion_progress
-        self.deadline = min(original_deadline, self.clock()+self.exploration_config.vehicle_inspection_timeout)
+        review_started = self.clock()
+        self.deadline = min(original_deadline, review_started+remaining_budget)
         self._motion_progress = None
         used_yaws = []
         waypoint = None
@@ -493,7 +521,8 @@ class FrontierExplorer(SemanticNavigator):
                 used_yaws.append(angle)
                 waypoint = dict(number=len(self.exploration_waypoints)+1, frontier=None,
                                 position=goal.tolist(), yaw=angle+math.pi, score=0.,
-                                source='vehicle_inspection', target_id=identity, status='active')
+                                source='column_inspection' if record['class_name'] == 'column' else 'vehicle_inspection',
+                                target_id=identity, status='active')
                 self.exploration_waypoints.append(waypoint)
                 self.active_route = path
                 self._waypoint_cursor = WaypointCursor()
@@ -509,18 +538,34 @@ class FrontierExplorer(SemanticNavigator):
                 place = f"place_{len(self.memory.places):04d}"
                 self.memory.add_place(place, self.vehicle.get_position(), self.current_place)
                 self.current_place = place
-                self._align(math.atan2(record['position_world'][1]-goal[1], record['position_world'][0]-goal[0]))
+                focus = np.asarray(record['position_world'])
+                if record.get('connection_targets'):
+                    from .object_inspection import ObjectInspectionMemory
+                    focus = ObjectInspectionMemory.focus(record)
+                self._align(math.atan2(focus[1]-goal[1], focus[0]-goal[0]))
                 baseline = self._frame().timestamp
-                observation_end = min(self.deadline, self.clock()+self.config.perception_timeout)
+                required = (max(1, int(getattr(getattr(self.perception, 'config', None),
+                                             'vehicle_confirmation_observations', 3)))
+                            if record.get('connection_targets') else 1)
+                observation_end = min(self.deadline, self.clock()+required*self.config.perception_timeout)
+                observed, latest = 0, baseline
                 while self.clock() < observation_end:
                     self._wait(.2)
                     frame = self._frame()
-                    if frame.timestamp > baseline:
-                        break
+                    if frame.timestamp > latest:
+                        observed, latest = observed+1, frame.timestamp
+                        if observed >= required:
+                            break
                 updated = next((r for r in frame.object_inspection_candidates
                                 if r['runtime_instance_id'] == identity or identity in r.get('merged_from', [])), None)
                 if updated is not None:
                     record = updated
+                    if selected_connection is not None:
+                        selected = [t for t in record.get('connection_targets', [])
+                                    if connection_key(t) == selected_connection]
+                        if not selected and record['last_seen'] > baseline:
+                            break  # This region resolved; other regions keep their own review opportunity.
+                        record = dict(record, connection_targets=selected)
                     self._inspected_vehicle_ids.add(record['runtime_instance_id'])
                     if record['last_seen'] > baseline and not needs_inspection(record, self.config.clearance_radius):
                         break
@@ -529,6 +574,8 @@ class FrontierExplorer(SemanticNavigator):
             if waypoint is not None and waypoint['status'] == 'active':
                 waypoint['status'] = 'inspection_timeout'
         finally:
+            if selected_connection is not None:
+                usage[identity] = usage.get(identity, 0.)+max(0., self.clock()-review_started)
             self.deadline = original_deadline
             self._motion_progress = previous_progress
             self.active_route = None

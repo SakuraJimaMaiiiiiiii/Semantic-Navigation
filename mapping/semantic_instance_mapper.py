@@ -8,6 +8,7 @@ import numpy as np
 
 from .vehicle_instance_tracker import VEHICLE_CLASSES, VehicleInstanceTracker
 from .instance_surface import InstanceSurface
+from .column_identity import ColumnIdentityPolicy
 
 
 _Vector3 = tuple[float, float, float]
@@ -142,7 +143,7 @@ class _SemanticLandmark:
     surface: InstanceSurface = field(default_factory=InstanceSurface)
 
 
-class SemanticInstanceMapper:
+class SemanticInstanceMapper(ColumnIdentityPolicy):
     """维护本次飞行的卡尔曼语义地标并完成马氏距离关联。"""
 
     def __init__(
@@ -275,6 +276,7 @@ class SemanticInstanceMapper:
                 observations[index] = None
             else:
                 accepted_signs.append(index)
+        observations = self._prepare_column_observations(canonical_names, confidences, observations, observed_at)
         vehicle_observations = [
             obs if name in VEHICLE_CLASSES and name in self.landmark_classes else None
             for name, obs in zip(canonical_names, observations)
@@ -293,6 +295,11 @@ class SemanticInstanceMapper:
             for landmark_key, landmark in self._landmarks.items():
                 if landmark_key[0] != class_name:
                     continue
+                if class_name == 'column':
+                    surface_cost = self._column_surface_cost(landmark, observation)
+                    if surface_cost is not None:
+                        candidates.append((surface_cost, observation_index, landmark_key))
+                        continue
                 surface_match = landmark.surface.supports(observation.surface_points_world)
                 if not surface_match and not self._association_geometry_valid(class_name, landmark, observation):
                     continue
@@ -497,6 +504,8 @@ class SemanticInstanceMapper:
         landmark = self._landmarks.get(landmark_key)
         if landmark is None:
             return None
+        if canonical == 'column' and not self._strict_column_geometry(landmark):
+            return None
         required = max(int(min_observations), self.sign_min_observations) if canonical in {"signboard", "exit sign"} else int(min_observations)
         if canonical in {'exit door', 'fire cabinet', 'fire extinguisher'}:
             required = max(required, self.safety_landmark_min_observations)
@@ -514,6 +523,7 @@ class SemanticInstanceMapper:
     def semantic_map_records(self, min_observations=1) -> list[dict]:
         """导出统一身份；过滤或合并不会给剩余物体重新编号。"""
         records = []
+        connections = self._vehicles.connection_hypotheses()
         for memory in self.snapshot():
             if memory.class_name in VEHICLE_CLASSES and memory.confidence < self.vehicle_map_min_confidence:
                 continue
@@ -571,6 +581,8 @@ class SemanticInstanceMapper:
                     anchor_position_world=track.state.tolist(),
                     supported_surface_voxels=len(track.surface.supported_points()),
                     connected_fragment_count=track.connected_fragment_count,
+                    identity_status='needs_connection_view' if connections.get(memory.instance_id) else 'observed',
+                    connection_targets=connections.get(memory.instance_id, []),
                 )
             elif runtime_key in self._category_aliases:
                 other = self._category_aliases[runtime_key]
@@ -580,7 +592,7 @@ class SemanticInstanceMapper:
                     key[0]: dict(observations=self._landmarks[key].observation_count,
                                  mean_confidence=self._landmarks[key].confidence)
                     for key in (runtime_key, other)}
-        return records
+        return self._with_column_identity_status(records)
 
     def vehicle_color(self, instance_id):
         track = self._vehicles.tracks.get(instance_id)
@@ -613,6 +625,7 @@ class SemanticInstanceMapper:
             })
         records.extend(r for r in published_records
                        if r["class_name"] in {"fire extinguisher", "fire cabinet", "exit door", "exit sign", "signboard"})
+        records.extend(self._column_inspection_records([*published_records, *self._pending_column_records(published_records)]))
         return records
 
     def navigation_records(self, min_observations=3):
@@ -787,7 +800,11 @@ class SemanticInstanceMapper:
                     second = self._landmarks[second_key]
                     if first_key[0] != second_key[0]:
                         continue
-                    if frozenset((first_key, second_key)) in self._distinct_landmark_pairs:
+                    pair = frozenset((first_key, second_key))
+                    if first_key[0] == 'column':
+                        if pair not in getattr(self, '_column_ready_pairs', ()):
+                            continue
+                    elif pair in self._distinct_landmark_pairs:
                         continue
                     # Nearby columns are distinct objects too. A duplicate must
                     # have overlapping measured support, not just nearby XY.
@@ -797,7 +814,7 @@ class SemanticInstanceMapper:
                     overlap = np.minimum(first.bbox_3d_max, second.bbox_3d_max) - np.maximum(first.bbox_3d_min, second.bbox_3d_min)
                     smaller = np.minimum(first.bbox_3d_max-first.bbox_3d_min,
                                          second.bbox_3d_max-second.bbox_3d_min)
-                    if np.any(overlap < 0) or np.any(overlap < .5*smaller):
+                    if first_key[0] != 'column' and (np.any(overlap < 0) or np.any(overlap < .5*smaller)):
                         continue
                     distance_xy = float(np.linalg.norm(
                         first.position_world[:2]
@@ -865,7 +882,8 @@ class SemanticInstanceMapper:
                 bbox_3d_max=bbox_max,
                 surface=keep.surface,
                 observation_count=total_observations,
-                last_seen=max(keep.last_seen, drop.last_seen),
+                last_seen=(self._last_timestamp if keep_key[0] == 'column'
+                           else max(keep.last_seen, drop.last_seen)),
             )
             if drop_key in self._displayed_instances:
                 self._displayed_instances.remove(drop_key)

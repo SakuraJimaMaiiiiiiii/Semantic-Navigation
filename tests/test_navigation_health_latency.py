@@ -69,12 +69,13 @@ class NavigationHealthLatencyTests(unittest.TestCase):
                 release.set(); write.join(2.); read.join(2.)
 
     def test_direct_plan_revalidation_uses_new_depth_without_map_snapshot(self):
-        local = NS(forward_clearance=float('inf'),
+        local = NS(forward_clearance=float('inf'), execution_snapshot=None,
                    snapshot=Mock(side_effect=AssertionError('duplicate geometry snapshot')))
         nav = NS(local_map=local, global_map=NS(revision=0), _check_maps=Mock(),
+                 vehicle=NS(get_velocity=lambda:np.zeros(3)),
                  local_planner=NS(config=PlannerConfig()))
         guard = _FlightGuard(nav)
-        guard._grid = NS(segment_free=lambda a,b:True)
+        guard._grid = NS(segment_free=lambda a,b:True, resolution=.2, altitude=0.)
         guard._braking_rejection = lambda *a:None
         guard._report = lambda plan, **kwargs:plan
         plan = LocalPlan('route_clear', np.array([2.,0.,0.]), np.array([[0.,0.,0.],[2.,0.,0.]]), .3)

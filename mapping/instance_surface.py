@@ -5,6 +5,27 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 
+def measured_patch_overlap(first, second, minimum_fraction=.5, *, axis_spans=(.3, .3, .3), require_vertical=False):
+    """Compare untransformed, unique world voxels; density is not evidence."""
+    clouds = []
+    for points in (first, second):
+        if points is None:
+            return False
+        points = np.asarray(points, dtype=float).reshape(-1, 3)
+        points = points[np.isfinite(points).all(axis=1)]
+        _, rows = np.unique(np.floor(points/.1).astype(np.int64), axis=0, return_index=True)
+        clouds.append(points[rows])
+    a, b = clouds
+    if min(len(a), len(b)) < 24:
+        return False
+    masks = [cKDTree(b).query(a)[0] <= .15, cKDTree(a).query(b)[0] <= .15]
+    if min(int(mask.sum()) for mask in masks) < max(24, minimum_fraction*min(len(a), len(b))):
+        return False
+    extents = [np.ptp(points[mask], axis=0) for points, mask in zip(clouds, masks)]
+    return all(np.count_nonzero(extent >= axis_spans) >= 2
+               and (not require_vertical or extent[2] >= axis_spans[2]) for extent in extents)
+
+
 class InstanceSurface:
     # Geometry memory only: these cells never mark navigation space occupied.
     resolution = .10

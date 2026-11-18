@@ -9,6 +9,7 @@ import unicodedata
 class MotionProgress:
     def __init__(self, stream=None, clock=time.monotonic):
         self.stream = sys.stdout if stream is None else stream
+        self.enabled = True
         self.clock = clock
         self.interactive = bool(getattr(self.stream, 'isatty', lambda: False)())
         self.last_update = -float('inf')
@@ -23,9 +24,13 @@ class MotionProgress:
 
     def update(self, status, *, moving=True, detail=None):
         with self._lock:
+            if not self.enabled:
+                return
             self._update(status, moving=moving, detail=detail)
 
     def _update(self, status, *, moving=True, detail=None):
+        if getattr(self.stream, 'quiet_current_thread', False) is True:
+            return
         changed = status != self.last_status or moving != self.last_moving
         now = self.clock()
         if not changed and (not self.interactive or now-self.last_update < .25):

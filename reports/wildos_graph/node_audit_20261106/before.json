@@ -1,0 +1,2019 @@
+{
+  "source": "data/runs/run_20261105_143724_250603/exploration/navigation_graph/no_overflight_preview",
+  "nodes": 201,
+  "sampling_history_nodes": 311,
+  "removed_nodes_still_in_state": 110,
+  "near_pairs_under_1m": 44,
+  "nodes_detail": [
+    {
+      "id": "nav:134",
+      "nearest": "nav:145",
+      "distance": 0.49278129244777363,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:145",
+      "nearest": "nav:134",
+      "distance": 0.49278129244777363,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:205",
+      "nearest": "nav:338",
+      "distance": 0.5104920816903548,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:338",
+      "nearest": "nav:205",
+      "distance": 0.5104920816903548,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000013"
+    },
+    {
+      "id": "nav:53",
+      "nearest": "nav:82",
+      "distance": 0.5196026290429444,
+      "unique_cells": 0,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:82",
+      "nearest": "nav:53",
+      "distance": 0.5196026290429444,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:334",
+      "nearest": "nav:341",
+      "distance": 0.5242527365614892,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000055",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:341",
+      "nearest": "nav:334",
+      "distance": 0.5242527365614892,
+      "unique_cells": 10,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000055"
+    },
+    {
+      "id": "nav:105",
+      "nearest": "nav:311",
+      "distance": 0.5382653546379962,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:311",
+      "nearest": "nav:105",
+      "distance": 0.5382653546379962,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:186",
+      "nearest": "nav:209",
+      "distance": 0.5717197461532904,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000012",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:209",
+      "nearest": "nav:186",
+      "distance": 0.5717197461532904,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000014",
+      "nearest_created": "update_000012"
+    },
+    {
+      "id": "nav:255",
+      "nearest": "nav:53",
+      "distance": 0.5933045599425424,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000025",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:239",
+      "nearest": "nav:246",
+      "distance": 0.6063088676834989,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000018",
+      "nearest_created": "update_000020"
+    },
+    {
+      "id": "nav:246",
+      "nearest": "nav:239",
+      "distance": 0.6063088676834989,
+      "unique_cells": 8,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000020",
+      "nearest_created": "update_000018"
+    },
+    {
+      "id": "nav:213",
+      "nearest": "nav:214",
+      "distance": 0.6134402565370587,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000014",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:214",
+      "nearest": "nav:213",
+      "distance": 0.6134402565370587,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000014",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:92",
+      "nearest": "nav:94",
+      "distance": 0.6358577885731899,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:94",
+      "nearest": "nav:92",
+      "distance": 0.6358577885731899,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:120",
+      "nearest": "nav:122",
+      "distance": 0.6551898442586358,
+      "unique_cells": 4,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000005",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:122",
+      "nearest": "nav:120",
+      "distance": 0.6551898442586358,
+      "unique_cells": 11,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000005",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:292",
+      "nearest": "nav:293",
+      "distance": 0.6648732130335478,
+      "unique_cells": 10,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000032",
+      "nearest_created": "update_000032"
+    },
+    {
+      "id": "nav:293",
+      "nearest": "nav:292",
+      "distance": 0.6648732130335478,
+      "unique_cells": 11,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000032",
+      "nearest_created": "update_000032"
+    },
+    {
+      "id": "nav:245",
+      "nearest": "nav:288",
+      "distance": 0.6662865512703786,
+      "unique_cells": 0,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000020",
+      "nearest_created": "update_000030"
+    },
+    {
+      "id": "nav:288",
+      "nearest": "nav:245",
+      "distance": 0.6662865512703786,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000030",
+      "nearest_created": "update_000020"
+    },
+    {
+      "id": "nav:238",
+      "nearest": "nav:328",
+      "distance": 0.6695382014473862,
+      "unique_cells": 6,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000018",
+      "nearest_created": "update_000051"
+    },
+    {
+      "id": "nav:328",
+      "nearest": "nav:238",
+      "distance": 0.6695382014473862,
+      "unique_cells": 8,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000051",
+      "nearest_created": "update_000018"
+    },
+    {
+      "id": "nav:42",
+      "nearest": "nav:96",
+      "distance": 0.6744957151455547,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:96",
+      "nearest": "nav:42",
+      "distance": 0.6744957151455547,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:107",
+      "nearest": "nav:108",
+      "distance": 0.6777198729050056,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:108",
+      "nearest": "nav:107",
+      "distance": 0.6777198729050056,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:251",
+      "nearest": "nav:330",
+      "distance": 0.6878399028968559,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000023",
+      "nearest_created": "update_000053"
+    },
+    {
+      "id": "nav:330",
+      "nearest": "nav:251",
+      "distance": 0.6878399028968559,
+      "unique_cells": 6,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000053",
+      "nearest_created": "update_000023"
+    },
+    {
+      "id": "nav:322",
+      "nearest": "nav:331",
+      "distance": 0.7047120906586625,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000048",
+      "nearest_created": "update_000053"
+    },
+    {
+      "id": "nav:331",
+      "nearest": "nav:322",
+      "distance": 0.7047120906586625,
+      "unique_cells": 6,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000053",
+      "nearest_created": "update_000048"
+    },
+    {
+      "id": "nav:203",
+      "nearest": "nav:337",
+      "distance": 0.7247497280117472,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:337",
+      "nearest": "nav:203",
+      "distance": 0.7247497280117472,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000013"
+    },
+    {
+      "id": "nav:318",
+      "nearest": "nav:323",
+      "distance": 0.7268404289698936,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000046",
+      "nearest_created": "update_000048"
+    },
+    {
+      "id": "nav:323",
+      "nearest": "nav:318",
+      "distance": 0.7268404289698936,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000048",
+      "nearest_created": "update_000046"
+    },
+    {
+      "id": "nav:101",
+      "nearest": "nav:105",
+      "distance": 0.7472638978863303,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:300",
+      "nearest": "nav:310",
+      "distance": 0.7772643135848387,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000039",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:310",
+      "nearest": "nav:300",
+      "distance": 0.7772643135848387,
+      "unique_cells": 12,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000039"
+    },
+    {
+      "id": "nav:110",
+      "nearest": "nav:112",
+      "distance": 0.7885586312512014,
+      "unique_cells": 26,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:112",
+      "nearest": "nav:110",
+      "distance": 0.7885586312512014,
+      "unique_cells": 11,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:176",
+      "nearest": "nav:179",
+      "distance": 0.801874087197934,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:179",
+      "nearest": "nav:176",
+      "distance": 0.801874087197934,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:226",
+      "nearest": "nav:230",
+      "distance": 0.8187104129930263,
+      "unique_cells": 11,
+      "frontier": true,
+      "anchor": true,
+      "created": "update_000015",
+      "nearest_created": "update_000016"
+    },
+    {
+      "id": "nav:230",
+      "nearest": "nav:226",
+      "distance": 0.8187104129930263,
+      "unique_cells": 5,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000016",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:125",
+      "nearest": "nav:120",
+      "distance": 0.8277578142861868,
+      "unique_cells": 5,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000006",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:0",
+      "nearest": "nav:100",
+      "distance": 0.8677433570755921,
+      "unique_cells": 18,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:100",
+      "nearest": "nav:0",
+      "distance": 0.8677433570755921,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:6",
+      "nearest": "nav:53",
+      "distance": 0.869611435005886,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:306",
+      "nearest": "nav:310",
+      "distance": 0.8775685261734106,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:106",
+      "nearest": "nav:111",
+      "distance": 0.9080150939137063,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:111",
+      "nearest": "nav:106",
+      "distance": 0.9080150939137063,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:309",
+      "nearest": "nav:323",
+      "distance": 0.9176053917832507,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000043",
+      "nearest_created": "update_000048"
+    },
+    {
+      "id": "nav:2",
+      "nearest": "nav:42",
+      "distance": 0.923378222610272,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:124",
+      "nearest": "nav:126",
+      "distance": 0.9256332397701025,
+      "unique_cells": 9,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000005",
+      "nearest_created": "update_000006"
+    },
+    {
+      "id": "nav:126",
+      "nearest": "nav:124",
+      "distance": 0.9256332397701025,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000006",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:48",
+      "nearest": "nav:339",
+      "distance": 0.9338818042546608,
+      "unique_cells": 10,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:339",
+      "nearest": "nav:48",
+      "distance": 0.9338818042546608,
+      "unique_cells": 11,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:291",
+      "nearest": "nav:245",
+      "distance": 0.93975216322347,
+      "unique_cells": 19,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000031",
+      "nearest_created": "update_000020"
+    },
+    {
+      "id": "nav:45",
+      "nearest": "nav:74",
+      "distance": 0.9442306195618604,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:74",
+      "nearest": "nav:45",
+      "distance": 0.9442306195618604,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:232",
+      "nearest": "nav:317",
+      "distance": 0.9648393060342798,
+      "unique_cells": 20,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000017",
+      "nearest_created": "update_000046"
+    },
+    {
+      "id": "nav:317",
+      "nearest": "nav:232",
+      "distance": 0.9648393060342798,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000046",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:250",
+      "nearest": "nav:253",
+      "distance": 0.9664369120087933,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000023",
+      "nearest_created": "update_000024"
+    },
+    {
+      "id": "nav:253",
+      "nearest": "nav:250",
+      "distance": 0.9664369120087933,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000024",
+      "nearest_created": "update_000023"
+    },
+    {
+      "id": "nav:299",
+      "nearest": "nav:330",
+      "distance": 0.9765526508228587,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000037",
+      "nearest_created": "update_000053"
+    },
+    {
+      "id": "nav:219",
+      "nearest": "nav:224",
+      "distance": 0.9767160686519135,
+      "unique_cells": 30,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000015",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:224",
+      "nearest": "nav:219",
+      "distance": 0.9767160686519135,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000015",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:312",
+      "nearest": "nav:314",
+      "distance": 1.027215547747216,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:314",
+      "nearest": "nav:312",
+      "distance": 1.027215547747216,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:78",
+      "nearest": "nav:89",
+      "distance": 1.0288320611872772,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:89",
+      "nearest": "nav:78",
+      "distance": 1.0288320611872772,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:117",
+      "nearest": "nav:124",
+      "distance": 1.0334305988959407,
+      "unique_cells": 15,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000004",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:235",
+      "nearest": "nav:265",
+      "distance": 1.0399001495884606,
+      "unique_cells": 14,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000017",
+      "nearest_created": "update_000026"
+    },
+    {
+      "id": "nav:265",
+      "nearest": "nav:235",
+      "distance": 1.0399001495884606,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000026",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:242",
+      "nearest": "nav:235",
+      "distance": 1.0518876329050848,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000019",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:285",
+      "nearest": "nav:320",
+      "distance": 1.0538039373202943,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000030",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:320",
+      "nearest": "nav:285",
+      "distance": 1.0538039373202943,
+      "unique_cells": 6,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000030"
+    },
+    {
+      "id": "nav:221",
+      "nearest": "nav:296",
+      "distance": 1.0562324554386127,
+      "unique_cells": 7,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000015",
+      "nearest_created": "update_000034"
+    },
+    {
+      "id": "nav:296",
+      "nearest": "nav:221",
+      "distance": 1.0562324554386127,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000034",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:31",
+      "nearest": "nav:86",
+      "distance": 1.0579846487481708,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:86",
+      "nearest": "nav:31",
+      "distance": 1.0579846487481708,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:98",
+      "nearest": "nav:257",
+      "distance": 1.0937555807267823,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000026"
+    },
+    {
+      "id": "nav:257",
+      "nearest": "nav:98",
+      "distance": 1.0937555807267823,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000026",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:90",
+      "nearest": "nav:45",
+      "distance": 1.1102636054819937,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:275",
+      "nearest": "nav:320",
+      "distance": 1.1287694011844827,
+      "unique_cells": 22,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000028",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:241",
+      "nearest": "nav:296",
+      "distance": 1.1378256094087467,
+      "unique_cells": 12,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000019",
+      "nearest_created": "update_000034"
+    },
+    {
+      "id": "nav:63",
+      "nearest": "nav:100",
+      "distance": 1.1825009961451525,
+      "unique_cells": 16,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:132",
+      "nearest": "nav:155",
+      "distance": 1.1845592216045615,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:155",
+      "nearest": "nav:132",
+      "distance": 1.1845592216045615,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:290",
+      "nearest": "nav:294",
+      "distance": 1.1869805535558426,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000030",
+      "nearest_created": "update_000033"
+    },
+    {
+      "id": "nav:294",
+      "nearest": "nav:290",
+      "distance": 1.1869805535558426,
+      "unique_cells": 38,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000033",
+      "nearest_created": "update_000030"
+    },
+    {
+      "id": "nav:162",
+      "nearest": "nav:180",
+      "distance": 1.1937293949463674,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:180",
+      "nearest": "nav:162",
+      "distance": 1.1937293949463674,
+      "unique_cells": 0,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:121",
+      "nearest": "nav:123",
+      "distance": 1.2033016797854479,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000005",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:123",
+      "nearest": "nav:121",
+      "distance": 1.2033016797854479,
+      "unique_cells": 13,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000005",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:270",
+      "nearest": "nav:280",
+      "distance": 1.2272774161426319,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000027",
+      "nearest_created": "update_000028"
+    },
+    {
+      "id": "nav:280",
+      "nearest": "nav:270",
+      "distance": 1.2272774161426319,
+      "unique_cells": 8,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000028",
+      "nearest_created": "update_000027"
+    },
+    {
+      "id": "nav:303",
+      "nearest": "nav:309",
+      "distance": 1.2505373468049605,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000040",
+      "nearest_created": "update_000043"
+    },
+    {
+      "id": "nav:140",
+      "nearest": "nav:148",
+      "distance": 1.2587243718723982,
+      "unique_cells": 27,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:148",
+      "nearest": "nav:140",
+      "distance": 1.2587243718723982,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:256",
+      "nearest": "nav:253",
+      "distance": 1.2699315790079921,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000025",
+      "nearest_created": "update_000024"
+    },
+    {
+      "id": "nav:247",
+      "nearest": "nav:307",
+      "distance": 1.2758985595454355,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000021",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:307",
+      "nearest": "nav:247",
+      "distance": 1.2758985595454355,
+      "unique_cells": 6,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000021"
+    },
+    {
+      "id": "nav:61",
+      "nearest": "nav:100",
+      "distance": 1.283009193226693,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:244",
+      "nearest": "nav:252",
+      "distance": 1.3047069155753261,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000019",
+      "nearest_created": "update_000024"
+    },
+    {
+      "id": "nav:252",
+      "nearest": "nav:244",
+      "distance": 1.3047069155753261,
+      "unique_cells": 8,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000024",
+      "nearest_created": "update_000019"
+    },
+    {
+      "id": "nav:234",
+      "nearest": "nav:237",
+      "distance": 1.3063425584254698,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000017",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:237",
+      "nearest": "nav:234",
+      "distance": 1.3063425584254698,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000017",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:277",
+      "nearest": "nav:285",
+      "distance": 1.3083172770612115,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000028",
+      "nearest_created": "update_000030"
+    },
+    {
+      "id": "nav:267",
+      "nearest": "nav:272",
+      "distance": 1.3105091465723853,
+      "unique_cells": 19,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000027",
+      "nearest_created": "update_000027"
+    },
+    {
+      "id": "nav:272",
+      "nearest": "nav:267",
+      "distance": 1.3105091465723853,
+      "unique_cells": 12,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000027",
+      "nearest_created": "update_000027"
+    },
+    {
+      "id": "nav:150",
+      "nearest": "nav:154",
+      "distance": 1.3255339223767773,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:154",
+      "nearest": "nav:150",
+      "distance": 1.3255339223767773,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:119",
+      "nearest": "nav:105",
+      "distance": 1.346407786178788,
+      "unique_cells": 20,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000004",
+      "nearest_created": "update_000003"
+    },
+    {
+      "id": "nav:240",
+      "nearest": "nav:235",
+      "distance": 1.3574498828069186,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000018",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:7",
+      "nearest": "nav:61",
+      "distance": 1.37402697145354,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:185",
+      "nearest": "nav:198",
+      "distance": 1.3848492926630263,
+      "unique_cells": 10,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000012",
+      "nearest_created": "update_000013"
+    },
+    {
+      "id": "nav:198",
+      "nearest": "nav:185",
+      "distance": 1.3848492926630263,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000012"
+    },
+    {
+      "id": "nav:281",
+      "nearest": "nav:280",
+      "distance": 1.401970000399798,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000028",
+      "nearest_created": "update_000028"
+    },
+    {
+      "id": "nav:271",
+      "nearest": "nav:256",
+      "distance": 1.4169260165349413,
+      "unique_cells": 16,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000027",
+      "nearest_created": "update_000025"
+    },
+    {
+      "id": "nav:60",
+      "nearest": "nav:84",
+      "distance": 1.4220928915119513,
+      "unique_cells": 10,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:84",
+      "nearest": "nav:60",
+      "distance": 1.4220928915119513,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:258",
+      "nearest": "nav:261",
+      "distance": 1.422864076557551,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000026",
+      "nearest_created": "update_000026"
+    },
+    {
+      "id": "nav:261",
+      "nearest": "nav:258",
+      "distance": 1.422864076557551,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000026",
+      "nearest_created": "update_000026"
+    },
+    {
+      "id": "nav:141",
+      "nearest": "nav:123",
+      "distance": 1.448681352199959,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000005"
+    },
+    {
+      "id": "nav:159",
+      "nearest": "nav:169",
+      "distance": 1.4611875043804616,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:169",
+      "nearest": "nav:159",
+      "distance": 1.4611875043804616,
+      "unique_cells": 18,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:27",
+      "nearest": "nav:315",
+      "distance": 1.4616374782748467,
+      "unique_cells": 22,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000045"
+    },
+    {
+      "id": "nav:315",
+      "nearest": "nav:27",
+      "distance": 1.4616374782748467,
+      "unique_cells": 24,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000045",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:47",
+      "nearest": "nav:141",
+      "distance": 1.462254086482919,
+      "unique_cells": 10,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:196",
+      "nearest": "nav:206",
+      "distance": 1.4649195562823525,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:206",
+      "nearest": "nav:196",
+      "distance": 1.4649195562823525,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000014",
+      "nearest_created": "update_000013"
+    },
+    {
+      "id": "nav:165",
+      "nearest": "nav:166",
+      "distance": 1.4851632643097674,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:166",
+      "nearest": "nav:165",
+      "distance": 1.4851632643097674,
+      "unique_cells": 31,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:228",
+      "nearest": "nav:259",
+      "distance": 1.5078159631535852,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000016",
+      "nearest_created": "update_000026"
+    },
+    {
+      "id": "nav:259",
+      "nearest": "nav:228",
+      "distance": 1.5078159631535852,
+      "unique_cells": 8,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000026",
+      "nearest_created": "update_000016"
+    },
+    {
+      "id": "nav:286",
+      "nearest": "nav:277",
+      "distance": 1.521823087572513,
+      "unique_cells": 70,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000030",
+      "nearest_created": "update_000028"
+    },
+    {
+      "id": "nav:236",
+      "nearest": "nav:241",
+      "distance": 1.5309035254073267,
+      "unique_cells": 6,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000017",
+      "nearest_created": "update_000019"
+    },
+    {
+      "id": "nav:4",
+      "nearest": "nav:311",
+      "distance": 1.5372378149863077,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:233",
+      "nearest": "nav:237",
+      "distance": 1.5382334675037335,
+      "unique_cells": 17,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000017",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:114",
+      "nearest": "nav:150",
+      "distance": 1.5901894035227042,
+      "unique_cells": 21,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000003",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:36",
+      "nearest": "nav:41",
+      "distance": 1.6011850891457067,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:41",
+      "nearest": "nav:36",
+      "distance": 1.6011850891457067,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:266",
+      "nearest": "nav:261",
+      "distance": 1.6956314005281814,
+      "unique_cells": 21,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000026",
+      "nearest_created": "update_000026"
+    },
+    {
+      "id": "nav:160",
+      "nearest": "nav:176",
+      "distance": 1.7103353099021252,
+      "unique_cells": 10,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:201",
+      "nearest": "nav:215",
+      "distance": 1.727974758921431,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:215",
+      "nearest": "nav:201",
+      "distance": 1.727974758921431,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000014",
+      "nearest_created": "update_000013"
+    },
+    {
+      "id": "nav:208",
+      "nearest": "nav:214",
+      "distance": 1.7431116887932663,
+      "unique_cells": 21,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000014",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:178",
+      "nearest": "nav:335",
+      "distance": 1.7436904401089697,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000055"
+    },
+    {
+      "id": "nav:335",
+      "nearest": "nav:178",
+      "distance": 1.7436904401089697,
+      "unique_cells": 5,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000055",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:249",
+      "nearest": "nav:291",
+      "distance": 1.7810427632539967,
+      "unique_cells": 12,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000031"
+    },
+    {
+      "id": "nav:284",
+      "nearest": "nav:305",
+      "distance": 1.8125555153922417,
+      "unique_cells": 4,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000029",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:305",
+      "nearest": "nav:284",
+      "distance": 1.8125555153922417,
+      "unique_cells": 3,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000029"
+    },
+    {
+      "id": "nav:190",
+      "nearest": "nav:215",
+      "distance": 1.8479441547631503,
+      "unique_cells": 35,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:302",
+      "nearest": "nav:304",
+      "distance": 1.851246869419721,
+      "unique_cells": 6,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000040",
+      "nearest_created": "update_000040"
+    },
+    {
+      "id": "nav:304",
+      "nearest": "nav:302",
+      "distance": 1.851246869419721,
+      "unique_cells": 23,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000040",
+      "nearest_created": "update_000040"
+    },
+    {
+      "id": "nav:295",
+      "nearest": "nav:293",
+      "distance": 1.8618495512786544,
+      "unique_cells": 13,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000034",
+      "nearest_created": "update_000032"
+    },
+    {
+      "id": "nav:10",
+      "nearest": "nav:96",
+      "distance": 1.8676064218942119,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:151",
+      "nearest": "nav:328",
+      "distance": 1.8737931646420105,
+      "unique_cells": 32,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000051"
+    },
+    {
+      "id": "nav:274",
+      "nearest": "nav:271",
+      "distance": 1.8766422591595087,
+      "unique_cells": 31,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000027",
+      "nearest_created": "update_000027"
+    },
+    {
+      "id": "nav:340",
+      "nearest": "nav:337",
+      "distance": 1.876733269867008,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:262",
+      "nearest": "nav:284",
+      "distance": 1.892600370478403,
+      "unique_cells": 26,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000026",
+      "nearest_created": "update_000029"
+    },
+    {
+      "id": "nav:25",
+      "nearest": "nav:6",
+      "distance": 1.895920465267758,
+      "unique_cells": 0,
+      "frontier": true,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:211",
+      "nearest": "nav:341",
+      "distance": 1.9042412205143069,
+      "unique_cells": 16,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000014",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:75",
+      "nearest": "nav:91",
+      "distance": 1.911054625171827,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:91",
+      "nearest": "nav:75",
+      "distance": 1.911054625171827,
+      "unique_cells": 1,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:222",
+      "nearest": "nav:84",
+      "distance": 1.9328476285750313,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000015",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:227",
+      "nearest": "nav:282",
+      "distance": 1.9511718769023023,
+      "unique_cells": 11,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000016",
+      "nearest_created": "update_000029"
+    },
+    {
+      "id": "nav:282",
+      "nearest": "nav:227",
+      "distance": 1.9511718769023023,
+      "unique_cells": 6,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000029",
+      "nearest_created": "update_000016"
+    },
+    {
+      "id": "nav:99",
+      "nearest": "nav:60",
+      "distance": 1.97409137955723,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:18",
+      "nearest": "nav:82",
+      "distance": 1.9857979273437298,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:216",
+      "nearest": "nav:218",
+      "distance": 2.020556596313934,
+      "unique_cells": 65,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000015",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:218",
+      "nearest": "nav:216",
+      "distance": 2.020556596313934,
+      "unique_cells": 41,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000015",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:21",
+      "nearest": "nav:18",
+      "distance": 2.02309456405572,
+      "unique_cells": 48,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:52",
+      "nearest": "nav:75",
+      "distance": 2.0312813067971063,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000001",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:188",
+      "nearest": "nav:206",
+      "distance": 2.052327762073975,
+      "unique_cells": 23,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:144",
+      "nearest": "nav:2",
+      "distance": 2.0540393257043865,
+      "unique_cells": 11,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000001"
+    },
+    {
+      "id": "nav:217",
+      "nearest": "nav:338",
+      "distance": 2.0548374602811745,
+      "unique_cells": 42,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000015",
+      "nearest_created": "preview_or_unknown"
+    },
+    {
+      "id": "nav:161",
+      "nearest": "nav:335",
+      "distance": 2.0572796170674783,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000055"
+    },
+    {
+      "id": "nav:269",
+      "nearest": "nav:274",
+      "distance": 2.1270208213390256,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000027",
+      "nearest_created": "update_000027"
+    },
+    {
+      "id": "nav:197",
+      "nearest": "nav:224",
+      "distance": 2.1422138126998624,
+      "unique_cells": 33,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:164",
+      "nearest": "nav:176",
+      "distance": 2.2070958712655937,
+      "unique_cells": 105,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:324",
+      "nearest": "nav:302",
+      "distance": 2.21859056878634,
+      "unique_cells": 36,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000048",
+      "nearest_created": "update_000040"
+    },
+    {
+      "id": "nav:177",
+      "nearest": "nav:214",
+      "distance": 2.2240589783423284,
+      "unique_cells": 0,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000011",
+      "nearest_created": "update_000014"
+    },
+    {
+      "id": "nav:326",
+      "nearest": "nav:272",
+      "distance": 2.388208621375575,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000049",
+      "nearest_created": "update_000027"
+    },
+    {
+      "id": "nav:268",
+      "nearest": "nav:236",
+      "distance": 2.410809264687223,
+      "unique_cells": 7,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000027",
+      "nearest_created": "update_000017"
+    },
+    {
+      "id": "nav:278",
+      "nearest": "nav:281",
+      "distance": 2.4128909388731317,
+      "unique_cells": 117,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000028",
+      "nearest_created": "update_000028"
+    },
+    {
+      "id": "nav:200",
+      "nearest": "nav:177",
+      "distance": 2.4332055603184264,
+      "unique_cells": 2,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000011"
+    },
+    {
+      "id": "nav:193",
+      "nearest": "nav:228",
+      "distance": 2.45947401913948,
+      "unique_cells": 79,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000016"
+    },
+    {
+      "id": "nav:319",
+      "nearest": "nav:222",
+      "distance": 2.462478715773081,
+      "unique_cells": 27,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000015"
+    },
+    {
+      "id": "nav:143",
+      "nearest": "nav:132",
+      "distance": 2.523141591005312,
+      "unique_cells": 47,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:138",
+      "nearest": "nav:156",
+      "distance": 2.59285929239972,
+      "unique_cells": 40,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000010"
+    },
+    {
+      "id": "nav:156",
+      "nearest": "nav:138",
+      "distance": 2.59285929239972,
+      "unique_cells": 10,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000010",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:129",
+      "nearest": "nav:148",
+      "distance": 2.5967581281030396,
+      "unique_cells": 9,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000009",
+      "nearest_created": "update_000009"
+    },
+    {
+      "id": "nav:204",
+      "nearest": "nav:200",
+      "distance": 2.6465718693065177,
+      "unique_cells": 78,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000013",
+      "nearest_created": "update_000013"
+    },
+    {
+      "id": "nav:297",
+      "nearest": "nav:278",
+      "distance": 2.9151841641673775,
+      "unique_cells": 11,
+      "frontier": false,
+      "anchor": false,
+      "created": "preview_or_unknown",
+      "nearest_created": "update_000028"
+    },
+    {
+      "id": "nav:289",
+      "nearest": "nav:274",
+      "distance": 3.503542310244149,
+      "unique_cells": 25,
+      "frontier": false,
+      "anchor": false,
+      "created": "update_000030",
+      "nearest_created": "update_000027"
+    }
+  ]
+}

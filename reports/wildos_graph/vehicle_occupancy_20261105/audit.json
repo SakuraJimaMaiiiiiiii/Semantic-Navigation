@@ -1,0 +1,93 @@
+{
+  "run": "run_20261105_143724_250603",
+  "graph_update": 55,
+  "note": "Counts use cell centers inside graph snapshot AABB. Final raw archive is later than graph snapshot; do not subtract these counts.",
+  "flight_altitude_ned": -1.4889328479766846,
+  "vertical_half_extent_m": 0.25,
+  "resolution_m": 0.3,
+  "vehicles": {
+    "vehicle_02": {
+      "bbox_3d": {
+        "min": [
+          -10.588670971016855,
+          4.469369395267632,
+          -1.4865092001339455
+        ],
+        "max": [
+          -6.752620619188345,
+          6.141665521272973,
+          -0.06016056649387507
+        ]
+      },
+      "vehicle_constraint_active": true,
+      "observed_top_clearance_from_band_m": -0.24757635215726093,
+      "graph_occupied_cells": 47,
+      "graph_clearance_excluded_cells": 0,
+      "graph_free_cells": 0,
+      "final_raw_occupied_xy_cells": 21,
+      "final_raw_voxel_layers": {
+        "-6": 2,
+        "-5": 19
+      },
+      "final_semantic_voxel_counts": {
+        "unclassified": 11,
+        "vehicle_02": 10
+      }
+    },
+    "vehicle_04": {
+      "bbox_3d": {
+        "min": [
+          6.371069518872885,
+          19.54355367264996,
+          -1.1503418442014133
+        ],
+        "max": [
+          11.065162010058252,
+          21.33785153227258,
+          0.016407018827434356
+        ]
+      },
+      "vehicle_constraint_active": false,
+      "observed_top_clearance_from_band_m": 0.0885910037752713,
+      "graph_occupied_cells": 17,
+      "graph_clearance_excluded_cells": 19,
+      "graph_free_cells": 59,
+      "final_raw_occupied_xy_cells": 5,
+      "final_raw_voxel_layers": {
+        "-5": 5
+      },
+      "final_semantic_voxel_counts": {
+        "unclassified": 3,
+        "vehicle_04": 2
+      }
+    },
+    "vehicle_05": {
+      "bbox_3d": {
+        "min": [
+          5.789568630324905,
+          28.94595958239722,
+          -1.2332799292444694
+        ],
+        "max": [
+          9.224615510941291,
+          30.740920151121447,
+          -0.029549480607953746
+        ]
+      },
+      "vehicle_constraint_active": false,
+      "observed_top_clearance_from_band_m": 0.005652918732215184,
+      "graph_occupied_cells": 14,
+      "graph_clearance_excluded_cells": 20,
+      "graph_free_cells": 36,
+      "final_raw_occupied_xy_cells": 16,
+      "final_raw_voxel_layers": {
+        "-6": 2,
+        "-5": 16
+      },
+      "final_semantic_voxel_counts": {
+        "unclassified": 12,
+        "vehicle_05": 6
+      }
+    }
+  }
+}

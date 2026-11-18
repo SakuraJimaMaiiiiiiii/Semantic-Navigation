@@ -7,7 +7,8 @@ import sys
 from pathlib import Path
 import json
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import numpy as np
 from PIL import Image
@@ -75,8 +76,54 @@ class OfficialSAM3:
                     inference_seconds=np.asarray(time.perf_counter()-started))
 
 
+class SAM3HTTPServer(ThreadingHTTPServer):
+    """Health requests stay responsive; the handler admits only one model job."""
+    request_queue_size = 16
+
+    def handle_error(self, request, client_address):
+        # A local caller can cancel a timed-out inference or close an idle
+        # keep-alive stream. Only transport disconnects are routine here.
+        if not isinstance(sys.exc_info()[1], (BrokenPipeError,ConnectionResetError,ConnectionAbortedError)):
+            super().handle_error(request,client_address)
+
+
 def handler_for(engine):
+    inference_lock = threading.Lock()
     class Handler(BaseHTTPRequestHandler):
+        protocol_version = 'HTTP/1.1'
+
+        def setup(self):
+            super().setup()
+            self.connection.settimeout(30.)
+
+        def handle(self):
+            try:
+                super().handle()
+            except (BrokenPipeError,ConnectionResetError,ConnectionAbortedError):
+                self.close_connection = True
+
+        def reply(self, status, body, content_type, *, close=False):
+            if close:
+                self.close_connection = True
+            try:
+                # Exception text belongs in a UTF-8 body, never in the ASCII
+                # HTTP status line (Windows socket messages may be Chinese).
+                self.send_response(status)
+                self.send_header('Content-Type',content_type)
+                self.send_header('Content-Length',str(len(body)))
+                if close:
+                    self.send_header('Connection','close')
+                if status == 503:
+                    self.send_header('Retry-After','1')
+                self.end_headers()
+                self.wfile.write(body)
+                if not close:
+                    self.connection.settimeout(30.)
+            except OSError:
+                # Headers/results may already be partially sent. Never try a
+                # second 500 response on a cancelled or broken connection.
+                self.close_connection = True
+
         def log_message(self, *args):
             pass
 
@@ -85,20 +132,25 @@ def handler_for(engine):
                 self.send_error(404)
                 return
             body = json.dumps(engine.metadata).encode()
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self.reply(200,body,'application/json')
 
         def do_POST(self):
             if self.path != '/predict':
+                self.close_connection = True
                 self.send_error(404)
                 return
+            acquired = False
+            inference_started = False
             try:
                 length = int(self.headers.get('Content-Length', 0))
                 if not 0 < length <= 32*1024*1024:
                     raise ValueError('Invalid request size')
+                acquired = inference_lock.acquire(blocking=False)
+                if not acquired:
+                    # The POST body is unread; never reuse this byte stream.
+                    self.reply(503,b'','application/octet-stream',close=True)
+                    return
+                self.connection.settimeout(8.)
                 with np.load(io.BytesIO(self.rfile.read(length)), allow_pickle=False) as data:
                     image = data['rgb']
                     prompts = data['prompts'].tolist()
@@ -110,19 +162,21 @@ def handler_for(engine):
                     raise ValueError('Invalid text prompts')
                 if not 0 <= confidence <= 1:
                     raise ValueError('Invalid confidence')
+                inference_started = True
                 result = engine.predict(image, prompts, confidence)
                 out = io.BytesIO()
                 np.savez_compressed(out, **result)
                 body = out.getvalue()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/octet-stream')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            except (BrokenPipeError, ConnectionResetError):
-                pass
+                self.reply(200,body,'application/octet-stream')
             except Exception as error:
-                self.send_error(500, f'{type(error).__name__}: {error}')
+                if not inference_started and isinstance(error,(BrokenPipeError,ConnectionResetError,ConnectionAbortedError)):
+                    self.close_connection = True
+                else:
+                    body = json.dumps(dict(error=type(error).__name__,message=str(error)),ensure_ascii=False).encode('utf-8')
+                    self.reply(500,body,'application/json; charset=utf-8',close=True)
+            finally:
+                if acquired:
+                    inference_lock.release()
     return Handler
 
 
@@ -177,6 +231,8 @@ def main():
                         help='Local official weights (default: project detections/Yolomode/sam3.pt)')
     parser.add_argument('--device', choices=['cuda', 'cpu'], default='cuda')
     parser.add_argument('--port', type=int, default=8878)
+    parser.add_argument('--warmup', action='store_true',
+                        help='Run one blank-image inference before serving (disabled by default)')
     args = parser.parse_args()
     try:
         check_environment(None if args.check_only or args.smoke_test else args.checkpoint)
@@ -189,9 +245,12 @@ def main():
         check_image_backend(args.device)
         return
     engine = OfficialSAM3(args.checkpoint, args.device)
-    print('Warming up SAM3 before accepting flight requests...', flush=True)
-    engine.predict(np.zeros((405,720,3),dtype=np.uint8), ['car'], .5)
-    server = HTTPServer(('127.0.0.1', args.port), handler_for(engine))
+    if args.warmup:
+        print('Warming up SAM3 before accepting flight requests...', flush=True)
+        engine.predict(np.zeros((405,720,3),dtype=np.uint8), ['car'], .5)
+    else:
+        print('SAM3 warmup disabled; inference starts with the first image.', flush=True)
+    server = SAM3HTTPServer(('127.0.0.1', args.port), handler_for(engine))
     print(f'SAM3 ready: http://127.0.0.1:{args.port}; official image API', flush=True)
     try:
         server.serve_forever()

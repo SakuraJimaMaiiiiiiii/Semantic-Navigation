@@ -19,7 +19,7 @@ from planner.vertical_projection import ned_height_slice_mask
 class AStarVisualizationConfig:
     """A*二维规划图的保存参数。"""
 
-    enabled: bool = True
+    enabled: bool = False  # 按需开启调试截图，避免每两秒新增 PNG。
     local_save_interval: float = 2.0
     local_above_height: float = 0.25
     local_below_height: float = 0.9

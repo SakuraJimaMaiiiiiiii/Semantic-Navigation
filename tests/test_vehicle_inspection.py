@@ -6,6 +6,24 @@ from navigation.vehicle_inspection import needs_inspection, observation_route
 from navigation.frontier_explorer import FrontierExplorer
 
 
+def car(identity='vehicle_01', **overrides):
+    """Shared records for the offline object/connection inspection tests."""
+    record = dict(class_name='car', runtime_instance_id=identity, confidence=.9,
+                  last_seen=10., position_world=[0., 0., -.5],
+                  bbox_3d={'min': [-2., -1., -1.], 'max': [2., 1., 0.]},
+                  position_status='partial_surface', position_covariance=np.eye(3)*.01)
+    record.update(overrides)
+    return record
+
+
+def grid():
+    from config.semantic_navigation_config import SemanticNavigationConfig
+    from navigation.route import NavigationGrid
+    return NavigationGrid({(x, y) for x in range(-40, 41) for y in range(-40, 41)},
+                          set(), .5, (0., 0.), -1.5,
+                          SemanticNavigationConfig(clearance_radius=.1))
+
+
 class VehicleInspectionTests(unittest.TestCase):
     def record(self):
         return dict(class_name='car', runtime_instance_id='vehicle_01', confidence=.9,

@@ -10,7 +10,9 @@ class TerminalTests(unittest.TestCase):
         self.assertEqual(parse_line('返航'), [{'command':'return_home'}])
         self.assertEqual(parse_line('quit'), [{'command':'shutdown'}])
         self.assertEqual(parse_line(' '), [])
-        with self.assertRaises(ValueError): parse_line('vehicle_02 home')
+        self.assertEqual(parse_line('vehicle_02 home'), [
+            {'command':'navigate','target':{'instance_id':'vehicle_02'}}, {'command':'return_home'}])
+        with self.assertRaises(ValueError): parse_line('vehicle_02 home vehicle_01')
 
     def run_console(self, fail=False):
         class Server:

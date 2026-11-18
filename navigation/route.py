@@ -296,8 +296,52 @@ class NavigationGrid:
 
 def observed_body_segment_free(snapshot, start, end, config):
     """Certify a height-recovery chord using actual observed 3D body volumes."""
+    return observed_body_segment_rejection(snapshot, start, end, config) is None
+
+
+def _body_volume_rejection(snapshot, cells, low, high):
+    if (low < 0 or high >= snapshot.states.shape[2] or np.any(cells < 0)
+            or np.any(cells >= np.asarray(snapshot.states.shape[:2]))):
+        return 'outside_map'
+    states = snapshot.states[cells[:,0],cells[:,1],low:high+1]
+    if np.any(states == 1):
+        return 'occupied_body_volume'
+    if np.any(states != 0):
+        return 'unknown_body_volume'
+    return None
+
+
+def _vertical_body_cells(snapshot, position, radius):
+    """All voxel squares with positive-area overlap with the actual body disk.
+
+    Using offsets from floor(position) both overchecks one side of a cell and
+    misses diagonal intersections on the other side as the UAV moves in-cell.
+    """
+    r = float(snapshot.resolution)
+    xy = np.asarray(position)[:2]
+    first = np.floor((xy-radius-snapshot.origin_ned[:2])/r+1e-8).astype(int)
+    last = np.ceil((xy+radius-snapshot.origin_ned[:2])/r-1e-8).astype(int)
+    cells = np.array([(x,y) for x in range(first[0],last[0])
+                      for y in range(first[1],last[1])],dtype=int).reshape(-1,2)
+    low = snapshot.origin_ned[:2]+cells*r
+    distance = np.maximum(np.maximum(low-xy,xy-(low+r)),0.)
+    return cells[np.einsum('ij,ij->i',distance,distance) < radius*radius]
+
+
+def observed_body_segment_rejection(snapshot, start, end, config):
+    """Explain a failed observed-volume check without discarding its cause."""
+    if snapshot is None:
+        return 'missing_map'
     r = float(snapshot.resolution)
     start, end = np.asarray(start, float), np.asarray(end, float)
+    if (start.shape != (3,) or end.shape != (3,)
+            or not np.isfinite(start).all() or not np.isfinite(end).all()):
+        return 'invalid_position'
+    if np.array_equal(start[:2],end[:2]):
+        cells = _vertical_body_cells(snapshot,start,config.clearance_radius)
+        low,high = height_band_indices((start[2]+end[2])*.5,
+            config.vertical_half_extent+abs(end[2]-start[2])*.5,r,snapshot.origin_ned[2])
+        return _body_volume_rejection(snapshot,cells,low,high)
     count = max(2, int(math.ceil(np.linalg.norm(end-start)/(.5*r)))+1)
     extent = math.ceil(config.clearance_radius/r)
     offsets = np.array([(x, y) for x in range(-extent, extent+1)
@@ -307,12 +351,10 @@ def observed_body_segment_free(snapshot, start, end, config):
         center = np.floor((point[:2]-snapshot.origin_ned[:2])/r).astype(int)
         cells = center+offsets
         low, high = height_band_indices(point[2], config.vertical_half_extent, r, snapshot.origin_ned[2])
-        if (low < 0 or high >= snapshot.states.shape[2] or np.any(cells < 0)
-                or np.any(cells >= np.asarray(snapshot.states.shape[:2]))):
-            return False
-        if not np.all(snapshot.states[cells[:, 0], cells[:, 1], low:high+1] == 0):
-            return False
-    return True
+        reason = _body_volume_rejection(snapshot,cells,low,high)
+        if reason is not None:
+            return reason
+    return None
 
 
 def execution_segment_free(snapshot, start, end, config, certified_grid):
@@ -337,10 +379,27 @@ def execution_segment_free(snapshot, start, end, config, certified_grid):
     cells = (centers[:,None,:]+offsets).reshape(-1,2)
     if np.any(cells < 0) or np.any(cells >= np.asarray(snapshot.states.shape[:2])):
         return False
-    states = snapshot.states[cells[:,0], cells[:,1], low:high+1]
-    if np.any(states == 1):
-        return False
-    if snapshot.observed is None:
-        return bool(np.all(states == 0))
-    observed = snapshot.observed[cells[:,0], cells[:,1], low:high+1]
-    return not np.any((states == -1) & observed)
+    # The planar certificate covers only its own height band. Tracking drift
+    # and sloping connectors can sweep additional layers above/below it.
+    points = np.linspace(start, end, count)
+    observed = getattr(snapshot, 'observed', None)
+    for point, center in zip(points, centers):
+        body_low, body_high = height_band_indices(
+            point[2], config.vertical_half_extent, r, snapshot.origin_ned[2])
+        if body_low < 0 or body_high >= snapshot.states.shape[2]:
+            return False
+        body_cells = center+offsets
+        states = snapshot.states[body_cells[:,0], body_cells[:,1], body_low:body_high+1]
+        if np.any(states == 1):
+            return False
+        unknown = states != 0
+        if observed is None:
+            if np.any(unknown):
+                return False
+        else:
+            seen = observed[body_cells[:,0], body_cells[:,1], body_low:body_high+1]
+            layers = np.arange(body_low, body_high+1)
+            certified = (layers >= low) & (layers <= high)
+            if np.any(unknown & (seen | ~certified)):
+                return False
+    return True

@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "checks": [
+    "initial two panels",
+    "live add/delete nodes and edges",
+    "zoom preserved",
+    "layer setting preserved",
+    "stable node selection preserved across renumbering",
+    "robot moves",
+    "fit uses latest bounds"
+  ],
+  "errors": []
+}

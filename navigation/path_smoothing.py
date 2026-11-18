@@ -76,25 +76,3 @@ def tracking_points(start, route, segment_free, spacing=.6):
     return output
 
 
-def advance_route(path, modes, current, velocity, segment_free, z_tolerance):
-    """Advance certified flowing points without imposing a zero-speed gate.
-
-    Real corners still require a slow arrival. A skipped point's replacement
-    tracking chord is always checked, including when tolerance cuts an arc.
-    """
-    path, modes = list(path), list(modes)
-    if len(modes) != len(path)-1:
-        raise ValueError('Route point/mode count mismatch')
-    current = np.asarray(current)
-    while len(path) > 2:
-        flowing, _ = modes[0]
-        delta = current - path[1]
-        if (np.linalg.norm(delta[:2]) > (.25 if flowing else .1)
-                or abs(delta[2]) > z_tolerance
-                or (not flowing and np.linalg.norm(velocity) > .05)
-                or not segment_free(current, path[2])):
-            break
-        path.pop(1)
-        modes.pop(0)
-    path[0] = current.copy()
-    return path, modes

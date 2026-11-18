@@ -20,7 +20,10 @@ class StartupConfigTests(unittest.TestCase):
         for x, height in [(0., 2.6), (5., .8)]:
             low = np.array([x, 0., -height])
             high = np.array([x+.5, .5, 0.])
-            observations.append(SemanticObservation3D((low+high)/2, low, high, np.eye(3)*.01))
+            points = np.array([[x, y, z] for y in np.linspace(0., .5, 6) for z in np.linspace(-height, 0., 29)]
+                              + [[a, .5, z] for a in np.linspace(x, x+.5, 6) for z in np.linspace(-height, 0., 29)])
+            observations.append(SemanticObservation3D((low+high)/2, low, high, np.eye(3)*.01,
+                                                       surface_points_world=points))
         for stamp in (1., 2., 3.):
             mapper.update(names, [.8, .8], observations, stamp)
         records = mapper.semantic_map_records(min_observations=3)
@@ -35,19 +38,26 @@ class StartupConfigTests(unittest.TestCase):
 
     def test_file_and_cli_precedence(self):
         config, args = self.parse_file(
-            dict(perception_backend='sam3', fastlio='live', lidar_scan_model='snapshot_assumed',
-                 max_radius=42, object_prompts=['car', 'fire hose cabinet']),
-            ['--sam2', '--fastlio', 'off', '--max-radius', '12'])
-        self.assertEqual(config.max_radius, 12)
+            dict(perception_backend='sam3', port=9011, object_prompts=['car', 'fire hose cabinet']),
+            ['--sam2', '--port', '9012'])
+        self.assertEqual(config.server_port, 9012)
         self.assertEqual(args.perception_backend, 'yolo_sam2')
-        self.assertIsNone(args.fastlio)
+        self.assertFalse(hasattr(args, 'fastlio'))
         self.assertEqual(args.object_prompts, ['car', 'fire hose cabinet'])
 
     def test_empty_file_uses_original_defaults(self):
         config, args = self.parse_file({})
-        self.assertIsNone(args.fastlio)
+        self.assertFalse(hasattr(args, 'fastlio'))
         self.assertEqual(args.perception_backend, 'yolo_sam2')
         self.assertEqual(config.server_port, 8877)
+
+    def test_navigation_rejects_unused_exploration_options_with_migration_message(self):
+        for values in ({'fastlio': 'live'}, {'lidar_scan_model': 'snapshot_assumed'},
+                       {'max_radius': 42}, {'timeout': 60}, {'max_viewpoints': 20}):
+            with self.subTest(values=values), contextlib.redirect_stderr(io.StringIO()) as errors:
+                with self.assertRaises(SystemExit):
+                    self.parse_file(values)
+                self.assertIn('does not apply to saved-map navigation', errors.getvalue())
 
     def test_bad_values_fail_before_start(self):
         for value in [dict(fastlio='wrong'), dict(max_radius=True),

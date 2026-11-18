@@ -14,7 +14,9 @@ class ExplorationBackendSelectionTests(unittest.TestCase):
                 _, args = run_explore.parse_config(argv, include_perception=True)
                 self.assertEqual(args.perception_backend, expected)
                 self.assertFalse(args.fastlio)
+                self.assertFalse(args.keep_session)
         self.assertTrue(run_explore.parse_config(['--fastlio'], include_perception=True)[1].fastlio)
+        self.assertTrue(run_explore.parse_config(['--keep-session'], include_perception=True)[1].keep_session)
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             run_explore.parse_config(['--sam2', '--sam3'])
 
@@ -38,6 +40,9 @@ class ExplorationBackendSelectionTests(unittest.TestCase):
                      patch('webbrowser.open', return_value=True):
                     run_explore.main()
                 self.assertEqual(runtime_factory.call_args.kwargs['detector_config'].backend, backend)
+                detector = runtime_factory.call_args.kwargs['detector_config']
+                self.assertIn('parking garage structural column', detector.class_prompts)
+                self.assertIn('column', detector.semantic_landmark_classes)
                 self.assertEqual(runtime_factory.call_args.kwargs['fastlio_mode'],
                                  'live' if '--fastlio' in argv else None)
                 self.assertEqual(service.start.call_count, int(backend == 'sam3'))

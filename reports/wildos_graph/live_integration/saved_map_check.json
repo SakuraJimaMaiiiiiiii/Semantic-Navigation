@@ -1,0 +1,65 @@
+{
+  "source_run": "run_20261103_134810_164283",
+  "offline_only": true,
+  "build_seconds": 29.03749259794131,
+  "decision_seconds": 0.14904803992249072,
+  "nodes": 222,
+  "edges": 647,
+  "candidates": 16,
+  "limited": false,
+  "outside": false,
+  "validation": {
+    "passed": true,
+    "checked_nodes": 222,
+    "checked_edges": 647,
+    "invalid_nodes": [],
+    "invalid_edges": [],
+    "certificate": "Existing NavigationGrid same-height free-space checks; not real-flight validation",
+    "vehicles": {
+      "passed": true,
+      "checked_nodes": 222,
+      "checked_edges": 647,
+      "invalid_nodes": [],
+      "invalid_edges": [],
+      "invalid_robot_attachment": false
+    }
+  },
+  "selected_route": {
+    "target": "nav:131",
+    "node_path": [
+      "nav:393",
+      "nav:587",
+      "nav:33",
+      "nav:131"
+    ],
+    "length_m": 10.539220726865775,
+    "points_ned": [
+      [
+        -0.1698598861694336,
+        0.00978169497102499,
+        -1.4707468748092651
+      ],
+      [
+        0.28781641365054383,
+        0.04904022149096413,
+        -1.4707468748092651
+      ],
+      [
+        -1.3782538589386897,
+        -0.4525272633285519,
+        -1.4707468748092651
+      ],
+      [
+        -6.530288124108209,
+        -0.3594358263845076,
+        -1.4707468748092651
+      ],
+      [
+        -9.675532717475628,
+        -0.8739956030656372,
+        -1.4707468748092651
+      ]
+    ],
+    "epoch": 0
+  }
+}

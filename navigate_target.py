@@ -9,6 +9,7 @@ import webbrowser
 from config.semantic_navigation_config import DEFAULT_TARGET_FILE
 from navigation.target import load_target_request, SemanticTargetRequest
 from navigation.session_server import send_command
+from navigation.console_output import navigation_result_text
 
 DEFAULT_SESSION_FILE = (
     Path(__file__).resolve().parent / "data" / "exploration_session.json"
@@ -110,18 +111,17 @@ def main():
     descriptor = json.loads(args.session.read_text(encoding="utf-8"))
     response = session_command(descriptor, "return_home" if args.return_home else "navigate", target)
     job_id = response["job_id"]
-    print(f"任务已提交：{job_id}")
     deadline, opened = time.monotonic() + args.wait_timeout, False
     while time.monotonic() < deadline:
         status = session_command(descriptor, "status", job_id=job_id)
         if status.get("map_path") and not opened:
-            print("目标地图：" + status["map_path"])
             if args.open_map:
                 webbrowser.open(Path(status["map_path"]).as_uri())
             opened = True
         job = status.get("job")
         if job and job["id"] == job_id and job["state"] in ("succeeded", "failed"):
-            print(json.dumps(job["result"], ensure_ascii=False, indent=2))
+            print(navigation_result_text(job['result'], getattr(target, 'instance_id', None),
+                                         command='return_home' if args.return_home else 'navigate'))
             if job["state"] == "failed":
                 raise SystemExit(1)
             return

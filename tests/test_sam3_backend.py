@@ -3,9 +3,13 @@ import ast
 from contextlib import nullcontext
 from dataclasses import dataclass
 import io
+import http.client
 import json
+import socket
+import select
 from pathlib import Path
 import threading
+import time
 from types import SimpleNamespace
 import unittest
 import urllib.request
@@ -84,7 +88,7 @@ class SAM3Tests(unittest.TestCase):
         server=HTTPServer(('127.0.0.1',0),handler_for(Engine()))
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         try:
-            ns=dict(io=io,json=json,np=np,urllib=urllib,urlparse=urlparse,
+            ns=dict(io=io,json=json,np=np,urllib=urllib,urlparse=urlparse,http=http,time=time,socket=socket,select=select,
                     torch=SimpleNamespace(from_numpy=lambda x:x),Detection=Detection,
                     TiledVehicleDetector=FakeDetector,canonical_class_name=lambda x:x)
             cls=extract('detections/sam3_client.py','SAM3Detector',ns)
@@ -100,6 +104,8 @@ class SAM3Tests(unittest.TestCase):
             cfg.sam3_url='https://example.com'
             with self.assertRaises(ValueError): cls(cfg)
         finally:
+            if 'client' in locals():
+                client.close()
             server.shutdown();thread.join();server.server_close()
 
     def test_shared_segment_uses_supplied_masks_without_sam2_inference(self):

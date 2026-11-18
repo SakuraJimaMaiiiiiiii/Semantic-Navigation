@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 class RecordingConfig:
     """运行时同步数据记录参数。"""
 
-    enabled: bool = True  # 是否在飞行过程中记录同步状态和 RGB-D 数据
+    enabled: bool = False  # 按需开启原始 RGB-D 录制，避免常规运行持续占用磁盘
     # 独立使用记录器时的默认目录；DemoRuntime 会改为本次运行目录。
     output_dir: Path = PROJECT_ROOT / "data" / "recordings"
     file_prefix: str = "flight_rgbd"  # 每次记录文件的名称前缀

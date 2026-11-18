@@ -1,0 +1,4756 @@
+{
+  "current": {
+    "history": "E:\\files\\Semantic Navigation\\data\\runs\\run_20261116_135014_114064\\maps\\semantic_observations.jsonl",
+    "backend": "mapping.semantic_instance_mapper",
+    "manual_overrides_used": false,
+    "recorded_ids_used_for_association": false,
+    "packets": 921,
+    "measurements": 3479,
+    "category_counts": {
+      "column": 27,
+      "vehicle": 6
+    },
+    "records": [
+      {
+        "instance_id": "column_01",
+        "runtime_instance_id": "column_01",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9059519439809858,
+          7.60743504500919,
+          -1.2884115559560352
+        ],
+        "position_covariance": [
+          [
+            0.02917271747017832,
+            -0.009043648743701132,
+            0.00048792358631381843
+          ],
+          [
+            -0.009043648743701133,
+            0.044243332606454945,
+            -0.0018124652972667118
+          ],
+          [
+            0.0004879235863138184,
+            -0.001812465297266713,
+            0.06975535990696838
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.440783533739531,
+            7.055449935498088,
+            -2.6295119940654805
+          ],
+          "max": [
+            -3.37112035422244,
+            8.159420154520292,
+            0.05268888215340997
+          ]
+        },
+        "confidence": 0.9155649038461539,
+        "observation_count": 78,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_01": 78
+        }
+      },
+      {
+        "instance_id": "column_02",
+        "runtime_instance_id": "column_02",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_30"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.021734758481113,
+          7.594583983841983,
+          -1.2836676842413872
+        ],
+        "position_covariance": [
+          [
+            0.028658814538932497,
+            0.007218841990581321,
+            -0.00042248796916327425
+          ],
+          [
+            0.007218841990581321,
+            0.042390998213465536,
+            -0.0018777454636587176
+          ],
+          [
+            -0.0004224879691632744,
+            -0.0018777454636587179,
+            0.07268185710711386
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.4948207343525386,
+            7.053583958580868,
+            -2.6288104741750242
+          ],
+          "max": [
+            4.548648782609686,
+            8.135584009103098,
+            0.061475105692249905
+          ]
+        },
+        "confidence": 0.9051378038194444,
+        "observation_count": 72,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_02": 70,
+          "column_30": 2
+        }
+      },
+      {
+        "instance_id": "column_03",
+        "runtime_instance_id": "column_03",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9015901518636844,
+          15.517223991986626,
+          -1.2628163732477202
+        ],
+        "position_covariance": [
+          [
+            0.01833536914390402,
+            0.021210568549889307,
+            0.00023051316056622948
+          ],
+          [
+            0.02121056854988931,
+            0.06974289664196784,
+            0.000686942778864006
+          ],
+          [
+            0.0002305131605662295,
+            0.0006869427788640058,
+            0.045561322610172615
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.455556749649715,
+            15.068423169629135,
+            -2.634252661705658
+          ],
+          "max": [
+            -3.3476235540776536,
+            15.966024814344117,
+            0.10861991521021762
+          ]
+        },
+        "confidence": 0.8721835371376813,
+        "observation_count": 69,
+        "last_seen": 1794811010.8088372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [
+          {
+            "min": [
+              -4.412097925431775,
+              15.176554792179275,
+              -2.621961084234417
+            ],
+            "max": [
+              -3.325373333342058,
+              16.146811470658427,
+              0.04739935841309147
+            ],
+            "last_seen": 1794811907.7788372,
+            "target_id": "column_32"
+          }
+        ],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_03": 69
+        }
+      },
+      {
+        "instance_id": "column_04",
+        "runtime_instance_id": "column_04",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.046108120087597,
+          15.645667692086688,
+          -1.2865528458609474
+        ],
+        "position_covariance": [
+          [
+            0.03112003643858793,
+            -0.0008392824046898338,
+            2.691466481405426e-05
+          ],
+          [
+            -0.0008392824046898341,
+            0.056682731072939085,
+            -0.0012330416380464334
+          ],
+          [
+            2.691466481405424e-05,
+            -0.0012330416380464332,
+            0.07269692159351435
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.5514416206077146,
+            15.036439847045727,
+            -2.624109612201836
+          ],
+          "max": [
+            4.54077461956748,
+            16.25489553712765,
+            0.05100392047994144
+          ]
+        },
+        "confidence": 0.8380248091603052,
+        "observation_count": 131,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_04": 131
+        }
+      },
+      {
+        "instance_id": "column_05",
+        "runtime_instance_id": "column_05",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_06"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.863428380354456,
+          15.532533779860705,
+          -1.286546046971707
+        ],
+        "position_covariance": [
+          [
+            0.03998426547130382,
+            0.010036634277634538,
+            -0.00039240981469897113
+          ],
+          [
+            0.010036634277634536,
+            0.05469679219992648,
+            -0.00020756476125945245
+          ],
+          [
+            -0.0003924098146989712,
+            -0.00020756476125945286,
+            0.05331238490354924
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.779016681607962,
+            14.945347690576906,
+            -2.6284303302203704
+          ],
+          "max": [
+            11.947840079100951,
+            16.119719869144504,
+            0.05533823627695666
+          ]
+        },
+        "confidence": 0.3416201636904762,
+        "observation_count": 105,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_05": 16,
+          "column_06": 86
+        }
+      },
+      {
+        "instance_id": "column_10",
+        "runtime_instance_id": "column_10",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.790649748138943,
+          7.9551999287923305,
+          -1.2695426933865244
+        ],
+        "position_covariance": [
+          [
+            0.06638637542666599,
+            0.015669327610513227,
+            0.000667827721301098
+          ],
+          [
+            0.015669327610513224,
+            0.047086948028424586,
+            6.105922144771986e-05
+          ],
+          [
+            0.0006678277213010986,
+            6.105922144772017e-05,
+            0.06747813182346467
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.876932234939439,
+            7.330295283111895,
+            -2.4738742170762436
+          ],
+          "max": [
+            -11.704367261338447,
+            8.580104574472767,
+            -0.06521116969680504
+          ]
+        },
+        "confidence": 0.17815290178571427,
+        "observation_count": 7,
+        "last_seen": 1794811796.7098372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_10": 7
+        }
+      },
+      {
+        "instance_id": "column_12",
+        "runtime_instance_id": "column_12",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9187791976880453,
+          23.61391410241355,
+          -1.2552096924542766
+        ],
+        "position_covariance": [
+          [
+            0.06158107589152231,
+            0.03197211544212931,
+            -0.0014837335390895017
+          ],
+          [
+            0.03197211544212931,
+            0.05005636066366392,
+            -0.001100894282885199
+          ],
+          [
+            -0.0014837335390895019,
+            -0.0011008942828851986,
+            0.07274711810916479
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.473418349528097,
+            23.076454993379173,
+            -2.565883291065371
+          ],
+          "max": [
+            -3.3641400458479938,
+            24.151373211447925,
+            0.05546390615681778
+          ]
+        },
+        "confidence": 0.8634456219059405,
+        "observation_count": 101,
+        "last_seen": 1794811770.947837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_12": 101
+        }
+      },
+      {
+        "instance_id": "column_14",
+        "runtime_instance_id": "column_14",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.051756105165998,
+          23.748788522495957,
+          -1.2527081863597467
+        ],
+        "position_covariance": [
+          [
+            0.0804255710016704,
+            -0.011312105330172368,
+            0.0006934916894318417
+          ],
+          [
+            -0.011312105330172368,
+            0.03794588664004539,
+            -8.090335313098883e-05
+          ],
+          [
+            0.0006934916894318413,
+            -8.090335313098892e-05,
+            0.07634441133465111
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.541556097014319,
+            23.069246479295337,
+            -2.5605415102910647
+          ],
+          "max": [
+            4.561956113317677,
+            24.428330565696577,
+            0.055125137571571454
+          ]
+        },
+        "confidence": 0.7497164818548389,
+        "observation_count": 93,
+        "last_seen": 1794811310.263837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_14": 57,
+          "column_70": 27
+        }
+      },
+      {
+        "instance_id": "column_18",
+        "runtime_instance_id": "column_18",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.856755628723455,
+          23.5919552630509,
+          -1.3089838892236487
+        ],
+        "position_covariance": [
+          [
+            0.03118540396823133,
+            -0.010342048682228136,
+            4.868720988100882e-06
+          ],
+          [
+            -0.010342048682228142,
+            0.04741453686085166,
+            -0.00011726836770571726
+          ],
+          [
+            4.868720988100851e-06,
+            -0.00011726836770571756,
+            0.05742306059328256
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.770119639688659,
+            23.078296588148415,
+            -2.5935941663397344
+          ],
+          "max": [
+            11.943391617758254,
+            24.105613937953382,
+            -0.024373612107563197
+          ]
+        },
+        "confidence": 0.2342247596153846,
+        "observation_count": 78,
+        "last_seen": 1794811559.7488372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_18": 78
+        }
+      },
+      {
+        "instance_id": "column_22",
+        "runtime_instance_id": "column_22",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.685305378772602,
+          15.851995530945803,
+          -1.2638228686688866
+        ],
+        "position_covariance": [
+          [
+            0.1754843744203921,
+            -0.003760718837494237,
+            -0.003052929578996332
+          ],
+          [
+            -0.0037607188374942364,
+            0.02399965368817122,
+            0.00012225780533692154
+          ],
+          [
+            -0.003052929578996331,
+            0.00012225780533692154,
+            0.10083374442237944
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.713205876288026,
+            15.549066044900435,
+            -2.5602341273513165
+          ],
+          "max": [
+            -11.657404881257179,
+            16.15492501699117,
+            0.03258839001354343
+          ]
+        },
+        "confidence": 0.16531808035714285,
+        "observation_count": 7,
+        "last_seen": 1794808596.6998372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_23": 7
+        }
+      },
+      {
+        "instance_id": "column_25",
+        "runtime_instance_id": "column_25",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_26",
+          "column_27",
+          "column_40"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.757527154638847,
+          32.387006511304804,
+          -1.289383136269496
+        ],
+        "position_covariance": [
+          [
+            0.0662073066583417,
+            -0.0064023267969896816,
+            -0.0010548638237941352
+          ],
+          [
+            -0.006402326796989676,
+            0.07116654909188096,
+            -0.008786390146350454
+          ],
+          [
+            -0.00105486382379413,
+            -0.008786390146350454,
+            0.07425027623308247
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.846758925951079,
+            31.66050798420948,
+            -2.6256517131357455
+          ],
+          "max": [
+            -11.668295383326615,
+            33.113505038400135,
+            0.046885440596753224
+          ]
+        },
+        "confidence": 0.182586669921875,
+        "observation_count": 64,
+        "last_seen": 1794811742.7188373,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [
+          {
+            "min": [
+              -11.925285780110176,
+              31.53632172445096,
+              -2.734090869918853
+            ],
+            "max": [
+              -11.765094355100633,
+              32.04378109274655,
+              0.04532417949377998
+            ],
+            "last_seen": 1794811746.987837,
+            "target_id": "column_39"
+          }
+        ],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_25": 20,
+          "column_26": 20,
+          "column_27": 17
+        }
+      },
+      {
+        "instance_id": "column_28",
+        "runtime_instance_id": "column_28",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.848528005898705,
+          7.643479456448953,
+          -1.2599174679999507
+        ],
+        "position_covariance": [
+          [
+            0.046799332341143814,
+            -0.007288896099209448,
+            -8.12165061954701e-05
+          ],
+          [
+            -0.007288896099209448,
+            0.04806560117026664,
+            -0.0001018288153618823
+          ],
+          [
+            -8.121650619547021e-05,
+            -0.00010182881536188232,
+            0.05598609771543197
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.773654084939363,
+            7.1663093647390514,
+            -2.5600752272439995
+          ],
+          "max": [
+            11.923401926858048,
+            8.120649548158855,
+            0.04024029124409781
+          ]
+        },
+        "confidence": 0.18782552083333334,
+        "observation_count": 42,
+        "last_seen": 1794811796.7098372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_28": 42
+        }
+      },
+      {
+        "instance_id": "column_32",
+        "runtime_instance_id": "column_32",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.8687356293869164,
+          15.661683131418851,
+          -1.2872808629106627
+        ],
+        "position_covariance": [
+          [
+            0.03248336745219902,
+            -0.0017566767653941526,
+            6.219694125109855e-05
+          ],
+          [
+            -0.001756676765394153,
+            0.07135687359218804,
+            -0.0016213536644950808
+          ],
+          [
+            6.219694125109857e-05,
+            -0.0016213536644950838,
+            0.07109048954800003
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.412097925431775,
+            15.176554792179275,
+            -2.621961084234417
+          ],
+          "max": [
+            -3.325373333342058,
+            16.146811470658427,
+            0.04739935841309147
+          ]
+        },
+        "confidence": 0.833389945652174,
+        "observation_count": 46,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_03": 28,
+          "column_34": 18
+        }
+      },
+      {
+        "instance_id": "column_33",
+        "runtime_instance_id": "column_33",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.044087031648994,
+          32.58745423971318,
+          -1.2548622927005586
+        ],
+        "position_covariance": [
+          [
+            0.033829634331070224,
+            0.02825698027933769,
+            0.00036438614401869906
+          ],
+          [
+            0.028256980279337686,
+            0.04319693651413179,
+            0.0004321220489775702
+          ],
+          [
+            0.00036438614401869895,
+            0.0004321220489775701,
+            0.04305687899309342
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.4385546675910224,
+            32.05870477620662,
+            -2.5607527367230043
+          ],
+          "max": [
+            4.649619395706965,
+            33.11620370321974,
+            0.0510281513218872
+          ]
+        },
+        "confidence": 0.8027474306483956,
+        "observation_count": 187,
+        "last_seen": 1794811702.6178372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_33": 187
+        }
+      },
+      {
+        "instance_id": "column_34",
+        "runtime_instance_id": "column_34",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_43"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9139382204328097,
+          32.55603792537585,
+          -1.2839270681120347
+        ],
+        "position_covariance": [
+          [
+            0.08003463794164525,
+            -0.013135787333999858,
+            -0.001180003721212925
+          ],
+          [
+            -0.013135787333999858,
+            0.01662755025738642,
+            0.00021899954689121696
+          ],
+          [
+            -0.001180003721212924,
+            0.00021899954689121674,
+            0.06657002750247104
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.459745091496909,
+            32.03475239105245,
+            -2.632793812654708
+          ],
+          "max": [
+            -3.3681313493687104,
+            33.077323459699244,
+            0.06493967643063833
+          ]
+        },
+        "confidence": 0.8757416000939849,
+        "observation_count": 133,
+        "last_seen": 1794811739.253837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_35": 115,
+          "column_41": 18
+        }
+      },
+      {
+        "instance_id": "column_37",
+        "runtime_instance_id": "column_37",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.895011279812195,
+          25.457302991628424,
+          -1.3137362537752553
+        ],
+        "position_covariance": [
+          [
+            0.026669522851909176,
+            -0.014188952041475902,
+            1.680029346644837e-05
+          ],
+          [
+            -0.014188952041475902,
+            0.052472223191407874,
+            4.135058557171484e-05
+          ],
+          [
+            1.680029346644837e-05,
+            4.1350585571714845e-05,
+            0.07778594752306425
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.835828687334178,
+            25.263054345152174,
+            -2.7287894216210056
+          ],
+          "max": [
+            11.954193872290212,
+            25.651551638104674,
+            0.10131691407049499
+          ]
+        },
+        "confidence": 0.20513556985294118,
+        "observation_count": 34,
+        "last_seen": 1794811559.7488372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_38": 34
+        }
+      },
+      {
+        "instance_id": "column_39",
+        "runtime_instance_id": "column_39",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.845190067605404,
+          31.790051408598757,
+          -1.3443833452125364
+        ],
+        "position_covariance": [
+          [
+            0.04386234380440173,
+            -0.02317133978453344,
+            -0.0007360999539289373
+          ],
+          [
+            -0.02317133978453344,
+            0.0475689719994783,
+            0.0008291750554653546
+          ],
+          [
+            -0.0007360999539289377,
+            0.0008291750554653551,
+            0.07499794440125725
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.925285780110176,
+            31.53632172445096,
+            -2.734090869918853
+          ],
+          "max": [
+            -11.765094355100633,
+            32.04378109274655,
+            0.04532417949377998
+          ]
+        },
+        "confidence": 0.21263020833333332,
+        "observation_count": 15,
+        "last_seen": 1794811746.987837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [
+          {
+            "min": [
+              -12.459118277326072,
+              31.52294516062778,
+              -2.635780243497996
+            ],
+            "max": [
+              -11.933522852140026,
+              31.533813613871533,
+              0.08757960357981445
+            ],
+            "last_seen": 1794811084.7488372,
+            "target_id": "column_41"
+          }
+        ],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_25": 12
+        }
+      },
+      {
+        "instance_id": "column_41",
+        "runtime_instance_id": "column_41",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -12.19632056473305,
+          31.528379387249657,
+          -1.2741003199590908
+        ],
+        "position_covariance": [
+          [
+            0.1136318647502104,
+            -0.0990023802691363,
+            -0.0049637843058286885
+          ],
+          [
+            -0.09900238026913628,
+            0.12110435633912427,
+            0.005311972234369061
+          ],
+          [
+            -0.004963784305828686,
+            0.005311972234369053,
+            0.21548442462568207
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -12.459118277326072,
+            31.52294516062778,
+            -2.635780243497996
+          ],
+          "max": [
+            -11.933522852140026,
+            31.533813613871533,
+            0.08757960357981445
+          ]
+        },
+        "confidence": 0.21126302083333334,
+        "observation_count": 3,
+        "last_seen": 1794811084.7488372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "needs_connection_view",
+        "source_observations": {}
+      },
+      {
+        "instance_id": "column_46",
+        "runtime_instance_id": "column_46",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_53"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.866170068915743,
+          32.26757082335204,
+          -1.3033254970057688
+        ],
+        "position_covariance": [
+          [
+            0.03807519757711419,
+            -0.01513762447798866,
+            0.002704810983650547
+          ],
+          [
+            -0.01513762447798866,
+            0.02521764975026747,
+            -0.001411013930994159
+          ],
+          [
+            0.0027048109836505466,
+            -0.001411013930994159,
+            0.05459471717241144
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.772097366388984,
+            31.48013532969828,
+            -2.6540603179848112
+          ],
+          "max": [
+            11.9602427714425,
+            33.0550063170058,
+            0.04740932397327374
+          ]
+        },
+        "confidence": 0.27814352101293094,
+        "observation_count": 58,
+        "last_seen": 1794811574.878837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_44": 26,
+          "column_51": 30,
+          "column_62": 1
+        }
+      },
+      {
+        "instance_id": "column_57",
+        "runtime_instance_id": "column_57",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          12.091543471317316,
+          37.65391272148493,
+          -1.1983102482762165
+        ],
+        "position_covariance": [
+          [
+            0.016688062106372477,
+            0.007293649752251216,
+            0.00016676113802618063
+          ],
+          [
+            0.0072936497522512155,
+            0.027346929274027907,
+            0.0003443200291929611
+          ],
+          [
+            0.00016676113802618068,
+            0.0003443200291929611,
+            0.045810013641156
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.971750650793643,
+            37.07093216619599,
+            -2.4626852273432798
+          ],
+          "max": [
+            12.21133629184099,
+            38.23689327677387,
+            0.06606473079084693
+          ]
+        },
+        "confidence": 0.3529715401785714,
+        "observation_count": 35,
+        "last_seen": 1794811656.0188372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_55": 35
+        }
+      },
+      {
+        "instance_id": "column_59",
+        "runtime_instance_id": "column_59",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          12.079241988518586,
+          35.266802903813954,
+          -1.3405212402014148
+        ],
+        "position_covariance": [
+          [
+            0.06377545455854992,
+            0.0125809244590857,
+            -0.003912554095899274
+          ],
+          [
+            0.012580924459085699,
+            0.028213059961887617,
+            -0.0011507860540367308
+          ],
+          [
+            -0.003912554095899275,
+            -0.0011507860540367315,
+            0.05287737156030431
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.977882800678259,
+            34.74810330141673,
+            -2.7319707496371617
+          ],
+          "max": [
+            12.180601176358913,
+            35.78550250621119,
+            0.05092826923433213
+          ]
+        },
+        "confidence": 0.21720377604166666,
+        "observation_count": 24,
+        "last_seen": 1794809886.2528372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_57": 10
+        }
+      },
+      {
+        "instance_id": "column_84",
+        "runtime_instance_id": "column_84",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          1.461708444901865,
+          -2.919233482914459,
+          -1.2961347025125187
+        ],
+        "position_covariance": [
+          [
+            0.027927382272473336,
+            -0.010220880802239445,
+            0.00018828146385331675
+          ],
+          [
+            -0.010220880802239445,
+            0.03639468460038493,
+            -0.0003920654450968563
+          ],
+          [
+            0.0001882814638533168,
+            -0.0003920654450968564,
+            0.08633874883950535
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            1.4442576910409195,
+            -2.949356128216577,
+            -2.6054285909203325
+          ],
+          "max": [
+            1.47915919876281,
+            -2.8891108376123404,
+            0.013159185895295064
+          ]
+        },
+        "confidence": 0.24755859375,
+        "observation_count": 10,
+        "last_seen": 1794810758.003837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_83": 10
+        }
+      },
+      {
+        "instance_id": "column_85",
+        "runtime_instance_id": "column_85",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -0.002129391645572982,
+          -2.909422032837927,
+          -1.303196673971729
+        ],
+        "position_covariance": [
+          [
+            0.02686675322834046,
+            -0.009353894168750118,
+            -6.864024054903105e-05
+          ],
+          [
+            -0.00935389416875012,
+            0.01824686033075152,
+            -7.865738366957654e-05
+          ],
+          [
+            -6.864024054903103e-05,
+            -7.865738366957654e-05,
+            0.07019596967147827
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -0.06127996901328077,
+            -2.9544061452977943,
+            -2.578842562969594
+          ],
+          "max": [
+            0.057021185722134805,
+            -2.86443792037806,
+            -0.027550784973863818
+          ]
+        },
+        "confidence": 0.2313565340909091,
+        "observation_count": 11,
+        "last_seen": 1794810780.7388372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_84": 11
+        }
+      },
+      {
+        "instance_id": "column_86",
+        "runtime_instance_id": "column_86",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -1.3655854104867253,
+          -2.8981133957815866,
+          -1.292707803943079
+        ],
+        "position_covariance": [
+          [
+            0.01472295344976024,
+            -0.0038987146163403756,
+            -0.00011811503912689777
+          ],
+          [
+            -0.003898714616340375,
+            0.028397856872704044,
+            -8.173558518750647e-05
+          ],
+          [
+            -0.00011811503912689777,
+            -8.173558518750647e-05,
+            0.07658072218021812
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -1.3723988408153027,
+            -2.9208916135372225,
+            -2.5950358788449974
+          ],
+          "max": [
+            -1.3587719801581482,
+            -2.8753351780259506,
+            0.009620270958839328
+          ]
+        },
+        "confidence": 0.1986328125,
+        "observation_count": 5,
+        "last_seen": 1794810780.7388372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_85": 5
+        }
+      },
+      {
+        "instance_id": "column_87",
+        "runtime_instance_id": "column_87",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.1040211364465207,
+          -1.944367832449686,
+          -1.3601529841840254
+        ],
+        "position_covariance": [
+          [
+            0.05315040535822224,
+            0.02059005227527184,
+            -4.582490441568431e-05
+          ],
+          [
+            0.02059005227527184,
+            0.033701408606105605,
+            -4.935822146292564e-05
+          ],
+          [
+            -4.58249044156843e-05,
+            -4.935822146292563e-05,
+            0.041793188048598356
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -3.362051109370469,
+            -2.7376245529697565,
+            -2.7568106216568666
+          ],
+          "max": [
+            -2.8459911635225725,
+            -1.1511111119296156,
+            0.03650465328881563
+          ]
+        },
+        "confidence": 0.201416015625,
+        "observation_count": 16,
+        "last_seen": 1794811896.418837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_86": 11
+        }
+      },
+      {
+        "instance_id": "column_91",
+        "runtime_instance_id": "column_91",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          2.977504651405564,
+          -1.8117577695774738,
+          -1.3550251399099342
+        ],
+        "position_covariance": [
+          [
+            0.06378335782092537,
+            -0.020297853815828673,
+            0.0005987020788123138
+          ],
+          [
+            -0.02029785381582867,
+            0.03794783439572269,
+            -0.0002698039354052441
+          ],
+          [
+            0.0005987020788123137,
+            -0.0002698039354052438,
+            0.08830790104592208
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            2.925478728954884,
+            -2.419211792672449,
+            -2.7610113148298696
+          ],
+          "max": [
+            3.0295305738562432,
+            -1.2043037464824986,
+            0.05096103501000135
+          ]
+        },
+        "confidence": 0.32872596153846156,
+        "observation_count": 13,
+        "last_seen": 1794810758.003837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_90": 13
+        }
+      },
+      {
+        "instance_id": "column_115",
+        "runtime_instance_id": "column_115",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.716981122626201,
+          14.21358320316292,
+          -1.2064095974752058
+        ],
+        "position_covariance": [
+          [
+            0.39026078271804054,
+            0.3756162842492819,
+            -0.027929829259765976
+          ],
+          [
+            0.3756162842492819,
+            0.5290918778662227,
+            -0.031206641421443398
+          ],
+          [
+            -0.027929829259765976,
+            -0.031206641421443398,
+            0.20383793751177537
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.403194141512444,
+            13.402972394350687,
+            -2.4488844580929485
+          ],
+          "max": [
+            12.030768103739957,
+            15.024194011975151,
+            0.03606526314253672
+          ]
+        },
+        "confidence": 0.22200520833333334,
+        "observation_count": 3,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {}
+      },
+      {
+        "instance_id": "vehicle_01",
+        "runtime_instance_id": "vehicle_01",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [],
+        "position_world": [
+          -8.797654282382226,
+          13.314860193287116,
+          -0.5469371242952847
+        ],
+        "position_covariance": [
+          [
+            0.06292329799876856,
+            -0.01256584584804696,
+            -0.002177510856992554
+          ],
+          [
+            -0.01256584584804696,
+            0.07200870826779801,
+            0.002534511711953287
+          ],
+          [
+            -0.002177510856992554,
+            0.002534511711953287,
+            0.04543792508495603
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.945967980464003,
+            12.466575531022519,
+            -1.0580232097359592
+          ],
+          "max": [
+            -6.6493405843004485,
+            14.163144855551714,
+            -0.035851038854610294
+          ]
+        },
+        "confidence": 0.9451704545454546,
+        "observation_count": 55,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.797654282382226,
+            13.314860193287116,
+            -0.5469371242952847
+          ],
+          "size": [
+            4.296627396163555,
+            1.696569324529195,
+            1.022172170881349
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.727500482102949,
+          12.978373170609592,
+          -0.4594048561607654
+        ],
+        "supported_surface_voxels": 1125,
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_01": 53
+        }
+      },
+      {
+        "instance_id": "vehicle_02",
+        "runtime_instance_id": "vehicle_02",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [
+          "vehicle_06"
+        ],
+        "color": "blue",
+        "color_confidence": 0.6635142666027675,
+        "aliases": [],
+        "position_world": [
+          -8.711079412394147,
+          5.566386784892374,
+          -0.7623127975796112
+        ],
+        "position_covariance": [
+          [
+            0.0820645492035292,
+            -0.02350752046102892,
+            -0.005115331096911609
+          ],
+          [
+            -0.02350752046102892,
+            0.061516061348916,
+            0.003329087345902943
+          ],
+          [
+            -0.005115331096911609,
+            0.003329087345902943,
+            0.04455875462362642
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.797256391797301,
+            4.615991560193336,
+            -1.4849529760254476
+          ],
+          "max": [
+            -6.624902432990994,
+            6.516782009591411,
+            -0.03967261913377492
+          ]
+        },
+        "confidence": 0.9562904094827587,
+        "observation_count": 58,
+        "last_seen": 1794811899.1838372,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_min",
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.711079412394147,
+            5.566386784892374,
+            -0.7623127975796112
+          ],
+          "size": [
+            4.172353958806307,
+            1.9007904493980745,
+            1.4452803568916728
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -7.334513250881397,
+          4.892448339612575,
+          -0.7087907506687432
+        ],
+        "supported_surface_voxels": 1713,
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_02": 49,
+          "vehicle_06": 5
+        }
+      },
+      {
+        "instance_id": "vehicle_03",
+        "runtime_instance_id": "vehicle_03",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.8377646967218095,
+        "aliases": [],
+        "position_world": [
+          8.74684108317488,
+          20.487357140638483,
+          -0.5547298899690788
+        ],
+        "position_covariance": [
+          [
+            0.05681502219038611,
+            0.00040801714282569343,
+            5.6007136940382056e-05
+          ],
+          [
+            0.00040801714282569343,
+            0.07780269273301055,
+            -0.004246762047570271
+          ],
+          [
+            5.6007136940382056e-05,
+            -0.004246762047570271,
+            0.04599289976231468
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.424624224833554,
+            19.5380385993073,
+            -1.1320367703211565
+          ],
+          "max": [
+            11.069057941516206,
+            21.43667568196967,
+            0.022576990382998936
+          ]
+        },
+        "confidence": 0.8962992749183006,
+        "observation_count": 153,
+        "last_seen": 1794811899.1838372,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.74684108317488,
+            20.487357140638483,
+            -0.5547298899690788
+          ],
+          "size": [
+            4.644433716682652,
+            1.8986370826623706,
+            1.1546137607041553
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          8.832466805408531,
+          20.794533182521448,
+          -0.4254103210543018
+        ],
+        "supported_surface_voxels": 1747,
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_03": 151
+        }
+      },
+      {
+        "instance_id": "vehicle_04",
+        "runtime_instance_id": "vehicle_04",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [],
+        "position_world": [
+          9.481685084723265,
+          29.894770434877294,
+          -0.7074111177413813
+        ],
+        "position_covariance": [
+          [
+            0.12000609927719527,
+            0.0754802246085878,
+            -0.0019813741916854424
+          ],
+          [
+            0.0754802246085878,
+            0.15601219760689888,
+            -0.000547882604612577
+          ],
+          [
+            -0.0019813741916854424,
+            -0.000547882604612577,
+            0.051844785961749205
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            8.471294648786955,
+            29.051969115191046,
+            -1.366945089484233
+          ],
+          "max": [
+            10.492075520659576,
+            30.73757175456354,
+            -0.04787714599852976
+          ]
+        },
+        "confidence": 0.8580729166666666,
+        "observation_count": 9,
+        "last_seen": 1794809731.9438372,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "partial_surface",
+        "supported_box_faces": [
+          "width_min"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            9.481685084723265,
+            29.89477043487729,
+            -0.7074111177413813
+          ],
+          "size": [
+            2.0207808718726197,
+            1.6856026393724914,
+            1.3190679434857033
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          9.870585456705916,
+          29.942410137692733,
+          -0.7941922333164417
+        ],
+        "supported_surface_voxels": 149,
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              5.937239770260385,
+              29.06245766660888,
+              -1.0628248708177583
+            ],
+            "max": [
+              7.625827161832465,
+              30.92717481814421,
+              0.019981125599375253
+            ],
+            "last_seen": 1794811713.2528372
+          }
+        ],
+        "source_observations": {
+          "vehicle_04": 7
+        }
+      },
+      {
+        "instance_id": "vehicle_05",
+        "runtime_instance_id": "vehicle_05",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.6071234310903031,
+        "aliases": [],
+        "position_world": [
+          8.741732319079025,
+          3.0949212050749666,
+          -0.5486721568003926
+        ],
+        "position_covariance": [
+          [
+            0.06451988586423116,
+            -0.028718339869559475,
+            0.002263569150857932
+          ],
+          [
+            -0.028718339869559475,
+            0.11886394318510445,
+            -0.005429303509714328
+          ],
+          [
+            0.002263569150857932,
+            -0.005429303509714328,
+            0.0462267431432306
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.545715781210941,
+            2.9419167684354965,
+            -1.0495090818447694
+          ],
+          "max": [
+            10.93774885694711,
+            3.2479256417144367,
+            -0.04783523175601582
+          ]
+        },
+        "confidence": 0.9547991071428571,
+        "observation_count": 21,
+        "last_seen": 1794811824.1578372,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "partial_surface",
+        "supported_box_faces": [
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.741732319079025,
+            3.0949212050749666,
+            -0.5486721568003926
+          ],
+          "size": [
+            4.392033075736169,
+            0.30600887327894033,
+            1.0016738500887536
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          8.888441276493225,
+          3.2828455124770763,
+          -0.5035072653488538
+        ],
+        "supported_surface_voxels": 532,
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              9.635888723982516,
+              1.4685407846517784,
+              -1.2087926166903957
+            ],
+            "max": [
+              10.831489898236597,
+              2.639900932772861,
+              -0.35539770934971215
+            ],
+            "last_seen": 1794810516.8878372
+          },
+          {
+            "min": [
+              6.3026739289660645,
+              1.4908780675417896,
+              -0.6707183767041102
+            ],
+            "max": [
+              6.848665082053625,
+              3.126891271183409,
+              -0.14522163368945407
+            ],
+            "last_seen": 1794811851.0638373
+          }
+        ],
+        "source_observations": {
+          "vehicle_05": 19
+        }
+      },
+      {
+        "instance_id": "vehicle_07",
+        "runtime_instance_id": "vehicle_07",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "red",
+        "color_confidence": 0.6698850803445713,
+        "aliases": [],
+        "position_world": [
+          -8.58696812257483,
+          39.05708947459947,
+          -0.612122300447543
+        ],
+        "position_covariance": [
+          [
+            0.04074530419905521,
+            -0.007346097677528551,
+            -0.0015580989963598977
+          ],
+          [
+            -0.007346097677528551,
+            0.06512766972738103,
+            0.0056848834366660436
+          ],
+          [
+            -0.0015580989963598977,
+            0.0056848834366660436,
+            0.036894278685232595
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.838243345039695,
+            38.155588611453936,
+            -1.1825912671272159
+          ],
+          "max": [
+            -6.335692900109968,
+            39.958590337745,
+            -0.0416533337678701
+          ]
+        },
+        "confidence": 0.9492749550359713,
+        "observation_count": 139,
+        "last_seen": 1794811688.6178372,
+        "is_static": true,
+        "is_obstacle": true,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.58696812257483,
+            39.05708947459947,
+            -0.612122300447543
+          ],
+          "size": [
+            4.502550444929726,
+            1.803001726291069,
+            1.1409379333593457
+          ],
+          "yaw": 0.0
+        },
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.608854154587089,
+          38.25388050915098,
+          -0.5535360098579676
+        ],
+        "supported_surface_voxels": 1688,
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_07": 136
+        }
+      }
+    ],
+    "deferred_column_connections": [
+      {
+        "parent": "column_03",
+        "targets": [
+          "column_32"
+        ]
+      },
+      {
+        "parent": "column_25",
+        "targets": [
+          "column_39"
+        ]
+      },
+      {
+        "parent": "column_39",
+        "targets": [
+          "column_41"
+        ]
+      }
+    ],
+    "deferred_vehicle_fragments": [
+      {
+        "observation_count": 33,
+        "possible_parents": [
+          "vehicle_05"
+        ]
+      },
+      {
+        "observation_count": 58,
+        "possible_parents": [
+          "vehicle_04"
+        ]
+      },
+      {
+        "observation_count": 15,
+        "possible_parents": [
+          "vehicle_05"
+        ]
+      }
+    ],
+    "duration_seconds": 44.656
+  },
+  "v3": {
+    "history": "E:\\files\\Semantic Navigation\\data\\runs\\run_20261116_135014_114064\\maps\\semantic_observations.jsonl",
+    "backend": "mapping.explore_v3.adapters",
+    "manual_overrides_used": false,
+    "recorded_ids_used_for_association": false,
+    "packets": 921,
+    "measurements": 3479,
+    "category_counts": {
+      "column": 27,
+      "vehicle": 6
+    },
+    "records": [
+      {
+        "instance_id": "column_01",
+        "runtime_instance_id": "column_01",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9059519439809858,
+          7.60743504500919,
+          -1.2884115559560352
+        ],
+        "position_covariance": [
+          [
+            0.02917271747017832,
+            -0.009043648743701132,
+            0.00048792358631381843
+          ],
+          [
+            -0.009043648743701133,
+            0.044243332606454945,
+            -0.0018124652972667118
+          ],
+          [
+            0.0004879235863138184,
+            -0.001812465297266713,
+            0.06975535990696838
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.440783533739531,
+            7.055449935498088,
+            -2.6295119940654805
+          ],
+          "max": [
+            -3.37112035422244,
+            8.159420154520292,
+            0.05268888215340997
+          ]
+        },
+        "confidence": 0.9155649038461539,
+        "observation_count": 78,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_01": 78
+        }
+      },
+      {
+        "instance_id": "column_02",
+        "runtime_instance_id": "column_02",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_30"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.021734758481113,
+          7.594583983841983,
+          -1.2836676842413872
+        ],
+        "position_covariance": [
+          [
+            0.028658814538932497,
+            0.007218841990581321,
+            -0.00042248796916327425
+          ],
+          [
+            0.007218841990581321,
+            0.042390998213465536,
+            -0.0018777454636587176
+          ],
+          [
+            -0.0004224879691632744,
+            -0.0018777454636587179,
+            0.07268185710711386
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.4948207343525386,
+            7.053583958580868,
+            -2.6288104741750242
+          ],
+          "max": [
+            4.548648782609686,
+            8.135584009103098,
+            0.061475105692249905
+          ]
+        },
+        "confidence": 0.9051378038194444,
+        "observation_count": 72,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_02": 70,
+          "column_30": 2
+        }
+      },
+      {
+        "instance_id": "column_03",
+        "runtime_instance_id": "column_03",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9015901518636844,
+          15.517223991986626,
+          -1.2628163732477202
+        ],
+        "position_covariance": [
+          [
+            0.01833536914390402,
+            0.021210568549889307,
+            0.00023051316056622948
+          ],
+          [
+            0.02121056854988931,
+            0.06974289664196784,
+            0.000686942778864006
+          ],
+          [
+            0.0002305131605662295,
+            0.0006869427788640058,
+            0.045561322610172615
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.455556749649715,
+            15.068423169629135,
+            -2.634252661705658
+          ],
+          "max": [
+            -3.3476235540776536,
+            15.966024814344117,
+            0.10861991521021762
+          ]
+        },
+        "confidence": 0.8721835371376813,
+        "observation_count": 69,
+        "last_seen": 1794811010.8088372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [
+          {
+            "min": [
+              -4.412097925431775,
+              15.176554792179275,
+              -2.621961084234417
+            ],
+            "max": [
+              -3.325373333342058,
+              16.146811470658427,
+              0.04739935841309147
+            ],
+            "last_seen": 1794811907.7788372,
+            "target_id": "column_32"
+          }
+        ],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_03": 69
+        }
+      },
+      {
+        "instance_id": "column_04",
+        "runtime_instance_id": "column_04",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.046108120087597,
+          15.645667692086688,
+          -1.2865528458609474
+        ],
+        "position_covariance": [
+          [
+            0.03112003643858793,
+            -0.0008392824046898338,
+            2.691466481405426e-05
+          ],
+          [
+            -0.0008392824046898341,
+            0.056682731072939085,
+            -0.0012330416380464334
+          ],
+          [
+            2.691466481405424e-05,
+            -0.0012330416380464332,
+            0.07269692159351435
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.5514416206077146,
+            15.036439847045727,
+            -2.624109612201836
+          ],
+          "max": [
+            4.54077461956748,
+            16.25489553712765,
+            0.05100392047994144
+          ]
+        },
+        "confidence": 0.8380248091603052,
+        "observation_count": 131,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_04": 131
+        }
+      },
+      {
+        "instance_id": "column_05",
+        "runtime_instance_id": "column_05",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_06"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.863428380354456,
+          15.532533779860705,
+          -1.286546046971707
+        ],
+        "position_covariance": [
+          [
+            0.03998426547130382,
+            0.010036634277634538,
+            -0.00039240981469897113
+          ],
+          [
+            0.010036634277634536,
+            0.05469679219992648,
+            -0.00020756476125945245
+          ],
+          [
+            -0.0003924098146989712,
+            -0.00020756476125945286,
+            0.05331238490354924
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.779016681607962,
+            14.945347690576906,
+            -2.6284303302203704
+          ],
+          "max": [
+            11.947840079100951,
+            16.119719869144504,
+            0.05533823627695666
+          ]
+        },
+        "confidence": 0.3416201636904762,
+        "observation_count": 105,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_05": 16,
+          "column_06": 86
+        }
+      },
+      {
+        "instance_id": "column_10",
+        "runtime_instance_id": "column_10",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.790649748138943,
+          7.9551999287923305,
+          -1.2695426933865244
+        ],
+        "position_covariance": [
+          [
+            0.06638637542666599,
+            0.015669327610513227,
+            0.000667827721301098
+          ],
+          [
+            0.015669327610513224,
+            0.047086948028424586,
+            6.105922144771986e-05
+          ],
+          [
+            0.0006678277213010986,
+            6.105922144772017e-05,
+            0.06747813182346467
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.876932234939439,
+            7.330295283111895,
+            -2.4738742170762436
+          ],
+          "max": [
+            -11.704367261338447,
+            8.580104574472767,
+            -0.06521116969680504
+          ]
+        },
+        "confidence": 0.17815290178571427,
+        "observation_count": 7,
+        "last_seen": 1794811796.7098372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_10": 7
+        }
+      },
+      {
+        "instance_id": "column_12",
+        "runtime_instance_id": "column_12",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9187791976880453,
+          23.61391410241355,
+          -1.2552096924542766
+        ],
+        "position_covariance": [
+          [
+            0.06158107589152231,
+            0.03197211544212931,
+            -0.0014837335390895017
+          ],
+          [
+            0.03197211544212931,
+            0.05005636066366392,
+            -0.001100894282885199
+          ],
+          [
+            -0.0014837335390895019,
+            -0.0011008942828851986,
+            0.07274711810916479
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.473418349528097,
+            23.076454993379173,
+            -2.565883291065371
+          ],
+          "max": [
+            -3.3641400458479938,
+            24.151373211447925,
+            0.05546390615681778
+          ]
+        },
+        "confidence": 0.8634456219059405,
+        "observation_count": 101,
+        "last_seen": 1794811770.947837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_12": 101
+        }
+      },
+      {
+        "instance_id": "column_14",
+        "runtime_instance_id": "column_14",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.051756105165998,
+          23.748788522495957,
+          -1.2527081863597467
+        ],
+        "position_covariance": [
+          [
+            0.0804255710016704,
+            -0.011312105330172368,
+            0.0006934916894318417
+          ],
+          [
+            -0.011312105330172368,
+            0.03794588664004539,
+            -8.090335313098883e-05
+          ],
+          [
+            0.0006934916894318413,
+            -8.090335313098892e-05,
+            0.07634441133465111
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.541556097014319,
+            23.069246479295337,
+            -2.5605415102910647
+          ],
+          "max": [
+            4.561956113317677,
+            24.428330565696577,
+            0.055125137571571454
+          ]
+        },
+        "confidence": 0.7497164818548389,
+        "observation_count": 93,
+        "last_seen": 1794811310.263837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_14": 57,
+          "column_70": 27
+        }
+      },
+      {
+        "instance_id": "column_18",
+        "runtime_instance_id": "column_18",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.856755628723455,
+          23.5919552630509,
+          -1.3089838892236487
+        ],
+        "position_covariance": [
+          [
+            0.03118540396823133,
+            -0.010342048682228136,
+            4.868720988100882e-06
+          ],
+          [
+            -0.010342048682228142,
+            0.04741453686085166,
+            -0.00011726836770571726
+          ],
+          [
+            4.868720988100851e-06,
+            -0.00011726836770571756,
+            0.05742306059328256
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.770119639688659,
+            23.078296588148415,
+            -2.5935941663397344
+          ],
+          "max": [
+            11.943391617758254,
+            24.105613937953382,
+            -0.024373612107563197
+          ]
+        },
+        "confidence": 0.2342247596153846,
+        "observation_count": 78,
+        "last_seen": 1794811559.7488372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_18": 78
+        }
+      },
+      {
+        "instance_id": "column_22",
+        "runtime_instance_id": "column_22",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.685305378772602,
+          15.851995530945803,
+          -1.2638228686688866
+        ],
+        "position_covariance": [
+          [
+            0.1754843744203921,
+            -0.003760718837494237,
+            -0.003052929578996332
+          ],
+          [
+            -0.0037607188374942364,
+            0.02399965368817122,
+            0.00012225780533692154
+          ],
+          [
+            -0.003052929578996331,
+            0.00012225780533692154,
+            0.10083374442237944
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.713205876288026,
+            15.549066044900435,
+            -2.5602341273513165
+          ],
+          "max": [
+            -11.657404881257179,
+            16.15492501699117,
+            0.03258839001354343
+          ]
+        },
+        "confidence": 0.16531808035714285,
+        "observation_count": 7,
+        "last_seen": 1794808596.6998372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_23": 7
+        }
+      },
+      {
+        "instance_id": "column_25",
+        "runtime_instance_id": "column_25",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_26",
+          "column_27",
+          "column_40"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.757527154638847,
+          32.387006511304804,
+          -1.289383136269496
+        ],
+        "position_covariance": [
+          [
+            0.0662073066583417,
+            -0.0064023267969896816,
+            -0.0010548638237941352
+          ],
+          [
+            -0.006402326796989676,
+            0.07116654909188096,
+            -0.008786390146350454
+          ],
+          [
+            -0.00105486382379413,
+            -0.008786390146350454,
+            0.07425027623308247
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.846758925951079,
+            31.66050798420948,
+            -2.6256517131357455
+          ],
+          "max": [
+            -11.668295383326615,
+            33.113505038400135,
+            0.046885440596753224
+          ]
+        },
+        "confidence": 0.182586669921875,
+        "observation_count": 64,
+        "last_seen": 1794811742.7188373,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [
+          {
+            "min": [
+              -11.925285780110176,
+              31.53632172445096,
+              -2.734090869918853
+            ],
+            "max": [
+              -11.765094355100633,
+              32.04378109274655,
+              0.04532417949377998
+            ],
+            "last_seen": 1794811746.987837,
+            "target_id": "column_39"
+          }
+        ],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_25": 20,
+          "column_26": 20,
+          "column_27": 17
+        }
+      },
+      {
+        "instance_id": "column_28",
+        "runtime_instance_id": "column_28",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.848528005898705,
+          7.643479456448953,
+          -1.2599174679999507
+        ],
+        "position_covariance": [
+          [
+            0.046799332341143814,
+            -0.007288896099209448,
+            -8.12165061954701e-05
+          ],
+          [
+            -0.007288896099209448,
+            0.04806560117026664,
+            -0.0001018288153618823
+          ],
+          [
+            -8.121650619547021e-05,
+            -0.00010182881536188232,
+            0.05598609771543197
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.773654084939363,
+            7.1663093647390514,
+            -2.5600752272439995
+          ],
+          "max": [
+            11.923401926858048,
+            8.120649548158855,
+            0.04024029124409781
+          ]
+        },
+        "confidence": 0.18782552083333334,
+        "observation_count": 42,
+        "last_seen": 1794811796.7098372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_28": 42
+        }
+      },
+      {
+        "instance_id": "column_32",
+        "runtime_instance_id": "column_32",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.8687356293869164,
+          15.661683131418851,
+          -1.2872808629106627
+        ],
+        "position_covariance": [
+          [
+            0.03248336745219902,
+            -0.0017566767653941526,
+            6.219694125109855e-05
+          ],
+          [
+            -0.001756676765394153,
+            0.07135687359218804,
+            -0.0016213536644950808
+          ],
+          [
+            6.219694125109857e-05,
+            -0.0016213536644950838,
+            0.07109048954800003
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.412097925431775,
+            15.176554792179275,
+            -2.621961084234417
+          ],
+          "max": [
+            -3.325373333342058,
+            16.146811470658427,
+            0.04739935841309147
+          ]
+        },
+        "confidence": 0.833389945652174,
+        "observation_count": 46,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_03": 28,
+          "column_34": 18
+        }
+      },
+      {
+        "instance_id": "column_33",
+        "runtime_instance_id": "column_33",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          4.044087031648994,
+          32.58745423971318,
+          -1.2548622927005586
+        ],
+        "position_covariance": [
+          [
+            0.033829634331070224,
+            0.02825698027933769,
+            0.00036438614401869906
+          ],
+          [
+            0.028256980279337686,
+            0.04319693651413179,
+            0.0004321220489775702
+          ],
+          [
+            0.00036438614401869895,
+            0.0004321220489775701,
+            0.04305687899309342
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            3.4385546675910224,
+            32.05870477620662,
+            -2.5607527367230043
+          ],
+          "max": [
+            4.649619395706965,
+            33.11620370321974,
+            0.0510281513218872
+          ]
+        },
+        "confidence": 0.8027474306483956,
+        "observation_count": 187,
+        "last_seen": 1794811702.6178372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_33": 187
+        }
+      },
+      {
+        "instance_id": "column_34",
+        "runtime_instance_id": "column_34",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_43"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.9139382204328097,
+          32.55603792537585,
+          -1.2839270681120347
+        ],
+        "position_covariance": [
+          [
+            0.08003463794164525,
+            -0.013135787333999858,
+            -0.001180003721212925
+          ],
+          [
+            -0.013135787333999858,
+            0.01662755025738642,
+            0.00021899954689121696
+          ],
+          [
+            -0.001180003721212924,
+            0.00021899954689121674,
+            0.06657002750247104
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -4.459745091496909,
+            32.03475239105245,
+            -2.632793812654708
+          ],
+          "max": [
+            -3.3681313493687104,
+            33.077323459699244,
+            0.06493967643063833
+          ]
+        },
+        "confidence": 0.8757416000939849,
+        "observation_count": 133,
+        "last_seen": 1794811739.253837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_35": 115,
+          "column_41": 18
+        }
+      },
+      {
+        "instance_id": "column_37",
+        "runtime_instance_id": "column_37",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.895011279812195,
+          25.457302991628424,
+          -1.3137362537752553
+        ],
+        "position_covariance": [
+          [
+            0.026669522851909176,
+            -0.014188952041475902,
+            1.680029346644837e-05
+          ],
+          [
+            -0.014188952041475902,
+            0.052472223191407874,
+            4.135058557171484e-05
+          ],
+          [
+            1.680029346644837e-05,
+            4.1350585571714845e-05,
+            0.07778594752306425
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.835828687334178,
+            25.263054345152174,
+            -2.7287894216210056
+          ],
+          "max": [
+            11.954193872290212,
+            25.651551638104674,
+            0.10131691407049499
+          ]
+        },
+        "confidence": 0.20513556985294118,
+        "observation_count": 34,
+        "last_seen": 1794811559.7488372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_38": 34
+        }
+      },
+      {
+        "instance_id": "column_39",
+        "runtime_instance_id": "column_39",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -11.845190067605404,
+          31.790051408598757,
+          -1.3443833452125364
+        ],
+        "position_covariance": [
+          [
+            0.04386234380440173,
+            -0.02317133978453344,
+            -0.0007360999539289373
+          ],
+          [
+            -0.02317133978453344,
+            0.0475689719994783,
+            0.0008291750554653546
+          ],
+          [
+            -0.0007360999539289377,
+            0.0008291750554653551,
+            0.07499794440125725
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -11.925285780110176,
+            31.53632172445096,
+            -2.734090869918853
+          ],
+          "max": [
+            -11.765094355100633,
+            32.04378109274655,
+            0.04532417949377998
+          ]
+        },
+        "confidence": 0.21263020833333332,
+        "observation_count": 15,
+        "last_seen": 1794811746.987837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [
+          {
+            "min": [
+              -12.459118277326072,
+              31.52294516062778,
+              -2.635780243497996
+            ],
+            "max": [
+              -11.933522852140026,
+              31.533813613871533,
+              0.08757960357981445
+            ],
+            "last_seen": 1794811084.7488372,
+            "target_id": "column_41"
+          }
+        ],
+        "identity_status": "needs_connection_view",
+        "source_observations": {
+          "column_25": 12
+        }
+      },
+      {
+        "instance_id": "column_41",
+        "runtime_instance_id": "column_41",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -12.19632056473305,
+          31.528379387249657,
+          -1.2741003199590908
+        ],
+        "position_covariance": [
+          [
+            0.1136318647502104,
+            -0.0990023802691363,
+            -0.0049637843058286885
+          ],
+          [
+            -0.09900238026913628,
+            0.12110435633912427,
+            0.005311972234369061
+          ],
+          [
+            -0.004963784305828686,
+            0.005311972234369053,
+            0.21548442462568207
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -12.459118277326072,
+            31.52294516062778,
+            -2.635780243497996
+          ],
+          "max": [
+            -11.933522852140026,
+            31.533813613871533,
+            0.08757960357981445
+          ]
+        },
+        "confidence": 0.21126302083333334,
+        "observation_count": 3,
+        "last_seen": 1794811084.7488372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "needs_connection_view",
+        "source_observations": {}
+      },
+      {
+        "instance_id": "column_46",
+        "runtime_instance_id": "column_46",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [
+          "column_53"
+        ],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.866170068915743,
+          32.26757082335204,
+          -1.3033254970057688
+        ],
+        "position_covariance": [
+          [
+            0.03807519757711419,
+            -0.01513762447798866,
+            0.002704810983650547
+          ],
+          [
+            -0.01513762447798866,
+            0.02521764975026747,
+            -0.001411013930994159
+          ],
+          [
+            0.0027048109836505466,
+            -0.001411013930994159,
+            0.05459471717241144
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.772097366388984,
+            31.48013532969828,
+            -2.6540603179848112
+          ],
+          "max": [
+            11.9602427714425,
+            33.0550063170058,
+            0.04740932397327374
+          ]
+        },
+        "confidence": 0.27814352101293094,
+        "observation_count": 58,
+        "last_seen": 1794811574.878837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_44": 26,
+          "column_51": 30,
+          "column_62": 1
+        }
+      },
+      {
+        "instance_id": "column_57",
+        "runtime_instance_id": "column_57",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          12.091543471317316,
+          37.65391272148493,
+          -1.1983102482762165
+        ],
+        "position_covariance": [
+          [
+            0.016688062106372477,
+            0.007293649752251216,
+            0.00016676113802618063
+          ],
+          [
+            0.0072936497522512155,
+            0.027346929274027907,
+            0.0003443200291929611
+          ],
+          [
+            0.00016676113802618068,
+            0.0003443200291929611,
+            0.045810013641156
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.971750650793643,
+            37.07093216619599,
+            -2.4626852273432798
+          ],
+          "max": [
+            12.21133629184099,
+            38.23689327677387,
+            0.06606473079084693
+          ]
+        },
+        "confidence": 0.3529715401785714,
+        "observation_count": 35,
+        "last_seen": 1794811656.0188372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_55": 35
+        }
+      },
+      {
+        "instance_id": "column_59",
+        "runtime_instance_id": "column_59",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          12.079241988518586,
+          35.266802903813954,
+          -1.3405212402014148
+        ],
+        "position_covariance": [
+          [
+            0.06377545455854992,
+            0.0125809244590857,
+            -0.003912554095899274
+          ],
+          [
+            0.012580924459085699,
+            0.028213059961887617,
+            -0.0011507860540367308
+          ],
+          [
+            -0.003912554095899275,
+            -0.0011507860540367315,
+            0.05287737156030431
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.977882800678259,
+            34.74810330141673,
+            -2.7319707496371617
+          ],
+          "max": [
+            12.180601176358913,
+            35.78550250621119,
+            0.05092826923433213
+          ]
+        },
+        "confidence": 0.21720377604166666,
+        "observation_count": 24,
+        "last_seen": 1794809886.2528372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_57": 10
+        }
+      },
+      {
+        "instance_id": "column_84",
+        "runtime_instance_id": "column_84",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          1.461708444901865,
+          -2.919233482914459,
+          -1.2961347025125187
+        ],
+        "position_covariance": [
+          [
+            0.027927382272473336,
+            -0.010220880802239445,
+            0.00018828146385331675
+          ],
+          [
+            -0.010220880802239445,
+            0.03639468460038493,
+            -0.0003920654450968563
+          ],
+          [
+            0.0001882814638533168,
+            -0.0003920654450968564,
+            0.08633874883950535
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            1.4442576910409195,
+            -2.949356128216577,
+            -2.6054285909203325
+          ],
+          "max": [
+            1.47915919876281,
+            -2.8891108376123404,
+            0.013159185895295064
+          ]
+        },
+        "confidence": 0.24755859375,
+        "observation_count": 10,
+        "last_seen": 1794810758.003837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_83": 10
+        }
+      },
+      {
+        "instance_id": "column_85",
+        "runtime_instance_id": "column_85",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -0.002129391645572982,
+          -2.909422032837927,
+          -1.303196673971729
+        ],
+        "position_covariance": [
+          [
+            0.02686675322834046,
+            -0.009353894168750118,
+            -6.864024054903105e-05
+          ],
+          [
+            -0.00935389416875012,
+            0.01824686033075152,
+            -7.865738366957654e-05
+          ],
+          [
+            -6.864024054903103e-05,
+            -7.865738366957654e-05,
+            0.07019596967147827
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -0.06127996901328077,
+            -2.9544061452977943,
+            -2.578842562969594
+          ],
+          "max": [
+            0.057021185722134805,
+            -2.86443792037806,
+            -0.027550784973863818
+          ]
+        },
+        "confidence": 0.2313565340909091,
+        "observation_count": 11,
+        "last_seen": 1794810780.7388372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_84": 11
+        }
+      },
+      {
+        "instance_id": "column_86",
+        "runtime_instance_id": "column_86",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -1.3655854104867253,
+          -2.8981133957815866,
+          -1.292707803943079
+        ],
+        "position_covariance": [
+          [
+            0.01472295344976024,
+            -0.0038987146163403756,
+            -0.00011811503912689777
+          ],
+          [
+            -0.003898714616340375,
+            0.028397856872704044,
+            -8.173558518750647e-05
+          ],
+          [
+            -0.00011811503912689777,
+            -8.173558518750647e-05,
+            0.07658072218021812
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -1.3723988408153027,
+            -2.9208916135372225,
+            -2.5950358788449974
+          ],
+          "max": [
+            -1.3587719801581482,
+            -2.8753351780259506,
+            0.009620270958839328
+          ]
+        },
+        "confidence": 0.1986328125,
+        "observation_count": 5,
+        "last_seen": 1794810780.7388372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_85": 5
+        }
+      },
+      {
+        "instance_id": "column_87",
+        "runtime_instance_id": "column_87",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          -3.1040211364465207,
+          -1.944367832449686,
+          -1.3601529841840254
+        ],
+        "position_covariance": [
+          [
+            0.05315040535822224,
+            0.02059005227527184,
+            -4.582490441568431e-05
+          ],
+          [
+            0.02059005227527184,
+            0.033701408606105605,
+            -4.935822146292564e-05
+          ],
+          [
+            -4.58249044156843e-05,
+            -4.935822146292563e-05,
+            0.041793188048598356
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -3.362051109370469,
+            -2.7376245529697565,
+            -2.7568106216568666
+          ],
+          "max": [
+            -2.8459911635225725,
+            -1.1511111119296156,
+            0.03650465328881563
+          ]
+        },
+        "confidence": 0.201416015625,
+        "observation_count": 16,
+        "last_seen": 1794811896.418837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_86": 11
+        }
+      },
+      {
+        "instance_id": "column_91",
+        "runtime_instance_id": "column_91",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          2.977504651405564,
+          -1.8117577695774738,
+          -1.3550251399099342
+        ],
+        "position_covariance": [
+          [
+            0.06378335782092537,
+            -0.020297853815828673,
+            0.0005987020788123138
+          ],
+          [
+            -0.02029785381582867,
+            0.03794783439572269,
+            -0.0002698039354052441
+          ],
+          [
+            0.0005987020788123137,
+            -0.0002698039354052438,
+            0.08830790104592208
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            2.925478728954884,
+            -2.419211792672449,
+            -2.7610113148298696
+          ],
+          "max": [
+            3.0295305738562432,
+            -1.2043037464824986,
+            0.05096103501000135
+          ]
+        },
+        "confidence": 0.32872596153846156,
+        "observation_count": 13,
+        "last_seen": 1794810758.003837,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {
+          "column_90": 13
+        }
+      },
+      {
+        "instance_id": "column_115",
+        "runtime_instance_id": "column_115",
+        "video_instance_id": null,
+        "class_name": "column",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [
+          "concrete column",
+          "concrete pillar",
+          "parking garage pillar",
+          "support column",
+          "support pillar",
+          "structural column",
+          "parking garage structural column",
+          "floor to ceiling concrete column",
+          "concrete column supporting a ceiling beam"
+        ],
+        "position_world": [
+          11.716981122626201,
+          14.21358320316292,
+          -1.2064095974752058
+        ],
+        "position_covariance": [
+          [
+            0.39026078271804054,
+            0.3756162842492819,
+            -0.027929829259765976
+          ],
+          [
+            0.3756162842492819,
+            0.5290918778662227,
+            -0.031206641421443398
+          ],
+          [
+            -0.027929829259765976,
+            -0.031206641421443398,
+            0.20383793751177537
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            11.403194141512444,
+            13.402972394350687,
+            -2.4488844580929485
+          ],
+          "max": [
+            12.030768103739957,
+            15.024194011975151,
+            0.03606526314253672
+          ]
+        },
+        "confidence": 0.22200520833333334,
+        "observation_count": 3,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "connection_targets": [],
+        "identity_status": "observed",
+        "source_observations": {}
+      },
+      {
+        "instance_id": "vehicle_01",
+        "runtime_instance_id": "vehicle_01",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [],
+        "position_world": [
+          -8.797654282382226,
+          13.314860193287116,
+          -0.5469371242952847
+        ],
+        "position_covariance": [
+          [
+            0.06292329799876856,
+            -0.01256584584804696,
+            -0.002177510856992554
+          ],
+          [
+            -0.01256584584804696,
+            0.07200870826779801,
+            0.002534511711953287
+          ],
+          [
+            -0.002177510856992554,
+            0.002534511711953287,
+            0.04543792508495603
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.945967980464003,
+            12.466575531022519,
+            -1.0580232097359592
+          ],
+          "max": [
+            -6.6493405843004485,
+            14.163144855551714,
+            -0.035851038854610294
+          ]
+        },
+        "confidence": 0.9451704545454546,
+        "observation_count": 55,
+        "last_seen": 1794811907.7788372,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.727500482102949,
+          12.978373170609592,
+          -0.4594048561607654
+        ],
+        "supported_surface_voxels": 1125,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.797654282382226,
+            13.314860193287116,
+            -0.5469371242952847
+          ],
+          "size": [
+            4.296627396163555,
+            1.696569324529195,
+            1.022172170881349
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_01": 53
+        }
+      },
+      {
+        "instance_id": "vehicle_02",
+        "runtime_instance_id": "vehicle_02",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [
+          "vehicle_06"
+        ],
+        "color": "blue",
+        "color_confidence": 0.6635142666027675,
+        "aliases": [],
+        "position_world": [
+          -8.711079412394147,
+          5.566386784892374,
+          -0.7623127975796112
+        ],
+        "position_covariance": [
+          [
+            0.0820645492035292,
+            -0.02350752046102892,
+            -0.005115331096911609
+          ],
+          [
+            -0.02350752046102892,
+            0.061516061348916,
+            0.003329087345902943
+          ],
+          [
+            -0.005115331096911609,
+            0.003329087345902943,
+            0.04455875462362642
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.797256391797301,
+            4.615991560193336,
+            -1.4849529760254476
+          ],
+          "max": [
+            -6.624902432990994,
+            6.516782009591411,
+            -0.03967261913377492
+          ]
+        },
+        "confidence": 0.9562904094827587,
+        "observation_count": 58,
+        "last_seen": 1794811899.1838372,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -7.334513250881397,
+          4.892448339612575,
+          -0.7087907506687432
+        ],
+        "supported_surface_voxels": 1713,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "length_min",
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.711079412394147,
+            5.566386784892374,
+            -0.7623127975796112
+          ],
+          "size": [
+            4.172353958806307,
+            1.9007904493980745,
+            1.4452803568916728
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_02": 49,
+          "vehicle_06": 5
+        }
+      },
+      {
+        "instance_id": "vehicle_03",
+        "runtime_instance_id": "vehicle_03",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.8377646967218095,
+        "aliases": [],
+        "position_world": [
+          8.74684108317488,
+          20.487357140638483,
+          -0.5547298899690788
+        ],
+        "position_covariance": [
+          [
+            0.05681502219038611,
+            0.00040801714282569343,
+            5.6007136940382056e-05
+          ],
+          [
+            0.00040801714282569343,
+            0.07780269273301055,
+            -0.004246762047570271
+          ],
+          [
+            5.6007136940382056e-05,
+            -0.004246762047570271,
+            0.04599289976231468
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.424624224833554,
+            19.5380385993073,
+            -1.1320367703211565
+          ],
+          "max": [
+            11.069057941516206,
+            21.43667568196967,
+            0.022576990382998936
+          ]
+        },
+        "confidence": 0.8962992749183006,
+        "observation_count": 153,
+        "last_seen": 1794811899.1838372,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          8.832466805408531,
+          20.794533182521448,
+          -0.4254103210543018
+        ],
+        "supported_surface_voxels": 1747,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.74684108317488,
+            20.487357140638483,
+            -0.5547298899690788
+          ],
+          "size": [
+            4.644433716682652,
+            1.8986370826623706,
+            1.1546137607041553
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_03": 151
+        }
+      },
+      {
+        "instance_id": "vehicle_04",
+        "runtime_instance_id": "vehicle_04",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "unknown",
+        "color_confidence": 0.0,
+        "aliases": [],
+        "position_world": [
+          9.481685084723265,
+          29.894770434877294,
+          -0.7074111177413813
+        ],
+        "position_covariance": [
+          [
+            0.12000609927719527,
+            0.0754802246085878,
+            -0.0019813741916854424
+          ],
+          [
+            0.0754802246085878,
+            0.15601219760689888,
+            -0.000547882604612577
+          ],
+          [
+            -0.0019813741916854424,
+            -0.000547882604612577,
+            0.051844785961749205
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            8.471294648786955,
+            29.051969115191046,
+            -1.366945089484233
+          ],
+          "max": [
+            10.492075520659576,
+            30.73757175456354,
+            -0.04787714599852976
+          ]
+        },
+        "confidence": 0.8580729166666666,
+        "observation_count": 9,
+        "last_seen": 1794809731.9438372,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          9.870585456705916,
+          29.942410137692733,
+          -0.7941922333164417
+        ],
+        "supported_surface_voxels": 149,
+        "position_status": "partial_surface",
+        "supported_box_faces": [
+          "width_min"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            9.481685084723265,
+            29.89477043487729,
+            -0.7074111177413813
+          ],
+          "size": [
+            2.0207808718726197,
+            1.6856026393724914,
+            1.3190679434857033
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              5.937239770260385,
+              29.06245766660888,
+              -1.0628248708177583
+            ],
+            "max": [
+              7.625827161832465,
+              30.92717481814421,
+              0.019981125599375253
+            ],
+            "last_seen": 1794811713.2528372
+          }
+        ],
+        "source_observations": {
+          "vehicle_04": 7
+        }
+      },
+      {
+        "instance_id": "vehicle_05",
+        "runtime_instance_id": "vehicle_05",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "blue",
+        "color_confidence": 0.6071234310903031,
+        "aliases": [],
+        "position_world": [
+          8.741732319079025,
+          3.0949212050749666,
+          -0.5486721568003926
+        ],
+        "position_covariance": [
+          [
+            0.06451988586423116,
+            -0.028718339869559475,
+            0.002263569150857932
+          ],
+          [
+            -0.028718339869559475,
+            0.11886394318510445,
+            -0.005429303509714328
+          ],
+          [
+            0.002263569150857932,
+            -0.005429303509714328,
+            0.0462267431432306
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            6.545715781210941,
+            2.9419167684354965,
+            -1.0495090818447694
+          ],
+          "max": [
+            10.93774885694711,
+            3.2479256417144367,
+            -0.04783523175601582
+          ]
+        },
+        "confidence": 0.9547991071428571,
+        "observation_count": 21,
+        "last_seen": 1794811824.1578372,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          8.888441276493225,
+          3.2828455124770763,
+          -0.5035072653488538
+        ],
+        "supported_surface_voxels": 532,
+        "position_status": "partial_surface",
+        "supported_box_faces": [
+          "length_max",
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            8.741732319079025,
+            3.0949212050749666,
+            -0.5486721568003926
+          ],
+          "size": [
+            4.392033075736169,
+            0.30600887327894033,
+            1.0016738500887536
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "needs_connection_view",
+        "connection_targets": [
+          {
+            "min": [
+              9.635888723982516,
+              1.4685407846517784,
+              -1.2087926166903957
+            ],
+            "max": [
+              10.831489898236597,
+              2.639900932772861,
+              -0.35539770934971215
+            ],
+            "last_seen": 1794810516.8878372
+          },
+          {
+            "min": [
+              6.3026739289660645,
+              1.4908780675417896,
+              -0.6707183767041102
+            ],
+            "max": [
+              6.848665082053625,
+              3.126891271183409,
+              -0.14522163368945407
+            ],
+            "last_seen": 1794811851.0638373
+          }
+        ],
+        "source_observations": {
+          "vehicle_05": 19
+        }
+      },
+      {
+        "instance_id": "vehicle_07",
+        "runtime_instance_id": "vehicle_07",
+        "video_instance_id": null,
+        "class_name": "car",
+        "merged_from": [],
+        "color": "red",
+        "color_confidence": 0.6698850803445713,
+        "aliases": [],
+        "position_world": [
+          -8.58696812257483,
+          39.05708947459947,
+          -0.612122300447543
+        ],
+        "position_covariance": [
+          [
+            0.04074530419905521,
+            -0.007346097677528551,
+            -0.0015580989963598977
+          ],
+          [
+            -0.007346097677528551,
+            0.06512766972738103,
+            0.0056848834366660436
+          ],
+          [
+            -0.0015580989963598977,
+            0.0056848834366660436,
+            0.036894278685232595
+          ]
+        ],
+        "bbox_3d": {
+          "min": [
+            -10.838243345039695,
+            38.155588611453936,
+            -1.1825912671272159
+          ],
+          "max": [
+            -6.335692900109968,
+            39.958590337745,
+            -0.0416533337678701
+          ]
+        },
+        "confidence": 0.9492749550359713,
+        "observation_count": 139,
+        "last_seen": 1794811688.6178372,
+        "is_static": true,
+        "is_obstacle": true,
+        "geometry_representation": "observed_surface_union",
+        "anchor_position_world": [
+          -8.608854154587089,
+          38.25388050915098,
+          -0.5535360098579676
+        ],
+        "supported_surface_voxels": 1688,
+        "position_status": "multi_surface_estimate",
+        "supported_box_faces": [
+          "width_min",
+          "width_max"
+        ],
+        "geometry_fit": "measured_face_rectangle",
+        "observed_oriented_box": {
+          "center": [
+            -8.58696812257483,
+            39.05708947459947,
+            -0.612122300447543
+          ],
+          "size": [
+            4.502550444929726,
+            1.803001726291069,
+            1.1409379333593457
+          ],
+          "yaw": 0.0
+        },
+        "connected_fragment_count": 0,
+        "identity_status": "observed",
+        "connection_targets": [],
+        "source_observations": {
+          "vehicle_07": 136
+        }
+      }
+    ],
+    "deferred_column_connections": [
+      {
+        "parent": "column_03",
+        "targets": [
+          "column_32"
+        ]
+      },
+      {
+        "parent": "column_25",
+        "targets": [
+          "column_39"
+        ]
+      },
+      {
+        "parent": "column_39",
+        "targets": [
+          "column_41"
+        ]
+      }
+    ],
+    "deferred_vehicle_fragments": [
+      {
+        "observation_count": 33,
+        "possible_parents": [
+          "vehicle_05"
+        ]
+      },
+      {
+        "observation_count": 58,
+        "possible_parents": [
+          "vehicle_04"
+        ]
+      },
+      {
+        "observation_count": 15,
+        "possible_parents": [
+          "vehicle_05"
+        ]
+      }
+    ],
+    "duration_seconds": 42.25
+  }
+}

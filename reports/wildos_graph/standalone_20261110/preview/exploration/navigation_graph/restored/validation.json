@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "checked_nodes": 218,
+  "checked_edges": 609,
+  "invalid_nodes": [],
+  "invalid_edges": [],
+  "certificate": "Existing NavigationGrid same-height free-space checks; not real-flight validation"
+}

@@ -1,0 +1,197 @@
+{
+  "history": "E:\\files\\Semantic Navigation\\data\\runs\\run_20261116_135014_114064\\maps\\semantic_observations.jsonl",
+  "coordinate_frame": "raw_world_NED",
+  "manual_overrides_used": false,
+  "recorded_ids_used_for_association": false,
+  "packets": 921,
+  "measurements": 928,
+  "published_vehicle_count": 6,
+  "vehicles": [
+    {
+      "runtime_instance_id": "vehicle_01",
+      "source_observations": {
+        "vehicle_01": 53
+      },
+      "position_ned": [
+        -8.797654282382226,
+        13.314860193287116,
+        -0.5469371242952847
+      ],
+      "position_status": "multi_surface_estimate",
+      "identity_status": "observed",
+      "connection_targets": []
+    },
+    {
+      "runtime_instance_id": "vehicle_02",
+      "source_observations": {
+        "vehicle_02": 49,
+        "vehicle_06": 5
+      },
+      "position_ned": [
+        -8.711079412394147,
+        5.566386784892374,
+        -0.7623127975796112
+      ],
+      "position_status": "multi_surface_estimate",
+      "identity_status": "observed",
+      "connection_targets": []
+    },
+    {
+      "runtime_instance_id": "vehicle_03",
+      "source_observations": {
+        "vehicle_03": 151
+      },
+      "position_ned": [
+        8.74684108317488,
+        20.487357140638483,
+        -0.5547298899690788
+      ],
+      "position_status": "multi_surface_estimate",
+      "identity_status": "observed",
+      "connection_targets": []
+    },
+    {
+      "runtime_instance_id": "vehicle_04",
+      "source_observations": {
+        "vehicle_04": 7
+      },
+      "position_ned": [
+        9.481685084723265,
+        29.894770434877294,
+        -0.7074111177413813
+      ],
+      "position_status": "partial_surface",
+      "identity_status": "needs_connection_view",
+      "connection_targets": [
+        {
+          "min": [
+            5.937239770260385,
+            29.06245766660888,
+            -1.0628248708177583
+          ],
+          "max": [
+            7.625827161832465,
+            30.92717481814421,
+            0.019981125599375253
+          ],
+          "last_seen": 1794811713.2528372
+        }
+      ]
+    },
+    {
+      "runtime_instance_id": "vehicle_05",
+      "source_observations": {
+        "vehicle_05": 19
+      },
+      "position_ned": [
+        8.741732319079025,
+        3.0949212050749666,
+        -0.5486721568003926
+      ],
+      "position_status": "partial_surface",
+      "identity_status": "needs_connection_view",
+      "connection_targets": [
+        {
+          "min": [
+            9.635888723982516,
+            1.4685407846517784,
+            -1.2087926166903957
+          ],
+          "max": [
+            10.831489898236597,
+            2.639900932772861,
+            -0.35539770934971215
+          ],
+          "last_seen": 1794810516.8878372
+        },
+        {
+          "min": [
+            6.3026739289660645,
+            1.4908780675417896,
+            -0.6707183767041102
+          ],
+          "max": [
+            6.848665082053625,
+            3.126891271183409,
+            -0.14522163368945407
+          ],
+          "last_seen": 1794811851.0638373
+        }
+      ]
+    },
+    {
+      "runtime_instance_id": "vehicle_07",
+      "source_observations": {
+        "vehicle_07": 136
+      },
+      "position_ned": [
+        -8.58696812257483,
+        39.05708947459947,
+        -0.612122300447543
+      ],
+      "position_status": "multi_surface_estimate",
+      "identity_status": "observed",
+      "connection_targets": []
+    }
+  ],
+  "deferred_fragments": [
+    {
+      "observation_count": 33,
+      "possible_parents": [
+        "vehicle_05"
+      ],
+      "bbox_3d": {
+        "min": [
+          9.635888723982516,
+          1.4685407846517784,
+          -1.2087926166903957
+        ],
+        "max": [
+          10.831489898236597,
+          2.639900932772861,
+          -0.35539770934971215
+        ]
+      }
+    },
+    {
+      "observation_count": 58,
+      "possible_parents": [
+        "vehicle_04"
+      ],
+      "bbox_3d": {
+        "min": [
+          5.937239770260385,
+          29.06245766660888,
+          -1.0628248708177583
+        ],
+        "max": [
+          7.625827161832465,
+          30.92717481814421,
+          0.019981125599375253
+        ]
+      }
+    },
+    {
+      "observation_count": 15,
+      "possible_parents": [
+        "vehicle_05"
+      ],
+      "bbox_3d": {
+        "min": [
+          6.3026739289660645,
+          1.4908780675417896,
+          -0.6707183767041102
+        ],
+        "max": [
+          6.848665082053625,
+          3.126891271183409,
+          -0.14522163368945407
+        ]
+      }
+    }
+  ],
+  "automatic_merges": {
+    "6": 2
+  },
+  "duration_seconds": 8.922
+}

@@ -1,4 +1,4 @@
-"""Keep v3 occupancy/landmarks while restoring current vehicle association."""
+"""Keep v3 geometry while sharing current vehicle/column identity decisions."""
 from .local_occupancy_grid import LocalOccupancyGrid as V3LocalMap
 from .online_loop_navigation import OnlineLoopNavigationMap as V3NavigationMap
 from .semantic_instance_mapper import SemanticInstanceMapper as V3Mapper
@@ -7,6 +7,7 @@ from .lidar_mapping_worker import LidarMappingWorker
 from .lidar_loop_map import rebuild
 from ..vehicle_instance_tracker import VehicleInstanceTracker
 from ..semantic_instance_mapper import SemanticInstanceMapper as CurrentMapper
+from ..column_identity import ColumnIdentityPolicy
 
 
 class LocalOccupancyGrid(V3LocalMap):
@@ -33,7 +34,13 @@ class OnlineLoopNavigationMap(V3NavigationMap):
         return self._state[0].last_observation_completed_at
 
 
-class SemanticInstanceMapper(V3Mapper):
+class SemanticInstanceMapper(ColumnIdentityPolicy, V3Mapper):
+    # Frozen v3 geometry/export rules remain in place; identity decisions must
+    # use the same evidence online and during corrected observation replay.
+    update = CurrentMapper.update
+    confirmed_instance_id = CurrentMapper.confirmed_instance_id
+    _merge_duplicate_landmarks_by_ned = CurrentMapper._merge_duplicate_landmarks_by_ned
+
     def __init__(self, **options):
         super().__init__(**options)
         vehicle_options = {
@@ -53,12 +60,15 @@ class SemanticInstanceMapper(V3Mapper):
 
     def semantic_map_records(self, min_observations=1):
         records = super().semantic_map_records(min_observations)
+        connections = self._vehicles.connection_hypotheses()
         for record in records:
             if record["runtime_instance_id"].startswith("vehicle_"):
                 track = self._vehicles.tracks[int(record["runtime_instance_id"].split("_")[-1])]
                 record.update(**track.surface.vehicle_geometry(),
-                              connected_fragment_count=track.connected_fragment_count)
-        return records
+                              connected_fragment_count=track.connected_fragment_count,
+                              identity_status='needs_connection_view' if connections.get(track.instance_id) else 'observed',
+                              connection_targets=connections.get(track.instance_id, []))
+        return self._with_column_identity_status(records)
 
     def object_inspection_records(self, published_records):
         return CurrentMapper.object_inspection_records(self, published_records)

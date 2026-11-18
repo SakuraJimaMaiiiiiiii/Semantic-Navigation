@@ -1,0 +1,20 @@
+{
+  "verification_date": "2026-11-05",
+  "flight_started": false,
+  "tests_passed": 74,
+  "subtests_passed": 7,
+  "original_files": {
+    "run_explore.py": {
+      "unchanged_from_git": true,
+      "sha256": "2e5b75fc92b9b2cf90aaf16f1fed6b23c5a2db0af6766bfe5c812611b252a06d"
+    },
+    "navigation/frontier_explorer.py": {
+      "unchanged_from_git": true,
+      "sha256": "ab1b324b9bf0cec87d4e90f4e353f7e3fa523b4de20f4d0f6e03121f803b86b1"
+    },
+    "navigation/exploration_session.py": {
+      "unchanged_from_git": true,
+      "sha256": "7efb7d3d3e983a5e8ee711bc3e0d2c55c75c46093c634b1018723a5f74465d37"
+    }
+  }
+}

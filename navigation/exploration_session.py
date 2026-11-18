@@ -13,6 +13,7 @@ from .mission import SemanticNavigator
 from .route import NavigationGrid
 from .scene_memory import SceneMemory, load_bundle, write_json
 from .target import select_targets
+from .perception_mode import active_perception
 
 
 class TargetUnavailableError(ValueError):
@@ -85,8 +86,8 @@ class SavedMapNavigator(SemanticNavigator):
         # Live mapping and perception worker failures are still checked.
         super()._check_health(require_semantics=False)
 
-    def _frame(self):
-        end = min(self.deadline, self.clock() + self.config.perception_timeout)
+    def _frame(self, *, deadline=None):
+        end = min(self.deadline, self.clock()+self.config.perception_timeout if deadline is None else deadline)
         waiting = False
         while True:
             self._check_health()
@@ -103,6 +104,10 @@ class SavedMapNavigator(SemanticNavigator):
                 self._event('PERCEPTION_WAIT', reason='saved_target_requires_fresh_observation')
                 waiting = True
             self.vehicle.wait(min(.2, end - self.clock()))
+
+    def _verify(self, record, goal):
+        from .visual_verification import verify_saved_target
+        return verify_saved_target(self,record,goal)
 
     def _verification_candidates(self, frame, current):
         # Relative conditions were resolved against the saved graph. Confirmation
@@ -167,6 +172,7 @@ class ExplorationSession:
         self.exploration_waypoints = []
         self.show_place_links = True
 
+    @active_perception
     def return_home(self):
         if self.airborne_navigation:
             self.watch.check()
@@ -313,6 +319,7 @@ class ExplorationSession:
             raise
         return explorer.result
 
+    @active_perception
     def navigate(self, request, job_id):
         self.show_place_links = False
         self.watch.check()

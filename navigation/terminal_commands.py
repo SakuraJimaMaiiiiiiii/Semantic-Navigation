@@ -2,8 +2,9 @@
 import json
 import re
 import threading
+from .console_output import navigation_result_text
 
-HELP = ('输入一个或多个物体 ID，空格分隔，例如 vehicle_03 vehicle_01；按输入顺序导航。\n'
+HELP = ('输入一个或多个物体 ID，空格分隔；可在末尾添加 home，例如 vehicle_03 vehicle_01 home。\n'
         'home / 返航：返回起点并降落；quit / 退出：返航降落并退出；status：状态；help：帮助。')
 
 
@@ -16,9 +17,15 @@ def parse_line(line):
                 'status':'status', '状态':'status', 'help':'help', '帮助':'help'}
     if len(words) == 1 and words[0].lower() in commands:
         return [{'command':commands[words[0].lower()]}]
+    return_home = words[-1].lower() in {'home', 'return', '返航'}
+    if return_home:
+        words = words[:-1]
     if any(word.lower() in commands or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', word) for word in words):
-        raise ValueError('请输入物体 ID，以空格分隔；home、quit 等命令需要单独输入。')
-    return [{'command':'navigate', 'target':{'instance_id':word}} for word in words]
+        raise ValueError('请输入物体 ID，以空格分隔；home/返航可单独输入或放在末尾，quit 等其他命令需单独输入。')
+    result = [{'command':'navigate', 'target':{'instance_id':word}} for word in words]
+    if return_home:
+        result.append({'command':'return_home'})
+    return result
 
 
 class TerminalCommands:
@@ -39,16 +46,19 @@ class TerminalCommands:
     def run(self):
         while not self.stop.is_set():
             try:
-                line = self.reader('\n请输入导航点（多个物体 ID 用空格分隔，home 返航，quit 退出）：')
+                line = self.reader('\n请输入导航点（多个 ID 空格分隔，可在末尾加 home 返航，quit 退出）：')
             except EOFError:
                 return
             if self.stop.is_set():
                 return
             try:
                 commands = parse_line(line)
+                skip_targets = False
                 for command in commands:
                     if self.stop.is_set():
                         return
+                    if skip_targets and command['command'] == 'navigate':
+                        continue
                     if command['command'] == 'help':
                         self.writer(HELP)
                         continue
@@ -60,22 +70,22 @@ class TerminalCommands:
                         self.writer('已请求返航降落并退出，请等待控制终端完成清理。')
                         return
                     identity = response['job_id']
-                    self.writer('已提交：'+(command.get('target', {}).get('instance_id') or '返航降落'))
                     failed = False
                     while not self.stop.wait(.2):
                         job = self.server.status(identity).get('job')
                         if job and job['id'] == identity and job['state'] in ('succeeded','failed'):
-                            self.writer(json.dumps(job['result'], ensure_ascii=False, indent=2))
+                            self.writer(navigation_result_text(job['result'],
+                                command.get('target', {}).get('instance_id'), command=command['command']))
                             if job['state'] == 'failed':
-                                self.writer('本次导航未完成，已停止本行剩余目标；请检查状态后重新输入导航点。')
                                 failed = True
                                 break
-                            if command['command'] == 'navigate':
-                                confirmation = ('视觉已确认' if job['result'].get('visual_confirmed')
-                                                else '视觉未确认')
-                                self.writer(f"已到达 {command['target']['instance_id']} 的地图接近点，{confirmation}；无人机正在悬停。")
                             break
                     if failed:
-                        break
-            except ValueError as error:
+                        if command['command'] == 'navigate' and commands[-1]['command'] == 'return_home':
+                            # Only a completed failure reaches here. A timeout,
+                            # stop or unknown task state never triggers return.
+                            skip_targets = True
+                        else:
+                            break
+            except (ValueError, RuntimeError) as error:
                 self.writer(str(error))
